@@ -8,6 +8,11 @@ type Matrix struct {
 	data [][]float64
 }
 
+// Initializer is an interface for initializing a matrix.
+type Initializer interface {
+	Get() float64
+}
+
 // New returns a new matrix with m rows and n columns.
 func New(m, n int) *Matrix {
 	data := make([][]float64, m)
