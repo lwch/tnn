@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 	"tnn/internal/initializer"
 	"tnn/internal/nn/layer"
 	"tnn/internal/nn/loss"
 	"tnn/internal/nn/model"
 	"tnn/internal/nn/net"
 	"tnn/internal/nn/optimizer"
-	"tnn/internal/shape"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -30,16 +31,34 @@ func main() {
 		0,
 	})
 
+	row := func(i int) (*mat.Dense, *mat.Dense) {
+		return mat.NewDense(1, 2, input.RawRowView(i)),
+			mat.NewDense(1, 1, output.RawRowView(i))
+	}
+
+	const hidden = 16
+	const inputCols = 2
+	const outputCols = 1
+
+	rand.Seed(time.Now().UnixNano())
+
 	var net net.Net
-	net.Add(layer.NewLinear(shape.Shape{M: 4, N: 2}, 1, initializer.NewNormal(0, 1)))
+	net.Add(layer.NewLinear(1, inputCols, hidden, initializer.NewNormal(100, 1)))
+	net.Add(layer.NewSigmoid())
+	net.Add(layer.NewLinear(1, hidden, outputCols, initializer.NewNormal(50, 1)))
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewSGD(lr, 0.9)
 	m := model.New(&net, loss, optimizer)
 	for i := 0; i < epoch; i++ {
-		loss := m.Train(input, output)
-		if i%100 == 0 {
+		dInput, dOutput := row(rand.Intn(4))
+		loss := m.Train(dInput, dOutput)
+		if i%1000 == 0 {
 			fmt.Printf("Epoch: %d, Loss: %f\n", i, loss)
 		}
 	}
-	fmt.Println(m.Predict(input))
+	for i := 0; i < 4; i++ {
+		dInput, _ := row(i)
+		pred := m.Predict(dInput)
+		fmt.Println(mat.Formatted(pred))
+	}
 }

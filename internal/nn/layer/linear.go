@@ -3,26 +3,22 @@ package layer
 import (
 	"tnn/internal/initializer"
 	"tnn/internal/nn/optimizer"
-	"tnn/internal/shape"
 
 	"gonum.org/v1/gonum/mat"
 )
 
 type Linear struct {
+	input  mat.Dense
 	w, b   *mat.Dense
-	input  *mat.Dense
-	deltaW *mat.Dense
+	deltaW mat.Dense
 	deltaB *mat.Dense
 }
 
-func NewLinear(inputShape shape.Shape, outputN int,
-	init initializer.Initializer) *Linear {
+func NewLinear(inputM, inputN, outputN int, init initializer.Initializer) *Linear {
 	return &Linear{
-		w:      mat.NewDense(inputShape.N, outputN, init.RandN(inputShape.N*outputN)),
-		b:      mat.NewDense(inputShape.M, outputN, nil),
-		input:  mat.NewDense(inputShape.M, inputShape.N, nil),
-		deltaW: mat.NewDense(inputShape.N, outputN, nil),
-		deltaB: mat.NewDense(inputShape.M, outputN, nil),
+		w:      mat.NewDense(inputN, outputN, init.RandN(inputN*outputN)),
+		b:      mat.NewDense(inputM, outputN, nil),
+		deltaB: mat.NewDense(inputM, outputN, nil),
 	}
 }
 
@@ -31,7 +27,7 @@ func (layer *Linear) Name() string {
 }
 
 func (layer *Linear) Forward(input *mat.Dense) *mat.Dense {
-	layer.input.Copy(input)
+	layer.input.CloneFrom(input)
 	var ret mat.Dense
 	ret.Mul(input, layer.w)
 	ret.Add(&ret, layer.b)
@@ -47,6 +43,6 @@ func (layer *Linear) Backward(grad *mat.Dense) *mat.Dense {
 }
 
 func (layer *Linear) Update(optimizer optimizer.Optimizer) {
-	optimizer.Update(layer.w, layer.deltaW)
+	optimizer.Update(layer.w, &layer.deltaW)
 	optimizer.Update(layer.b, layer.deltaB)
 }
