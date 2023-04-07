@@ -42,10 +42,14 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
+	initializer := initializer.NewNormal(0, 0.5)
+
 	var net net.Net
-	net.Add(layer.NewLinear(1, inputCols, hidden, initializer.NewNormal(100, 1)))
-	net.Add(layer.NewSigmoid())
-	net.Add(layer.NewLinear(1, hidden, outputCols, initializer.NewNormal(50, 1)))
+	net.Add(
+		layer.NewLinear(1, inputCols, hidden, initializer),
+		layer.NewSigmoid(),
+		layer.NewLinear(1, hidden, outputCols, initializer),
+	)
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewSGD(lr, 0)
 	m := model.New(&net, loss, optimizer)

@@ -15,8 +15,8 @@ func New() *Net {
 	return &Net{}
 }
 
-func (n *Net) Add(layer layer.Layer) {
-	n.layers = append(n.layers, layer)
+func (n *Net) Add(layer ...layer.Layer) {
+	n.layers = append(n.layers, layer...)
 }
 
 func (n *Net) Forward(input *mat.Dense) *mat.Dense {
