@@ -15,14 +15,14 @@ import (
 )
 
 const lr = 0.01
-const epoch = 10000
+const epoch = 100000
 
 func main() {
 	input := mat.NewDense(4, 2, []float64{
 		0, 0,
 		0, 1,
 		1, 0,
-		0, 0,
+		1, 1,
 	})
 	output := mat.NewDense(4, 1, []float64{
 		0,
