@@ -47,7 +47,7 @@ func main() {
 	net.Add(layer.NewSigmoid())
 	net.Add(layer.NewLinear(1, hidden, outputCols, initializer.NewNormal(50, 1)))
 	loss := loss.NewMSE()
-	optimizer := optimizer.NewSGD(lr, 0.9)
+	optimizer := optimizer.NewSGD(lr, 0)
 	m := model.New(&net, loss, optimizer)
 	for i := 0; i < epoch; i++ {
 		dInput, dOutput := row(rand.Intn(4))
