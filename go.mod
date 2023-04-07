@@ -2,4 +2,6 @@ module tnn
 
 go 1.20
 
-require github.com/leesper/go_rng v0.0.0-20190531154944-a612b043e353
+require gonum.org/v1/gonum v0.12.0
+
+require golang.org/x/exp v0.0.0-20191002040644-a1355ae1e2c3 // indirect
