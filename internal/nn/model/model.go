@@ -41,5 +41,5 @@ func (m *Model) Loss(input, targets *mat.Dense) float64 {
 
 func (m *Model) apply(grads []*layer.Params) {
 	params := m.net.Params()
-	m.optimizer.Update(params)
+	m.optimizer.Update(grads, params)
 }

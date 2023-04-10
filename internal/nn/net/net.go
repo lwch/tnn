@@ -29,7 +29,8 @@ func (n *Net) Backward(grad *mat.Dense) []*layer.Params {
 	ret := make([]*layer.Params, len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
 		grad = n.layers[i].Backward(grad)
-		ret[i] = n.layers[i].Params()
+		ret[i] = new(layer.Params)
+		ret[i].Copy(n.layers[i].Context())
 	}
 	return ret
 }

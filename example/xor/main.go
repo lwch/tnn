@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"time"
 	"tnn/internal/initializer"
 	"tnn/internal/nn/layer"
 	"tnn/internal/nn/loss"
@@ -37,12 +36,8 @@ func main() {
 	}
 
 	const hidden = 16
-	const inputCols = 2
-	const outputCols = 1
 
-	rand.Seed(time.Now().UnixNano())
-
-	initializer := initializer.NewNormal(0, 0.5)
+	initializer := initializer.NewNormal(1, 0.5)
 
 	var net net.Net
 	net.Add(
@@ -61,7 +56,6 @@ func main() {
 			loss := m.Loss(dInput, dOutput)
 			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss)
 		}
-		fmt.Println("===================")
 	}
 	for i := 0; i < 4; i++ {
 		dInput, _ := row(i)

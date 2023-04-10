@@ -29,7 +29,7 @@ func (layer *Linear) Forward(input *mat.Dense) *mat.Dense {
 		shape := layer.shapes["w"]
 		_, shape.m = input.Dims()
 		layer.shapes["w"] = shape
-		layer.initParams(layer.init)
+		layer.initParams()
 	}
 	var ret mat.Dense
 	ret.Mul(input, layer.params["w"])
@@ -42,7 +42,7 @@ func (layer *Linear) Backward(grad *mat.Dense) *mat.Dense {
 	db := layer.context["b"]
 
 	dw.Mul(layer.input.T(), grad)
-	db.Add(db, grad)
+	db.Copy(grad)
 
 	var ret mat.Dense
 	w := layer.params["w"]

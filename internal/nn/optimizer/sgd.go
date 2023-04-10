@@ -1,6 +1,8 @@
 package optimizer
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"tnn/internal/nn/layer"
+)
 
 type SGD struct {
 	*base
@@ -12,9 +14,12 @@ func NewSGD(lr, weightDecay float64) *SGD {
 	return &sgd
 }
 
-func (sgd *SGD) compute(grads []*mat.Dense) []*mat.Dense {
+func (sgd *SGD) compute(grads []*layer.Params) []*layer.Params {
 	for i := 0; i < len(grads); i++ {
-		grads[i].Scale(-sgd.lr, grads[i])
+		params := grads[i]
+		for _, grad := range *params {
+			grad.Scale(-sgd.lr, grad)
+		}
 	}
 	return grads
 }

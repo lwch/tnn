@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"fmt"
 	"tnn/internal/initializer"
 
 	"gonum.org/v1/gonum/mat"
@@ -9,14 +8,22 @@ import (
 
 type Params map[string]*mat.Dense
 
-func (params *Params) Add(grad *mat.Dense) {
-	for name := range *params {
-		p := (*params)[name]
-		fmt.Println(name)
-		fmt.Println(p.Dims())
-		fmt.Println(grad.Dims())
+func (params *Params) Copy(ps Params) {
+	*params = make(Params)
+	for name, value := range ps {
+		var dense mat.Dense
+		dense.CloneFrom(value)
+		(*params)[name] = &dense
+	}
+}
+
+func (params Params) Add(grads *Params) {
+	for name, grad := range *grads {
+		p := params[name]
+		if p == nil {
+			continue
+		}
 		p.Add(p, grad)
-		(*params)[name] = p
 	}
 }
 
@@ -25,6 +32,7 @@ type Layer interface {
 	Forward(input *mat.Dense) *mat.Dense
 	Backward(grad *mat.Dense) *mat.Dense
 	Params() *Params
+	Context() Params
 }
 
 type shape struct {
@@ -50,14 +58,14 @@ func new(shapes map[string]shape, init initializer.Initializer) *base {
 	}
 }
 
-func (layer *base) initParams(init initializer.Initializer) {
+func (layer *base) initParams() {
 	if layer.hasInit {
 		return
 	}
 	layer.params = make(Params)
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
-		layer.params[name] = mat.NewDense(shape.m, shape.n, init.RandN(shape.m*shape.n))
+		layer.params[name] = mat.NewDense(shape.m, shape.n, layer.init.RandN(shape.m*shape.n))
 		layer.context[name] = mat.NewDense(shape.m, shape.n, nil)
 	}
 	layer.hasInit = true
@@ -65,4 +73,8 @@ func (layer *base) initParams(init initializer.Initializer) {
 
 func (layer *base) Params() *Params {
 	return &layer.params
+}
+
+func (layer *base) Context() Params {
+	return layer.context
 }
