@@ -48,21 +48,24 @@ func main() {
 	net.Add(
 		layer.NewLinear(1, inputCols, hidden, initializer),
 		layer.NewSigmoid(),
-		layer.NewLinear(1, hidden, outputCols, initializer),
+		layer.NewLinear(1, hidden, 1, initializer),
 	)
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewSGD(lr, 0)
 	m := model.New(&net, loss, optimizer)
 	for i := 0; i < epoch; i++ {
 		dInput, dOutput := row(rand.Intn(4))
-		loss := m.Train(dInput, dOutput)
+		m.Train(dInput, dOutput)
 		if i%1000 == 0 {
+			loss := m.Loss(dInput, dOutput)
 			fmt.Printf("Epoch: %d, Loss: %f\n", i, loss)
 		}
 	}
 	for i := 0; i < 4; i++ {
 		dInput, _ := row(i)
 		pred := m.Predict(dInput)
-		fmt.Println(mat.Formatted(pred))
+		fmt.Printf("predict %d xor %d: %f\n",
+			int(dInput.At(0, 0)), int(dInput.At(0, 1)),
+			pred.At(0, 0))
 	}
 }

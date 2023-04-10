@@ -26,11 +26,14 @@ func (m *Model) Predict(input *mat.Dense) *mat.Dense {
 	return m.net.Forward(input)
 }
 
-func (m *Model) Train(input, targets *mat.Dense) float64 {
-	t := m.Predict(input)
-	loss := m.loss.Loss(t, targets)
-	grad := m.loss.Grad(t, targets)
+func (m *Model) Train(input, targets *mat.Dense) {
+	pred := m.Predict(input)
+	grad := m.loss.Grad(pred, targets)
 	m.net.Backward(grad)
 	m.net.Update(m.optimizer)
-	return loss
+}
+
+func (m *Model) Loss(input, targets *mat.Dense) float64 {
+	pred := m.Predict(input)
+	return m.loss.Loss(pred, targets)
 }
