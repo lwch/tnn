@@ -2,17 +2,16 @@ package layer
 
 import (
 	"math"
-	"tnn/internal/nn/optimizer"
 
 	"gonum.org/v1/gonum/mat"
 )
 
 type Sigmoid struct {
-	input mat.Dense
+	*base
 }
 
 func NewSigmoid() *Sigmoid {
-	return &Sigmoid{}
+	return &Sigmoid{base: new(map[string]shape{}, nil)}
 }
 
 func (layer *Sigmoid) Name() string {
@@ -25,25 +24,17 @@ func sigmoid(x float64) float64 {
 
 func (layer *Sigmoid) Forward(input *mat.Dense) *mat.Dense {
 	layer.input.CloneFrom(input)
-	rows, cols := input.Dims()
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			layer.input.Set(i, j, sigmoid(input.At(i, j)))
-		}
-	}
-	return &layer.input
+	var ret mat.Dense
+	ret.Apply(func(_, _ int, v float64) float64 {
+		return sigmoid(v)
+	}, &layer.input)
+	return &ret
 }
 
 func (layer *Sigmoid) Backward(grad *mat.Dense) *mat.Dense {
-	rows, cols := layer.input.Dims()
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			n := layer.input.At(i, j)
-			layer.input.Set(i, j, n*(1-n)*grad.At(i, j))
-		}
-	}
-	return &layer.input
-}
-
-func (layer *Sigmoid) Update(optimizer optimizer.Optimizer) {
+	var ret mat.Dense
+	ret.Apply(func(i, j int, v float64) float64 {
+		return sigmoid(v) * (1 - sigmoid(v)) * grad.At(i, j)
+	}, &layer.input)
+	return &ret
 }

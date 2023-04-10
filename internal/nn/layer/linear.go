@@ -2,23 +2,20 @@ package layer
 
 import (
 	"tnn/internal/initializer"
-	"tnn/internal/nn/optimizer"
 
 	"gonum.org/v1/gonum/mat"
 )
 
 type Linear struct {
-	input  mat.Dense
-	w, b   *mat.Dense
-	deltaW mat.Dense
-	deltaB *mat.Dense
+	*base
 }
 
-func NewLinear(inputM, inputN, outputN int, init initializer.Initializer) *Linear {
+func NewLinear(output int, init initializer.Initializer) *Linear {
 	return &Linear{
-		w:      mat.NewDense(inputN, outputN, init.RandN(inputN*outputN)),
-		b:      mat.NewDense(inputM, outputN, nil),
-		deltaB: mat.NewDense(inputM, outputN, nil),
+		base: new(map[string]shape{
+			"w": {noneShape, output}, // rows reshape from input
+			"b": {1, output},
+		}, init),
 	}
 }
 
@@ -28,21 +25,27 @@ func (layer *Linear) Name() string {
 
 func (layer *Linear) Forward(input *mat.Dense) *mat.Dense {
 	layer.input.CloneFrom(input)
+	if !layer.hasInit {
+		shape := layer.shapes["w"]
+		_, shape.m = input.Dims()
+		layer.shapes["w"] = shape
+		layer.initParams(layer.init)
+	}
 	var ret mat.Dense
-	ret.Mul(input, layer.w)
-	ret.Add(&ret, layer.b)
+	ret.Mul(input, layer.params["w"])
+	ret.Add(&ret, layer.params["b"])
 	return &ret
 }
 
 func (layer *Linear) Backward(grad *mat.Dense) *mat.Dense {
-	layer.deltaW.Mul(layer.input.T(), grad)
-	layer.deltaB.Add(layer.deltaB, grad)
-	var ret mat.Dense
-	ret.Mul(grad, layer.w.T())
-	return &ret
-}
+	dw := layer.context["w"]
+	db := layer.context["b"]
 
-func (layer *Linear) Update(optimizer optimizer.Optimizer) {
-	optimizer.Update(layer.w, &layer.deltaW)
-	optimizer.Update(layer.b, layer.deltaB)
+	dw.Mul(layer.input.T(), grad)
+	db.Add(db, grad)
+
+	var ret mat.Dense
+	w := layer.params["w"]
+	ret.Mul(grad, w.T())
+	return &ret
 }

@@ -2,7 +2,6 @@ package net
 
 import (
 	"tnn/internal/nn/layer"
-	"tnn/internal/nn/optimizer"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -26,14 +25,19 @@ func (n *Net) Forward(input *mat.Dense) *mat.Dense {
 	return input
 }
 
-func (n *Net) Backward(grad *mat.Dense) {
+func (n *Net) Backward(grad *mat.Dense) []*layer.Params {
+	ret := make([]*layer.Params, len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
 		grad = n.layers[i].Backward(grad)
+		ret[i] = n.layers[i].Params()
 	}
+	return ret
 }
 
-func (n *Net) Update(optimizer optimizer.Optimizer) {
-	for i := len(n.layers) - 1; i >= 0; i-- {
-		n.layers[i].Update(optimizer)
+func (n *Net) Params() []*layer.Params {
+	ret := make([]*layer.Params, len(n.layers))
+	for i := 0; i < len(n.layers); i++ {
+		ret[i] = n.layers[i].Params()
 	}
+	return ret
 }

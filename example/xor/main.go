@@ -46,20 +46,22 @@ func main() {
 
 	var net net.Net
 	net.Add(
-		layer.NewLinear(1, inputCols, hidden, initializer),
+		layer.NewLinear(hidden, initializer),
 		layer.NewSigmoid(),
-		layer.NewLinear(1, hidden, 1, initializer),
+		layer.NewLinear(1, initializer),
 	)
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewSGD(lr, 0)
+	// optimizer := optimizer.NewAdam(lr, 0.9, 0.999, 1e-8, 0)
 	m := model.New(&net, loss, optimizer)
 	for i := 0; i < epoch; i++ {
 		dInput, dOutput := row(rand.Intn(4))
 		m.Train(dInput, dOutput)
 		if i%1000 == 0 {
 			loss := m.Loss(dInput, dOutput)
-			fmt.Printf("Epoch: %d, Loss: %f\n", i, loss)
+			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss)
 		}
+		fmt.Println("===================")
 	}
 	for i := 0; i < 4; i++ {
 		dInput, _ := row(i)
