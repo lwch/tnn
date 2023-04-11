@@ -41,7 +41,7 @@ func main() {
 	initializer := initializer.NewNormal(1, 0.5)
 
 	var net net.Net
-	net.Add(
+	net.Set(
 		layer.NewDense(hidden, initializer),
 		activation.NewSigmoid(),
 		layer.NewDense(1, initializer),
