@@ -22,3 +22,9 @@ func (params Params) Add(grads *Params) {
 		p.Add(p, grad)
 	}
 }
+
+func (params *Params) Apply(fn func(i, j int, v float64) float64) {
+	for _, grad := range *params {
+		grad.Apply(fn, grad)
+	}
+}

@@ -27,9 +27,9 @@ func new(lr, weightDecay float64, compute computeFunc) *base {
 func (opt *base) Update(grads, params []*params.Params) {
 	grads = opt.compute(grads)
 	for i := 0; i < len(grads); i++ {
-		// var grad mat.Dense
-		// grad.Apply(func(i, j int, v float64) float64 {
-		// }, grads[i])
+		grads[i].Apply(func(i, j int, v float64) float64 {
+			return v - opt.lr*opt.weightDecay*v
+		})
 	}
 	for i := 0; i < len(params); i++ {
 		if params[i] == nil {

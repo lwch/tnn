@@ -23,19 +23,3 @@ func (sgd *SGD) compute(grads []*params.Params) []*params.Params {
 	}
 	return grads
 }
-
-// func (sgd *SGD) Update(weights, delta *mat.Dense) {
-// 	rows, cols := weights.Dims()
-// 	for i := 0; i < rows; i++ {
-// 		for j := 0; j < cols; j++ {
-// 			d := sgd.compute(delta.At(i, j))
-// 			d -= sgd.weightDecay.compute(d, sgd.lr)
-// 			delta.Set(i, j, d)
-// 			weights.Set(i, j, weights.At(i, j)+d)
-// 		}
-// 	}
-// }
-
-// func (sgd *SGD) compute(delta float64) float64 {
-// 	return -sgd.lr * delta
-// }
