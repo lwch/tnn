@@ -1,10 +1,10 @@
 package model
 
 import (
-	"tnn/internal/nn/layer"
 	"tnn/internal/nn/loss"
 	"tnn/internal/nn/net"
 	"tnn/internal/nn/optimizer"
+	"tnn/internal/nn/params"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -39,7 +39,7 @@ func (m *Model) Loss(input, targets *mat.Dense) float64 {
 	return m.loss.Loss(pred, targets)
 }
 
-func (m *Model) apply(grads []*layer.Params) {
+func (m *Model) apply(grads []*params.Params) {
 	params := m.net.Params()
 	m.optimizer.Update(grads, params)
 }

@@ -2,6 +2,7 @@ package net
 
 import (
 	"tnn/internal/nn/layer"
+	"tnn/internal/nn/params"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -25,18 +26,19 @@ func (n *Net) Forward(input *mat.Dense) *mat.Dense {
 	return input
 }
 
-func (n *Net) Backward(grad *mat.Dense) []*layer.Params {
-	ret := make([]*layer.Params, len(n.layers))
+func (n *Net) Backward(grad *mat.Dense) []*params.Params {
+	ret := make([]*params.Params, len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
 		grad = n.layers[i].Backward(grad)
-		ret[i] = new(layer.Params)
-		ret[i].Copy(n.layers[i].Context())
+		var p params.Params
+		p.Copy(n.layers[i].Context())
+		ret[i] = &p
 	}
 	return ret
 }
 
-func (n *Net) Params() []*layer.Params {
-	ret := make([]*layer.Params, len(n.layers))
+func (n *Net) Params() []*params.Params {
+	ret := make([]*params.Params, len(n.layers))
 	for i := 0; i < len(n.layers); i++ {
 		ret[i] = n.layers[i].Params()
 	}

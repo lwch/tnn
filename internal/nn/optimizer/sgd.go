@@ -1,7 +1,7 @@
 package optimizer
 
 import (
-	"tnn/internal/nn/layer"
+	"tnn/internal/nn/params"
 )
 
 type SGD struct {
@@ -14,7 +14,7 @@ func NewSGD(lr, weightDecay float64) *SGD {
 	return &sgd
 }
 
-func (sgd *SGD) compute(grads []*layer.Params) []*layer.Params {
+func (sgd *SGD) compute(grads []*params.Params) []*params.Params {
 	for i := 0; i < len(grads); i++ {
 		params := grads[i]
 		for _, grad := range *params {

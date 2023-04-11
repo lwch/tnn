@@ -1,4 +1,4 @@
-package layer
+package activation
 
 import (
 	"math"
@@ -11,7 +11,9 @@ type Sigmoid struct {
 }
 
 func NewSigmoid() *Sigmoid {
-	return &Sigmoid{base: new(map[string]shape{}, nil)}
+	var sm Sigmoid
+	sm.base = new(sm.activation, sm.derivative)
+	return &sm
 }
 
 func (layer *Sigmoid) Name() string {
@@ -22,8 +24,7 @@ func sigmoid(x float64) float64 {
 	return 1 / (1 + math.Exp(-x))
 }
 
-func (layer *Sigmoid) Forward(input *mat.Dense) *mat.Dense {
-	layer.input.CloneFrom(input)
+func (layer *Sigmoid) activation(input *mat.Dense) *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(_, _ int, v float64) float64 {
 		return sigmoid(v)
@@ -31,10 +32,10 @@ func (layer *Sigmoid) Forward(input *mat.Dense) *mat.Dense {
 	return &ret
 }
 
-func (layer *Sigmoid) Backward(grad *mat.Dense) *mat.Dense {
+func (layer *Sigmoid) derivative(grad *mat.Dense) *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(i, j int, v float64) float64 {
-		return sigmoid(v) * (1 - sigmoid(v)) * grad.At(i, j)
+		return sigmoid(v) * (1 - sigmoid(v))
 	}, &layer.input)
 	return &ret
 }

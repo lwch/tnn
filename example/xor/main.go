@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"tnn/internal/initializer"
 	"tnn/internal/nn/layer"
+	"tnn/internal/nn/layer/activation"
 	"tnn/internal/nn/loss"
 	"tnn/internal/nn/model"
 	"tnn/internal/nn/net"
@@ -41,9 +42,9 @@ func main() {
 
 	var net net.Net
 	net.Add(
-		layer.NewLinear(hidden, initializer),
-		layer.NewSigmoid(),
-		layer.NewLinear(1, initializer),
+		layer.NewDense(hidden, initializer),
+		activation.NewSigmoid(),
+		layer.NewDense(1, initializer),
 	)
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewSGD(lr, 0)

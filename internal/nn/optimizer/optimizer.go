@@ -1,14 +1,14 @@
 package optimizer
 
 import (
-	"tnn/internal/nn/layer"
+	"tnn/internal/nn/params"
 )
 
 type Optimizer interface {
-	Update(grads, params []*layer.Params)
+	Update(grads, params []*params.Params)
 }
 
-type computeFunc func(grads []*layer.Params) []*layer.Params
+type computeFunc func(grads []*params.Params) []*params.Params
 
 type base struct {
 	lr          float64
@@ -24,7 +24,7 @@ func new(lr, weightDecay float64, compute computeFunc) *base {
 	}
 }
 
-func (opt *base) Update(grads, params []*layer.Params) {
+func (opt *base) Update(grads, params []*params.Params) {
 	grads = opt.compute(grads)
 	for i := 0; i < len(grads); i++ {
 		// var grad mat.Dense
@@ -32,6 +32,9 @@ func (opt *base) Update(grads, params []*layer.Params) {
 		// }, grads[i])
 	}
 	for i := 0; i < len(params); i++ {
+		if params[i] == nil {
+			continue
+		}
 		params[i].Add(grads[i])
 	}
 }

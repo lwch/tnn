@@ -6,25 +6,24 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-type Linear struct {
+type Dense struct {
 	*base
 }
 
-func NewLinear(output int, init initializer.Initializer) *Linear {
-	return &Linear{
-		base: new(map[string]shape{
-			"w": {noneShape, output}, // rows reshape from input
-			"b": {1, output},
-		}, init),
-	}
+func NewDense(output int, init initializer.Initializer) *Dense {
+	var d Dense
+	d.base = new(map[string]shape{
+		"w": {noneShape, output}, // rows reshape from input
+		"b": {1, output},
+	}, init, d.forward, d.backward)
+	return &d
 }
 
-func (layer *Linear) Name() string {
-	return "linear"
+func (layer *Dense) Name() string {
+	return "dense"
 }
 
-func (layer *Linear) Forward(input *mat.Dense) *mat.Dense {
-	layer.input.CloneFrom(input)
+func (layer *Dense) forward(input *mat.Dense) *mat.Dense {
 	if !layer.hasInit {
 		shape := layer.shapes["w"]
 		_, shape.m = input.Dims()
@@ -37,7 +36,7 @@ func (layer *Linear) Forward(input *mat.Dense) *mat.Dense {
 	return &ret
 }
 
-func (layer *Linear) Backward(grad *mat.Dense) *mat.Dense {
+func (layer *Dense) backward(grad *mat.Dense) *mat.Dense {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
