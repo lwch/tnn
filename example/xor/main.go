@@ -47,8 +47,8 @@ func main() {
 		layer.NewDense(1, initializer),
 	)
 	loss := loss.NewMSE()
-	optimizer := optimizer.NewSGD(lr, 0)
-	// optimizer := optimizer.NewAdam(lr, 0.9, 0.999, 1e-8, 0)
+	// optimizer := optimizer.NewSGD(lr, 0)
+	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
 	for i := 0; i < epoch; i++ {
 		dInput, dOutput := row(rand.Intn(4))

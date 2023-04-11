@@ -1,38 +1,81 @@
 package optimizer
 
-// type Adam struct {
-// 	weightDecay
-// 	lr           float64
-// 	beta1, beta2 float64
-// 	epsilon      float64
+import (
+	"math"
+	"tnn/internal/nn/params"
 
-// 	t    int
-// 	m, v mat.Dense
-// }
+	"gonum.org/v1/gonum/mat"
+)
 
-// func NewAdam(lr, wd, beta1, beta2, epsilon float64) *Adam {
-// 	return &Adam{
-// 		weightDecay: weightDecay(wd),
-// 		lr:          lr,
-// 		beta1:       beta1,
-// 		beta2:       beta2,
-// 		epsilon:     epsilon,
-// 	}
-// }
+type Adam struct {
+	*base
+	beta1, beta2 float64
+	epsilon      float64
 
-// func (adam *Adam) Update(weights, delta *mat.Dense) {
-// 	adam.t++
-// }
+	init bool
+	t    int
+	m, v []*params.Params
+}
 
-// func (adam *Adam) compute(i, j int, delta float64) float64 {
-// 	fmt.Println(i, j)
-// 	m := adam.m.At(i, j)
-// 	v := adam.v.At(i, j)
-// 	m += (1 - adam.beta1) * (delta - m)
-// 	v += (1 - adam.beta2) * (math.Pow(delta, 2) - v)
-// 	adam.m.Set(i, j, m)
-// 	adam.v.Set(i, j, v)
-// 	m /= 1 - math.Pow(adam.beta1, float64(adam.t))
-// 	v /= 1 - math.Pow(adam.beta2, float64(adam.t))
-// 	return -adam.lr * m / (math.Pow(v, 0.5) + adam.epsilon)
-// }
+func NewAdam(lr, weightDecay, beta1, beta2, epsilon float64) *Adam {
+	var adam Adam
+	adam.base = new(lr, weightDecay, adam.compute)
+	adam.beta1 = beta1
+	adam.beta2 = beta2
+	adam.epsilon = epsilon
+	return &adam
+}
+
+func (adam *Adam) initParams(grads []*params.Params) {
+	if adam.init {
+		return
+	}
+	adam.m = make([]*params.Params, len(grads))
+	adam.v = make([]*params.Params, len(grads))
+	for i := 0; i < len(grads); i++ {
+		ps := grads[i]
+		adam.m[i] = params.New()
+		adam.v[i] = params.New()
+		ps.Range(func(name string, dense *mat.Dense) {
+			rows, cols := dense.Dims()
+			adam.m[i].Init(name, rows, cols)
+			adam.v[i].Init(name, rows, cols)
+		})
+	}
+	adam.init = true
+}
+
+func (adam *Adam) compute(grads []*params.Params) []*params.Params {
+	if !adam.init {
+		adam.initParams(grads)
+	}
+	adam.t++
+	for i := 0; i < len(grads); i++ {
+		ps := grads[i]
+		ps.Range(func(name string, dense *mat.Dense) {
+			paramM := adam.m[i].Get(name)
+			paramV := adam.v[i].Get(name)
+			var deltaM, deltaV mat.Dense
+			deltaM.Apply(func(i, j int, v float64) float64 {
+				return (1 - adam.beta1) * (v - paramM.At(i, j))
+			}, dense)
+			deltaV.Apply(func(i, j int, v float64) float64 {
+				return (1 - adam.beta2) * (math.Pow(v, 2) - paramV.At(i, j))
+			}, dense)
+			paramM.Add(paramM, &deltaM)
+			paramV.Add(paramV, &deltaV)
+
+			deltaM.Apply(func(i, j int, v float64) float64 {
+				return v / (1 - math.Pow(adam.beta1, float64(adam.t)))
+			}, paramM)
+			deltaV.Apply(func(i, j int, v float64) float64 {
+				return v / (1 - math.Pow(adam.beta2, float64(adam.t)))
+			}, paramV)
+			dense.Apply(func(i, j int, v float64) float64 {
+				return -adam.lr * deltaM.At(i, j) /
+					(math.Pow(deltaV.At(i, j), 0.5) + adam.epsilon)
+			}, dense)
+		})
+	}
+	return grads
+}
