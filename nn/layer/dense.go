@@ -21,9 +21,10 @@ func NewDense(output int, init initializer.Initializer) *Dense {
 	return &layer
 }
 
-func LoadDense(params map[string]*pb.Dense) Layer {
+func LoadDense(name string, params map[string]*pb.Dense) Layer {
 	var layer Dense
 	layer.base = new("dense", nil, nil, layer.forward, layer.backward)
+	layer.name = name
 	layer.base.loadParams(params)
 	return &layer
 }
@@ -48,12 +49,20 @@ func (layer *Dense) backward(grad *mat.Dense) *mat.Dense {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
+	// fmt.Println("======>")
+	// fmt.Println(layer.Name())
+	// fmt.Println(layer.input.T().Dims())
+	// fmt.Println(grad.Dims())
+	// fmt.Println(dw.Dims())
 	dw.Mul(layer.input.T(), grad)
 	db.Copy(grad)
 
 	var ret mat.Dense
 	w := layer.params["w"]
 	ret.Mul(grad, w.T())
+	fmt.Println("======>")
+	fmt.Println(layer.Name())
+	fmt.Println(ret.Dims())
 	return &ret
 }
 

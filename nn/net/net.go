@@ -7,10 +7,11 @@ import (
 	"tnn/nn/params"
 	"tnn/nn/pb"
 
+	"github.com/lwch/logging"
 	"gonum.org/v1/gonum/mat"
 )
 
-type loadFunc func(map[string]*pb.Dense) layer.Layer
+type loadFunc func(string, map[string]*pb.Dense) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"dense":   layer.LoadDense,
@@ -81,6 +82,7 @@ func (n *Net) SaveLayers() []*pb.Layer {
 	ret := make([]*pb.Layer, len(n.layers))
 	for i := 0; i < len(n.layers); i++ {
 		ret[i] = new(pb.Layer)
+		ret[i].Class = n.layers[i].Class()
 		ret[i].Name = n.layers[i].Name()
 		ps := n.layers[i].Params()
 		if ps == nil {
@@ -104,12 +106,14 @@ func (n *Net) SaveLayers() []*pb.Layer {
 func (n *Net) LoadLayers(layers []*pb.Layer) {
 	n.layers = make([]layer.Layer, len(layers))
 	for i := 0; i < len(layers); i++ {
-		name := layers[i].GetName()
-		fn := loadFuncs[name]
+		class := layers[i].GetClass()
+		fn := loadFuncs[class]
 		if fn == nil {
-			panic("unsupported " + name + " layer")
+			panic("unsupported " + class + " layer")
 		}
-		n.layers[i] = fn(layers[i].GetParams())
+		name := layers[i].GetName()
+		logging.Info("loading layer: %s...", name)
+		n.layers[i] = fn(name, layers[i].GetParams())
 	}
 }
 

@@ -20,11 +20,12 @@ func NewDropout(keepProb float64) *Dropout {
 	return &layer
 }
 
-func LoadDropout(params map[string]*pb.Dense) Layer {
+func LoadDropout(name string, params map[string]*pb.Dense) Layer {
 	var layer Dropout
 	kp := params["kp"].GetData()[0]
 	layer.base = new("dropout", nil, initializer.NewBinomial(1, kp),
 		layer.forward, layer.backward)
+	layer.name = name
 	layer.base.loadParams(params)
 	return &layer
 }

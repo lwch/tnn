@@ -49,24 +49,34 @@ func main() {
 func train() {
 	initializer := initializer.NewNormal(1, 0.5)
 
+	hidden1 := layer.NewDense(100, initializer)
+	hidden1.SetName("hidden1")
+	hidden2 := layer.NewDense(70, initializer)
+	hidden2.SetName("hidden2")
+	hidden3 := layer.NewDense(30, initializer)
+	hidden3.SetName("hidden3")
+	hidden4 := layer.NewDense(10, initializer)
+	hidden4.SetName("hidden4")
+	outputLayer := layer.NewDense(1, initializer)
+	outputLayer.SetName("output")
+
 	var net net.Net
 	net.Set(
-		layer.NewDense(100, initializer),
+		hidden1,
 		activation.NewSigmoid(),
-		layer.NewDropout(0.5),
-		layer.NewDense(70, initializer),
+		// layer.NewDropout(0.5),
+		hidden2,
 		activation.NewSigmoid(),
-		layer.NewDense(30, initializer),
-		activation.NewSigmoid(),
-		layer.NewDense(10, initializer),
-		activation.NewSigmoid(),
-		layer.NewDense(1, initializer),
+		hidden3,
+		// activation.NewSigmoid(),
+		hidden4,
+		// activation.NewSigmoid(),
+		outputLayer,
 	)
 	loss := loss.NewMSE()
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
-	m.SetName("xor")
 
 	p := plot.New()
 	p.Title.Text = "xor train model"
@@ -78,6 +88,7 @@ func train() {
 	var i int
 	for {
 		m.Train(input, output)
+		break
 		if i%100 == 0 {
 			loss := m.Loss(input, output)
 			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss)

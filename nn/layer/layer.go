@@ -10,7 +10,9 @@ import (
 )
 
 type Layer interface {
+	SetName(string)
 	Name() string
+	Class() string
 	Forward(input *mat.Dense) *mat.Dense
 	Backward(grad *mat.Dense) *mat.Dense
 	Params() *params.Params
@@ -28,6 +30,7 @@ type forwardFunc func(*mat.Dense) *mat.Dense
 type backwardFunc func(*mat.Dense) *mat.Dense
 
 type base struct {
+	class    string
 	name     string
 	shapes   map[string]shape
 	params   params.Params
@@ -39,10 +42,10 @@ type base struct {
 	backward backwardFunc
 }
 
-func new(name string, shapes map[string]shape, init initializer.Initializer,
+func new(class string, shapes map[string]shape, init initializer.Initializer,
 	forward forwardFunc, backward backwardFunc) *base {
 	return &base{
-		name:     name,
+		class:    class,
 		shapes:   shapes,
 		params:   make(params.Params),
 		context:  make(params.Params),
@@ -56,15 +59,29 @@ func (layer *base) initParams() {
 	if layer.hasInit {
 		return
 	}
+	fmt.Println(layer.Name())
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
+		// fmt.Println(name, shape.m, shape.n)
 		layer.params[name] = mat.NewDense(shape.m, shape.n, layer.init.RandN(shape.m*shape.n))
 		layer.context[name] = mat.NewDense(shape.m, shape.n, nil)
 	}
+	// fmt.Println("===========")
 	layer.hasInit = true
 }
 
+func (layer *base) Class() string {
+	return layer.class
+}
+
+func (layer *base) SetName(name string) {
+	layer.name = name
+}
+
 func (layer *base) Name() string {
+	if len(layer.name) == 0 {
+		return layer.class
+	}
 	return layer.name
 }
 
@@ -88,10 +105,12 @@ func (layer *base) Context() params.Params {
 func (layer *base) loadParams(ps map[string]*pb.Dense) {
 	layer.params.Load(ps)
 	layer.context = make(params.Params)
-	for name := range layer.params {
-		rows, cols := layer.params[name].Dims()
+	layer.params.Range(func(name string, param *mat.Dense) {
+		rows, cols := param.Dims()
+		// fmt.Println(name, rows, cols)
 		layer.context[name] = mat.NewDense(rows, cols, nil)
-	}
+	})
+	// fmt.Println("===========")
 	layer.hasInit = true
 }
 

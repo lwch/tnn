@@ -13,9 +13,9 @@ type Activation interface {
 	layer.Layer
 }
 
-func Load(name string) func(map[string]*pb.Dense) layer.Layer {
+func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
 	var fn Activation
-	switch name {
+	switch class {
 	case "sigmoid":
 		fn = NewSigmoid()
 	case "softplus":
@@ -23,7 +23,8 @@ func Load(name string) func(map[string]*pb.Dense) layer.Layer {
 	default:
 		return nil
 	}
-	return func(map[string]*pb.Dense) layer.Layer {
+	return func(name string, _ map[string]*pb.Dense) layer.Layer {
+		fn.SetName(name)
 		return fn
 	}
 }
@@ -32,21 +33,33 @@ type activationFunc func(*mat.Dense) *mat.Dense
 type derivativeFunc func(*mat.Dense) *mat.Dense
 
 type base struct {
+	class      string
 	name       string
 	input      mat.Dense
 	activation activationFunc
 	derivative derivativeFunc
 }
 
-func new(name string, activation activationFunc, derivative derivativeFunc) *base {
+func new(class string, activation activationFunc, derivative derivativeFunc) *base {
 	return &base{
-		name:       name,
+		class:      class,
 		activation: activation,
 		derivative: derivative,
 	}
 }
 
+func (layer *base) Class() string {
+	return layer.class
+}
+
+func (layer *base) SetName(name string) {
+	layer.name = name
+}
+
 func (layer *base) Name() string {
+	if len(layer.name) == 0 {
+		return layer.class
+	}
 	return layer.name
 }
 
@@ -69,14 +82,6 @@ func (*base) Params() *params.Params {
 
 func (*base) Context() params.Params {
 	return nil
-}
-
-func (*base) Active() {
-	panic("unimplemented")
-}
-
-func (*base) Derivative() {
-	panic("unimplemented")
 }
 
 func (layer *base) Print() {
