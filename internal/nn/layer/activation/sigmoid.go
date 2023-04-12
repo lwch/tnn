@@ -10,14 +10,10 @@ type Sigmoid struct {
 	*base
 }
 
-func NewSigmoid() *Sigmoid {
-	var sm Sigmoid
-	sm.base = new(sm.activation, sm.derivative)
-	return &sm
-}
-
-func (layer *Sigmoid) Name() string {
-	return "sigmoid"
+func NewSigmoid() Activation {
+	var layer Sigmoid
+	layer.base = new("sigmoid", layer.activation, layer.derivative)
+	return &layer
 }
 
 func sigmoid(x float64) float64 {

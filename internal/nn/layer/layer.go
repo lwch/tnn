@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"fmt"
 	"tnn/internal/initializer"
 	"tnn/internal/nn/params"
 	"tnn/internal/nn/pb"
@@ -14,6 +15,7 @@ type Layer interface {
 	Backward(grad *mat.Dense) *mat.Dense
 	Params() *params.Params
 	Context() params.Params
+	Print()
 }
 
 type shape struct {
@@ -26,6 +28,7 @@ type forwardFunc func(*mat.Dense) *mat.Dense
 type backwardFunc func(*mat.Dense) *mat.Dense
 
 type base struct {
+	name     string
 	shapes   map[string]shape
 	params   params.Params
 	input    mat.Dense
@@ -36,9 +39,10 @@ type base struct {
 	backward backwardFunc
 }
 
-func new(shapes map[string]shape, init initializer.Initializer,
+func new(name string, shapes map[string]shape, init initializer.Initializer,
 	forward forwardFunc, backward backwardFunc) *base {
 	return &base{
+		name:     name,
 		shapes:   shapes,
 		params:   make(params.Params),
 		context:  make(params.Params),
@@ -60,8 +64,8 @@ func (layer *base) initParams() {
 	layer.hasInit = true
 }
 
-func (*base) Name() {
-	panic("unimplemented")
+func (layer *base) Name() string {
+	return layer.name
 }
 
 func (layer *base) Forward(input *mat.Dense) *mat.Dense {
@@ -89,4 +93,8 @@ func (layer *base) loadParams(ps map[string]*pb.Dense) {
 		layer.context[name] = mat.NewDense(rows, cols, nil)
 	}
 	layer.hasInit = true
+}
+
+func (layer *base) Print() {
+	fmt.Println("  - Name:", layer.Name())
 }

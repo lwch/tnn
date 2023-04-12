@@ -66,6 +66,7 @@ func train() {
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
+	m.SetName("xor")
 
 	p := plot.New()
 	p.Title.Text = "xor train model"

@@ -1,6 +1,7 @@
 package loss
 
 import (
+	"fmt"
 	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
@@ -22,4 +23,8 @@ func Load(loss *pb.Loss) Loss {
 	default:
 		return nil
 	}
+}
+
+func Print(loss Loss) {
+	fmt.Println("Loss Func:", loss.Name())
 }

@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"fmt"
 	"tnn/internal/initializer"
 	"tnn/internal/nn/pb"
 
@@ -13,7 +14,7 @@ type Dense struct {
 
 func NewDense(output int, init initializer.Initializer) *Dense {
 	var layer Dense
-	layer.base = new(map[string]shape{
+	layer.base = new("dense", map[string]shape{
 		"w": {noneShape, output}, // rows reshape from input
 		"b": {noneShape, output}, // rows reshape from input
 	}, init, layer.forward, layer.backward)
@@ -22,13 +23,9 @@ func NewDense(output int, init initializer.Initializer) *Dense {
 
 func LoadDense(params map[string]*pb.Dense) Layer {
 	var layer Dense
-	layer.base = new(nil, nil, layer.forward, layer.backward)
+	layer.base = new("dense", nil, nil, layer.forward, layer.backward)
 	layer.base.loadParams(params)
 	return &layer
-}
-
-func (layer *Dense) Name() string {
-	return "dense"
 }
 
 func (layer *Dense) forward(input *mat.Dense) *mat.Dense {
@@ -58,4 +55,15 @@ func (layer *Dense) backward(grad *mat.Dense) *mat.Dense {
 	w := layer.params["w"]
 	ret.Mul(grad, w.T())
 	return &ret
+}
+
+func (layer *Dense) Print() {
+	layer.base.Print()
+	_, cnt := layer.params["w"].Dims()
+	fmt.Println("    Output Count:", cnt)
+	fmt.Println("    Params:")
+	for name, dense := range layer.params {
+		rows, cols := dense.Dims()
+		fmt.Println("      - "+name+":", fmt.Sprintf("%dx%d", rows, cols))
+	}
 }

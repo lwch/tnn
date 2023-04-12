@@ -1,6 +1,7 @@
 package optimizer
 
 import (
+	"fmt"
 	"tnn/internal/nn/params"
 	"tnn/internal/nn/pb"
 )
@@ -8,18 +9,21 @@ import (
 type Optimizer interface {
 	Update(grads, params []*params.Params)
 	Save() *pb.Optimizer
+	Print()
 }
 
 type computeFunc func(grads []*params.Params) []*params.Params
 
 type base struct {
+	name        string
 	lr          float64
 	weightDecay float64
 	compute     computeFunc
 }
 
-func new(lr, weightDecay float64, compute computeFunc) *base {
+func new(name string, lr, weightDecay float64, compute computeFunc) *base {
 	return &base{
+		name:        name,
 		lr:          lr,
 		weightDecay: weightDecay,
 		compute:     compute,
@@ -61,4 +65,10 @@ func (opt *base) Save() *pb.Optimizer {
 		Lr:          opt.lr,
 		WeightDecay: opt.weightDecay,
 	}
+}
+
+func (opt *base) Print() {
+	fmt.Println("Optimizer:", opt.name)
+	fmt.Println("  - Learning Rate:", opt.lr)
+	fmt.Println("  - Weight Decay:", opt.weightDecay)
 }

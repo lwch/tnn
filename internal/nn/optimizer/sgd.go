@@ -11,7 +11,7 @@ type SGD struct {
 
 func NewSGD(lr, weightDecay float64) *SGD {
 	var sgd SGD
-	sgd.base = new(lr, weightDecay, sgd.compute)
+	sgd.base = new("sgd", lr, weightDecay, sgd.compute)
 	return &sgd
 }
 

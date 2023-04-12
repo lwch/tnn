@@ -13,7 +13,7 @@ type Dropout struct {
 
 func NewDropout(keepProb float64) *Dropout {
 	var layer Dropout
-	layer.base = new(map[string]shape{
+	layer.base = new("dropout", map[string]shape{
 		"m": {noneShape, noneShape},
 	}, initializer.NewBinomial(1, keepProb), layer.forward, layer.backward)
 	layer.params["kp"] = mat.NewDense(1, 1, []float64{keepProb})
@@ -23,7 +23,7 @@ func NewDropout(keepProb float64) *Dropout {
 func LoadDropout(params map[string]*pb.Dense) Layer {
 	var layer Dropout
 	kp := params["kp"].GetData()[0]
-	layer.base = new(nil, initializer.NewBinomial(1, kp),
+	layer.base = new("dropout", nil, initializer.NewBinomial(1, kp),
 		layer.forward, layer.backward)
 	layer.base.loadParams(params)
 	return &layer

@@ -1,6 +1,7 @@
 package optimizer
 
 import (
+	"fmt"
 	"math"
 	"tnn/internal/nn/params"
 	"tnn/internal/nn/pb"
@@ -20,7 +21,7 @@ type Adam struct {
 
 func NewAdam(lr, weightDecay, beta1, beta2, epsilon float64) *Adam {
 	var adam Adam
-	adam.base = new(lr, weightDecay, adam.compute)
+	adam.base = new("adam", lr, weightDecay, adam.compute)
 	adam.beta1 = beta1
 	adam.beta2 = beta2
 	adam.epsilon = epsilon
@@ -89,4 +90,11 @@ func (adam *Adam) Save() *pb.Optimizer {
 	ret.Params["beta2"] = adam.beta2
 	ret.Params["epsilon"] = adam.epsilon
 	return ret
+}
+
+func (adam *Adam) Print() {
+	adam.base.Print()
+	fmt.Println("  - beta1:", adam.beta1)
+	fmt.Println("  - beta2:", adam.beta2)
+	fmt.Println("  - epsilon:", adam.epsilon)
 }

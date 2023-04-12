@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"io/ioutil"
 	"tnn/internal/nn/loss"
 	"tnn/internal/nn/net"
@@ -91,4 +92,13 @@ func (m *Model) Load(dir string) error {
 	m.loss = loss.Load(model.GetLoss())
 	m.optimizer = optimizer.Load(model.GetOptimizer())
 	return nil
+}
+
+func (m Model) Print() {
+	fmt.Println("Model:", m.name)
+	fmt.Println("Train Count:", m.trainCount)
+	fmt.Println("Param Count:", m.ParamCount())
+	loss.Print(m.loss)
+	m.optimizer.Print()
+	m.net.Print()
 }

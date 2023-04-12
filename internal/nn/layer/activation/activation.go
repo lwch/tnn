@@ -1,6 +1,7 @@
 package activation
 
 import (
+	"fmt"
 	"tnn/internal/nn/layer"
 	"tnn/internal/nn/params"
 	"tnn/internal/nn/pb"
@@ -13,13 +14,17 @@ type Activation interface {
 }
 
 func Load(name string) func(map[string]*pb.Dense) layer.Layer {
+	var fn Activation
 	switch name {
 	case "sigmoid":
-		return func(map[string]*pb.Dense) layer.Layer {
-			return NewSigmoid()
-		}
+		fn = NewSigmoid()
+	case "softplus":
+		fn = NewSoftplus()
 	default:
 		return nil
+	}
+	return func(map[string]*pb.Dense) layer.Layer {
+		return fn
 	}
 }
 
@@ -27,20 +32,22 @@ type activationFunc func(*mat.Dense) *mat.Dense
 type derivativeFunc func(*mat.Dense) *mat.Dense
 
 type base struct {
+	name       string
 	input      mat.Dense
 	activation activationFunc
 	derivative derivativeFunc
 }
 
-func new(activation activationFunc, derivative derivativeFunc) *base {
+func new(name string, activation activationFunc, derivative derivativeFunc) *base {
 	return &base{
+		name:       name,
 		activation: activation,
 		derivative: derivative,
 	}
 }
 
-func (*base) Name() {
-	panic("unimplemented")
+func (layer *base) Name() string {
+	return layer.name
 }
 
 func (layer *base) Forward(input *mat.Dense) *mat.Dense {
@@ -70,4 +77,8 @@ func (*base) Active() {
 
 func (*base) Derivative() {
 	panic("unimplemented")
+}
+
+func (layer *base) Print() {
+	fmt.Println("  - Name:", layer.Name())
 }

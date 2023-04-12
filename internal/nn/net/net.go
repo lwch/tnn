@@ -1,6 +1,7 @@
 package net
 
 import (
+	"fmt"
 	"tnn/internal/nn/layer"
 	"tnn/internal/nn/layer/activation"
 	"tnn/internal/nn/params"
@@ -14,7 +15,9 @@ type loadFunc func(map[string]*pb.Dense) layer.Layer
 var loadFuncs = map[string]loadFunc{
 	"dense":   layer.LoadDense,
 	"dropout": layer.LoadDropout,
-	"sigmoid": activation.Load("sigmoid"),
+	// activation
+	"sigmoid":  activation.Load("sigmoid"),
+	"softplus": activation.Load("softplus"),
 }
 
 type Net struct {
@@ -107,5 +110,12 @@ func (n *Net) LoadLayers(layers []*pb.Layer) {
 			panic("unsupported " + name + " layer")
 		}
 		n.layers[i] = fn(layers[i].GetParams())
+	}
+}
+
+func (n *Net) Print() {
+	fmt.Println("Layers:")
+	for i := 0; i < len(n.layers); i++ {
+		n.layers[i].Print()
 	}
 }
