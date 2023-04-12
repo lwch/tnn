@@ -2,6 +2,7 @@ package params
 
 import (
 	"fmt"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -65,4 +66,12 @@ func (params Params) Print() {
 
 func (params Params) Size() int {
 	return len(params)
+}
+
+func (params *Params) Load(from map[string]*pb.Dense) {
+	m := make(Params, len(from))
+	for name, param := range from {
+		m[name] = mat.NewDense(int(param.GetRows()), int(param.GetCols()), param.GetData())
+	}
+	*params = m
 }

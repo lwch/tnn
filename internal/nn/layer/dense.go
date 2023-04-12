@@ -2,6 +2,7 @@ package layer
 
 import (
 	"tnn/internal/initializer"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -16,6 +17,13 @@ func NewDense(output int, init initializer.Initializer) *Dense {
 		"w": {noneShape, output}, // rows reshape from input
 		"b": {noneShape, output}, // rows reshape from input
 	}, init, d.forward, d.backward)
+	return &d
+}
+
+func LoadDense(params map[string]*pb.Dense) Layer {
+	var d Dense
+	d.base = new(nil, nil, d.forward, d.backward)
+	d.base.loadParams(params)
 	return &d
 }
 

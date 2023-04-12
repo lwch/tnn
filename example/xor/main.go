@@ -42,7 +42,8 @@ func main() {
 		train()
 		return
 	}
-	predict()
+	model := nextTrain()
+	predict(model)
 }
 
 func train() {
@@ -104,10 +105,20 @@ func train() {
 	runtime.Assert(m.Save(modelFile))
 }
 
-func predict() {
+func nextTrain() *model.Model {
 	var m model.Model
 	runtime.Assert(m.Load(modelFile))
-	pred := m.Predict(input)
+	for i := 0; i < 1000; i++ {
+		m.Train(input, output)
+		if i%100 == 0 {
+			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, m.Loss(input, output))
+		}
+	}
+	return &m
+}
+
+func predict(model *model.Model) {
+	pred := model.Predict(input)
 	for i := 0; i < 4; i++ {
 		fmt.Printf("%d xor %d: %.2f\n",
 			int(input.At(i, 0)), int(input.At(i, 1)),

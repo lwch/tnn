@@ -13,6 +13,10 @@ func NewMAE() *MAE {
 	return &MAE{}
 }
 
+func (*MAE) Name() string {
+	return "mae"
+}
+
 func (*MAE) Loss(predict, targets *mat.Dense) float64 {
 	row, col := predict.Dims()
 	var sum float64

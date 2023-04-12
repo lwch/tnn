@@ -3,6 +3,7 @@ package layer
 import (
 	"tnn/internal/initializer"
 	"tnn/internal/nn/params"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -78,4 +79,14 @@ func (layer *base) Params() *params.Params {
 
 func (layer *base) Context() params.Params {
 	return layer.context
+}
+
+func (layer *base) loadParams(ps map[string]*pb.Dense) {
+	layer.params.Load(ps)
+	layer.context = make(params.Params)
+	for name := range layer.params {
+		rows, cols := layer.params[name].Dims()
+		layer.context[name] = mat.NewDense(rows, cols, nil)
+	}
+	layer.hasInit = true
 }

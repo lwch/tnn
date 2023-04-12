@@ -2,11 +2,19 @@ package net
 
 import (
 	"tnn/internal/nn/layer"
+	"tnn/internal/nn/layer/activation"
 	"tnn/internal/nn/params"
 	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
+
+type loadFunc func(map[string]*pb.Dense) layer.Layer
+
+var loadFuncs = map[string]loadFunc{
+	"dense":   layer.LoadDense,
+	"sigmoid": activation.Load("sigmoid"),
+}
 
 type Net struct {
 	layers []layer.Layer
@@ -84,4 +92,16 @@ func (n *Net) SaveLayers() []*pb.Layer {
 		})
 	}
 	return ret
+}
+
+func (n *Net) LoadLayers(layers []*pb.Layer) {
+	n.layers = make([]layer.Layer, len(layers))
+	for i := 0; i < len(layers); i++ {
+		name := layers[i].GetName()
+		fn := loadFuncs[name]
+		if fn == nil {
+			panic("unsupported " + name + " layer")
+		}
+		n.layers[i] = fn(layers[i].GetParams())
+	}
 }

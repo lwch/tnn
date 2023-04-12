@@ -13,6 +13,10 @@ func NewMSE() *MSE {
 	return &MSE{}
 }
 
+func (*MSE) Name() string {
+	return "mse"
+}
+
 func (*MSE) Loss(predict, targets *mat.Dense) float64 {
 	row, col := predict.Dims()
 	var sum float64

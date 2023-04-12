@@ -3,12 +3,24 @@ package activation
 import (
 	"tnn/internal/nn/layer"
 	"tnn/internal/nn/params"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
 
 type Activation interface {
 	layer.Layer
+}
+
+func Load(name string) func(map[string]*pb.Dense) layer.Layer {
+	switch name {
+	case "sigmoid":
+		return func(map[string]*pb.Dense) layer.Layer {
+			return NewSigmoid()
+		}
+	default:
+		return nil
+	}
 }
 
 type activationFunc func(*mat.Dense) *mat.Dense

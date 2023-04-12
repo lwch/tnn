@@ -26,6 +26,21 @@ func new(lr, weightDecay float64, compute computeFunc) *base {
 	}
 }
 
+func Load(opt *pb.Optimizer) Optimizer {
+	switch opt.Name {
+	case "sgd":
+		return NewSGD(opt.GetLr(), opt.GetWeightDecay())
+	case "adam":
+		ps := opt.GetParams()
+		beta1 := ps["beta1"]
+		beta2 := ps["beta2"]
+		epsilon := ps["epsilon"]
+		return NewAdam(opt.GetLr(), opt.GetWeightDecay(), beta1, beta2, epsilon)
+	default:
+		return nil
+	}
+}
+
 func (opt *base) Update(grads, params []*params.Params) {
 	grads = opt.compute(grads)
 	for i := 0; i < len(grads); i++ {

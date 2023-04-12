@@ -22,7 +22,7 @@ type Model struct {
 
 func New(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *Model {
 	return &Model{
-		name:      "<unset model name>",
+		name:      "<unset>",
 		net:       net,
 		loss:      loss,
 		optimizer: optimizer,
@@ -86,5 +86,9 @@ func (m *Model) Load(dir string) error {
 	}
 	m.name = model.GetName()
 	m.trainCount = model.GetTrainCount()
+	m.net = net.New()
+	m.net.LoadLayers(model.GetLayers())
+	m.loss = loss.Load(model.GetLoss())
+	m.optimizer = optimizer.Load(model.GetOptimizer())
 	return nil
 }
