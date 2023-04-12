@@ -2,8 +2,8 @@ package layer
 
 import (
 	"fmt"
-	"tnn/internal/initializer"
-	"tnn/internal/nn/pb"
+	"tnn/initializer"
+	"tnn/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )

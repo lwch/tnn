@@ -2,10 +2,10 @@ package net
 
 import (
 	"fmt"
-	"tnn/internal/nn/layer"
-	"tnn/internal/nn/layer/activation"
-	"tnn/internal/nn/params"
-	"tnn/internal/nn/pb"
+	"tnn/nn/layer"
+	"tnn/nn/layer/activation"
+	"tnn/nn/params"
+	"tnn/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )

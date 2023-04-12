@@ -1,8 +1,8 @@
 package optimizer
 
 import (
-	"tnn/internal/nn/params"
-	"tnn/internal/nn/pb"
+	"tnn/nn/params"
+	"tnn/nn/pb"
 )
 
 type SGD struct {

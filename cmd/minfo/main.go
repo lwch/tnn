@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"tnn/internal/nn/model"
+	"tnn/nn/model"
 
 	"github.com/lwch/runtime"
 )

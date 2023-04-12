@@ -3,8 +3,8 @@ package optimizer
 import (
 	"fmt"
 	"math"
-	"tnn/internal/nn/params"
-	"tnn/internal/nn/pb"
+	"tnn/nn/params"
+	"tnn/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )

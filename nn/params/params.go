@@ -2,7 +2,7 @@ package params
 
 import (
 	"fmt"
-	"tnn/internal/nn/pb"
+	"tnn/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )

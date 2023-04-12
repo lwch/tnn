@@ -3,11 +3,11 @@ package model
 import (
 	"fmt"
 	"io/ioutil"
-	"tnn/internal/nn/loss"
-	"tnn/internal/nn/net"
-	"tnn/internal/nn/optimizer"
-	"tnn/internal/nn/params"
-	"tnn/internal/nn/pb"
+	"tnn/nn/loss"
+	"tnn/nn/net"
+	"tnn/nn/optimizer"
+	"tnn/nn/params"
+	"tnn/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 	"google.golang.org/protobuf/proto"

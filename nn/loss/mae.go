@@ -2,7 +2,7 @@ package loss
 
 import (
 	"math"
-	"tnn/internal/nn/pb"
+	"tnn/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
