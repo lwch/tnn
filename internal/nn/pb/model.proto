@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package pb;
+option go_package = ".;pb";
+
+message dense {
+    int32           rows = 1;
+    int32           cols = 2;
+    repeated double data = 3;
+}
+
+message layer {
+    string               name = 1;
+    map<string, dense> params = 2;
+}
+
+message loss {
+    string                name = 1;
+    map<string, double> params = 2;
+}
+
+message optimizer {
+    string                name = 1;
+    double                  lr = 2;
+    double        weight_decay = 3;
+    map<string, double> params = 4;
+}
+
+message model {
+    string           name = 1;
+    uint64    train_count = 2;
+    repeated layer layers = 3;
+    loss             loss = 4;
+    optimizer   optimizer = 5;
+}

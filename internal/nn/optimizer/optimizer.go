@@ -2,10 +2,12 @@ package optimizer
 
 import (
 	"tnn/internal/nn/params"
+	"tnn/internal/nn/pb"
 )
 
 type Optimizer interface {
 	Update(grads, params []*params.Params)
+	Save() *pb.Optimizer
 }
 
 type computeFunc func(grads []*params.Params) []*params.Params
@@ -36,5 +38,12 @@ func (opt *base) Update(grads, params []*params.Params) {
 			continue
 		}
 		params[i].Add(grads[i])
+	}
+}
+
+func (opt *base) Save() *pb.Optimizer {
+	return &pb.Optimizer{
+		Lr:          opt.lr,
+		WeightDecay: opt.weightDecay,
 	}
 }

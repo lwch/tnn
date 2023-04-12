@@ -2,6 +2,7 @@ package loss
 
 import (
 	"math"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -39,4 +40,8 @@ func (*MAE) Grad(predict, targets *mat.Dense) *mat.Dense {
 		}
 	}
 	return grad
+}
+
+func (loss *MAE) Save() *pb.Loss {
+	return &pb.Loss{Name: "mae"}
 }

@@ -3,6 +3,7 @@ package optimizer
 import (
 	"math"
 	"tnn/internal/nn/params"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -78,4 +79,14 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 		})
 	}
 	return grads
+}
+
+func (adam *Adam) Save() *pb.Optimizer {
+	ret := adam.base.Save()
+	ret.Name = "adam"
+	ret.Params = make(map[string]float64)
+	ret.Params["beta1"] = adam.beta1
+	ret.Params["beta2"] = adam.beta2
+	ret.Params["epsilon"] = adam.epsilon
+	return ret
 }

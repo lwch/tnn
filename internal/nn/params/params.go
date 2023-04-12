@@ -62,3 +62,7 @@ func (params Params) Print() {
 	}
 	fmt.Println("======================================")
 }
+
+func (params Params) Size() int {
+	return len(params)
+}

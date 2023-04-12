@@ -3,6 +3,7 @@ package net
 import (
 	"tnn/internal/nn/layer"
 	"tnn/internal/nn/params"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -45,6 +46,27 @@ func (n *Net) Params() []*params.Params {
 	ret := make([]*params.Params, len(n.layers))
 	for i := 0; i < len(n.layers); i++ {
 		ret[i] = n.layers[i].Params()
+	}
+	return ret
+}
+
+func (n *Net) SaveLayers() []*pb.Layer {
+	ret := make([]*pb.Layer, len(n.layers))
+	for i := 0; i < len(n.layers); i++ {
+		ret[i] = new(pb.Layer)
+		ret[i].Name = n.layers[i].Name()
+		ps := n.layers[i].Params()
+		if ps == nil {
+			continue
+		}
+		ret[i].Params = make(map[string]*pb.Dense)
+		ps.Range(func(key string, val *mat.Dense) {
+			var dense pb.Dense
+			rows, cols := val.Dims()
+			dense.Rows, dense.Cols = int32(rows), int32(cols)
+			dense.Data = mat.DenseCopyOf(val).RawMatrix().Data
+			ret[i].Params[key] = &dense
+		})
 	}
 	return ret
 }

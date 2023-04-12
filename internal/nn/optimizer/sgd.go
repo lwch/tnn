@@ -2,6 +2,7 @@ package optimizer
 
 import (
 	"tnn/internal/nn/params"
+	"tnn/internal/nn/pb"
 )
 
 type SGD struct {
@@ -22,4 +23,8 @@ func (sgd *SGD) compute(grads []*params.Params) []*params.Params {
 		}
 	}
 	return grads
+}
+
+func (sgd *SGD) Save() *pb.Optimizer {
+	return sgd.base.Save()
 }

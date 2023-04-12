@@ -2,6 +2,7 @@ package loss
 
 import (
 	"math"
+	"tnn/internal/nn/pb"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -30,4 +31,8 @@ func (*MSE) Grad(predict, targets *mat.Dense) *mat.Dense {
 	rows, _ := predict.Dims()
 	grad.Scale(1/float64(rows), &grad)
 	return &grad
+}
+
+func (loss *MSE) Save() *pb.Loss {
+	return &pb.Loss{Name: "mse"}
 }
