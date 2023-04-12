@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
+	"time"
 	"tnn/internal/initializer"
 	"tnn/internal/nn/layer"
 	"tnn/internal/nn/layer/activation"
@@ -31,11 +31,6 @@ func main() {
 		0,
 	})
 
-	row := func(i int) (*mat.Dense, *mat.Dense) {
-		return mat.NewDense(1, 2, input.RawRowView(i)),
-			mat.NewDense(1, 1, output.RawRowView(i))
-	}
-
 	const hidden = 16
 
 	initializer := initializer.NewNormal(1, 0.5)
@@ -47,22 +42,23 @@ func main() {
 		layer.NewDense(1, initializer),
 	)
 	loss := loss.NewMSE()
-	// optimizer := optimizer.NewSGD(lr, 0)
-	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
+	optimizer := optimizer.NewSGD(lr, 0)
+	// optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
+	begin := time.Now()
 	for i := 0; i < epoch; i++ {
-		dInput, dOutput := row(rand.Intn(4))
-		m.Train(dInput, dOutput)
+		m.Train(input, output)
 		if i%1000 == 0 {
-			loss := m.Loss(dInput, dOutput)
+			loss := m.Loss(input, output)
 			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss)
 		}
 	}
+	fmt.Printf("train cost: %s\n", time.Since(begin).String())
+	fmt.Println("predict:")
+	pred := m.Predict(input)
 	for i := 0; i < 4; i++ {
-		dInput, _ := row(i)
-		pred := m.Predict(dInput)
-		fmt.Printf("predict %d xor %d: %f\n",
-			int(dInput.At(0, 0)), int(dInput.At(0, 1)),
-			pred.At(0, 0))
+		fmt.Printf("%d xor %d: %f\n",
+			int(input.At(i, 0)), int(input.At(i, 1)),
+			pred.At(i, 0))
 	}
 }

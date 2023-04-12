@@ -14,7 +14,7 @@ func NewDense(output int, init initializer.Initializer) *Dense {
 	var d Dense
 	d.base = new(map[string]shape{
 		"w": {noneShape, output}, // rows reshape from input
-		"b": {1, output},
+		"b": {noneShape, output}, // rows reshape from input
 	}, init, d.forward, d.backward)
 	return &d
 }
@@ -25,9 +25,12 @@ func (layer *Dense) Name() string {
 
 func (layer *Dense) forward(input *mat.Dense) *mat.Dense {
 	if !layer.hasInit {
-		shape := layer.shapes["w"]
-		_, shape.m = input.Dims()
-		layer.shapes["w"] = shape
+		shapeW := layer.shapes["w"]
+		shapeB := layer.shapes["b"]
+		_, shapeW.m = input.Dims()
+		shapeB.m, _ = input.Dims()
+		layer.shapes["w"] = shapeW
+		layer.shapes["b"] = shapeB
 		layer.initParams()
 	}
 	var ret mat.Dense
