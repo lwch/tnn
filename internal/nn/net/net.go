@@ -50,6 +50,21 @@ func (n *Net) Params() []*params.Params {
 	return ret
 }
 
+func (n *Net) ParamCount() uint64 {
+	var count uint64
+	for i := 0; i < len(n.layers); i++ {
+		ps := n.layers[i].Params()
+		if ps == nil {
+			continue
+		}
+		ps.Range(func(_ string, val *mat.Dense) {
+			rows, cols := val.Dims()
+			count += uint64(rows * cols)
+		})
+	}
+	return count
+}
+
 func (n *Net) SaveLayers() []*pb.Layer {
 	ret := make([]*pb.Layer, len(n.layers))
 	for i := 0; i < len(n.layers); i++ {

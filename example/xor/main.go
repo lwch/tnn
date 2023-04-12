@@ -20,7 +20,7 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-const lr = 0.0001
+const lr = 0.001
 const modelFile = "xor.model"
 
 var input = mat.NewDense(4, 2, []float64{
@@ -46,13 +46,17 @@ func main() {
 }
 
 func train() {
-	const hidden = 16
-
 	initializer := initializer.NewNormal(1, 0.5)
 
 	var net net.Net
 	net.Set(
-		layer.NewDense(hidden, initializer),
+		layer.NewDense(100, initializer),
+		activation.NewSigmoid(),
+		layer.NewDense(70, initializer),
+		activation.NewSigmoid(),
+		layer.NewDense(30, initializer),
+		activation.NewSigmoid(),
+		layer.NewDense(10, initializer),
 		activation.NewSigmoid(),
 		layer.NewDense(1, initializer),
 	)
@@ -81,7 +85,8 @@ func train() {
 		}
 		i++
 	}
-	fmt.Printf("train cost: %s\n", time.Since(begin).String())
+	fmt.Printf("train cost: %s, param count: %d\n",
+		time.Since(begin).String(), m.ParamCount())
 	fmt.Println("predict:")
 	pred := m.Predict(input)
 	for i := 0; i < 4; i++ {

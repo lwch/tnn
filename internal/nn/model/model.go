@@ -1,9 +1,7 @@
 package model
 
 import (
-	"bytes"
-	"io"
-	"os"
+	"io/ioutil"
 	"tnn/internal/nn/loss"
 	"tnn/internal/nn/net"
 	"tnn/internal/nn/optimizer"
@@ -57,25 +55,36 @@ func (m *Model) apply(grads []*params.Params) {
 	m.optimizer.Update(grads, params)
 }
 
+func (m *Model) ParamCount() uint64 {
+	return m.net.ParamCount()
+}
+
 func (m *Model) Save(dir string) error {
 	var model pb.Model
 	model.Name = m.name
 	model.TrainCount = m.trainCount
+	model.ParamCount = m.ParamCount()
 	model.Layers = m.net.SaveLayers()
 	model.Loss = m.loss.Save()
 	model.Optimizer = m.optimizer.Save()
-	f, err := os.Create(dir)
-	if err != nil {
-		return err
-	}
 	data, err := proto.Marshal(&model)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(f, bytes.NewReader(data))
-	return err
+	return ioutil.WriteFile(dir, data, 0644)
 }
 
 func (m *Model) Load(dir string) error {
+	data, err := ioutil.ReadFile(dir)
+	if err != nil {
+		return err
+	}
+	var model pb.Model
+	err = proto.Unmarshal(data, &model)
+	if err != nil {
+		return err
+	}
+	m.name = model.GetName()
+	m.trainCount = model.GetTrainCount()
 	return nil
 }
