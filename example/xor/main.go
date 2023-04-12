@@ -53,6 +53,7 @@ func train() {
 	net.Set(
 		layer.NewDense(100, initializer),
 		activation.NewSigmoid(),
+		layer.NewDropout(0.5),
 		layer.NewDense(70, initializer),
 		activation.NewSigmoid(),
 		layer.NewDense(30, initializer),

@@ -40,6 +40,7 @@ func new(shapes map[string]shape, init initializer.Initializer,
 	forward forwardFunc, backward backwardFunc) *base {
 	return &base{
 		shapes:   shapes,
+		params:   make(params.Params),
 		context:  make(params.Params),
 		init:     init,
 		forward:  forward,
@@ -51,7 +52,6 @@ func (layer *base) initParams() {
 	if layer.hasInit {
 		return
 	}
-	layer.params = make(params.Params)
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
 		layer.params[name] = mat.NewDense(shape.m, shape.n, layer.init.RandN(shape.m*shape.n))

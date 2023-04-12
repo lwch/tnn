@@ -13,6 +13,7 @@ type loadFunc func(map[string]*pb.Dense) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"dense":   layer.LoadDense,
+	"dropout": layer.LoadDropout,
 	"sigmoid": activation.Load("sigmoid"),
 }
 
@@ -80,6 +81,9 @@ func (n *Net) SaveLayers() []*pb.Layer {
 		ret[i].Name = n.layers[i].Name()
 		ps := n.layers[i].Params()
 		if ps == nil {
+			continue
+		}
+		if ps.Size() == 0 {
 			continue
 		}
 		ret[i].Params = make(map[string]*pb.Dense)

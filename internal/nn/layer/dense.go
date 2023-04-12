@@ -12,19 +12,19 @@ type Dense struct {
 }
 
 func NewDense(output int, init initializer.Initializer) *Dense {
-	var d Dense
-	d.base = new(map[string]shape{
+	var layer Dense
+	layer.base = new(map[string]shape{
 		"w": {noneShape, output}, // rows reshape from input
 		"b": {noneShape, output}, // rows reshape from input
-	}, init, d.forward, d.backward)
-	return &d
+	}, init, layer.forward, layer.backward)
+	return &layer
 }
 
 func LoadDense(params map[string]*pb.Dense) Layer {
-	var d Dense
-	d.base = new(nil, nil, d.forward, d.backward)
-	d.base.loadParams(params)
-	return &d
+	var layer Dense
+	layer.base = new(nil, nil, layer.forward, layer.backward)
+	layer.base.loadParams(params)
+	return &layer
 }
 
 func (layer *Dense) Name() string {
