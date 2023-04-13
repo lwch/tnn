@@ -41,7 +41,7 @@ func Load(opt *pb.Optimizer) Optimizer {
 		epsilon := ps["epsilon"]
 		return NewAdam(opt.GetLr(), opt.GetWeightDecay(), beta1, beta2, epsilon)
 	default:
-		return nil
+		panic("unsupported " + opt.GetName() + " optimizer")
 	}
 }
 

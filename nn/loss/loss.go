@@ -20,8 +20,10 @@ func Load(loss *pb.Loss) Loss {
 		return NewMSE()
 	case "mae":
 		return NewMAE()
+	case "huber":
+		return NewHuber(loss.GetParams()["delta"])
 	default:
-		return nil
+		panic("unsupported " + loss.Name + " loss function")
 	}
 }
 
