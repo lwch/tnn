@@ -20,6 +20,8 @@ func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
 		fn = NewSigmoid
 	case "softplus":
 		fn = NewSoftplus
+	case "tanh":
+		fn = NewTanh
 	default:
 		return nil
 	}
