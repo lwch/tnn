@@ -64,13 +64,13 @@ func train() {
 	net.Set(
 		hidden1,
 		activation.NewSigmoid(),
-		// layer.NewDropout(0.5),
+		layer.NewDropout(0.5),
 		hidden2,
 		activation.NewSigmoid(),
 		hidden3,
-		// activation.NewSigmoid(),
+		activation.NewSigmoid(),
 		hidden4,
-		// activation.NewSigmoid(),
+		activation.NewSigmoid(),
 		outputLayer,
 	)
 	loss := loss.NewMSE()
@@ -88,7 +88,6 @@ func train() {
 	var i int
 	for {
 		m.Train(input, output)
-		break
 		if i%100 == 0 {
 			loss := m.Loss(input, output)
 			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss)

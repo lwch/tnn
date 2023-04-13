@@ -14,23 +14,22 @@ type Activation interface {
 }
 
 func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
-	var fn Activation
+	var fn func() Activation
 	switch class {
 	case "sigmoid":
-		fn = NewSigmoid()
+		fn = NewSigmoid
 	case "softplus":
-		fn = NewSoftplus()
+		fn = NewSoftplus
 	default:
 		return nil
 	}
 	return func(name string, _ map[string]*pb.Dense) layer.Layer {
-		fn.SetName(name)
-		return fn
+		return fn()
 	}
 }
 
 type activationFunc func(*mat.Dense) *mat.Dense
-type derivativeFunc func(*mat.Dense) *mat.Dense
+type derivativeFunc func() *mat.Dense
 
 type base struct {
 	class      string
@@ -72,7 +71,7 @@ func (layer *base) Backward(grad *mat.Dense) *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(i, j int, v float64) float64 {
 		return v * grad.At(i, j)
-	}, layer.derivative(grad))
+	}, layer.derivative())
 	return &ret
 }
 

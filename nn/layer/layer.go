@@ -59,14 +59,11 @@ func (layer *base) initParams() {
 	if layer.hasInit {
 		return
 	}
-	fmt.Println(layer.Name())
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
-		// fmt.Println(name, shape.m, shape.n)
 		layer.params[name] = mat.NewDense(shape.m, shape.n, layer.init.RandN(shape.m*shape.n))
 		layer.context[name] = mat.NewDense(shape.m, shape.n, nil)
 	}
-	// fmt.Println("===========")
 	layer.hasInit = true
 }
 
@@ -107,10 +104,8 @@ func (layer *base) loadParams(ps map[string]*pb.Dense) {
 	layer.context = make(params.Params)
 	layer.params.Range(func(name string, param *mat.Dense) {
 		rows, cols := param.Dims()
-		// fmt.Println(name, rows, cols)
 		layer.context[name] = mat.NewDense(rows, cols, nil)
 	})
-	// fmt.Println("===========")
 	layer.hasInit = true
 }
 

@@ -49,20 +49,12 @@ func (layer *Dense) backward(grad *mat.Dense) *mat.Dense {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
-	// fmt.Println("======>")
-	// fmt.Println(layer.Name())
-	// fmt.Println(layer.input.T().Dims())
-	// fmt.Println(grad.Dims())
-	// fmt.Println(dw.Dims())
 	dw.Mul(layer.input.T(), grad)
 	db.Copy(grad)
 
 	var ret mat.Dense
 	w := layer.params["w"]
 	ret.Mul(grad, w.T())
-	fmt.Println("======>")
-	fmt.Println(layer.Name())
-	fmt.Println(ret.Dims())
 	return &ret
 }
 

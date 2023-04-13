@@ -7,7 +7,6 @@ import (
 	"tnn/nn/params"
 	"tnn/nn/pb"
 
-	"github.com/lwch/logging"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -112,7 +111,6 @@ func (n *Net) LoadLayers(layers []*pb.Layer) {
 			panic("unsupported " + class + " layer")
 		}
 		name := layers[i].GetName()
-		logging.Info("loading layer: %s...", name)
 		n.layers[i] = fn(name, layers[i].GetParams())
 	}
 }

@@ -28,7 +28,7 @@ func (layer *Sigmoid) activation(input *mat.Dense) *mat.Dense {
 	return &ret
 }
 
-func (layer *Sigmoid) derivative(grad *mat.Dense) *mat.Dense {
+func (layer *Sigmoid) derivative() *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(i, j int, v float64) float64 {
 		return sigmoid(v) * (1 - sigmoid(v))

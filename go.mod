@@ -3,7 +3,6 @@ module tnn
 go 1.20
 
 require (
-	github.com/lwch/logging v1.0.1
 	github.com/lwch/runtime v1.0.0
 	gonum.org/v1/gonum v0.12.0
 	gonum.org/v1/plot v0.12.0
