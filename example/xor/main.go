@@ -89,9 +89,9 @@ func train() {
 	for {
 		m.Train(input, output)
 		if i%100 == 0 {
-			acc := m.Accuracy(input, output)
+			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)
-			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, math.Round(acc))
+			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
 			points = append(points, plotter.XY{X: float64(i), Y: loss})
 			if acc >= 100 {
 				break
@@ -125,7 +125,7 @@ func nextTrain() *model.Model {
 		m.Train(input, output)
 		if i%100 == 0 {
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i,
-				m.Loss(input, output), m.Accuracy(input, output))
+				m.Loss(input, output), accuracy(&m, input, output))
 		}
 	}
 	return &m
@@ -138,4 +138,15 @@ func predict(model *model.Model) {
 			int(input.At(i, 0)), int(input.At(i, 1)),
 			pred.At(i, 0))
 	}
+}
+
+func accuracy(m *model.Model, input, output *mat.Dense) float64 {
+	pred := m.Predict(input)
+	var correct int
+	for i := 0; i < 4; i++ {
+		if math.Abs(pred.At(i, 0)-output.At(i, 0)) < math.SmallestNonzeroFloat64 {
+			correct++
+		}
+	}
+	return float64(correct) * 100 / 4
 }
