@@ -82,9 +82,7 @@ func train(train, test dataSet) {
 		m.Train(input, output)
 		if i%100 == 0 {
 			loss := m.Loss(input, output)
-			n := rand.Intn(batchSize)
-			input, output = getBatch(test, n)
-			acc := accuracy(m, input, output)
+			acc := accuracy(m, test)
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
 			// points = append(points, plotter.XY{X: float64(i), Y: loss})
 			// if acc >= 100 {
@@ -141,9 +139,7 @@ func predict(model *model.Model, data dataSet) {
 
 }
 
-func accuracy(m *model.Model, input, output *mat.Dense) float64 {
-	pred := m.Predict(input)
-	var correct int
+func accuracy(m *model.Model, data dataSet) float64 {
 	get := func(cols mat.Vector) int {
 		var n int
 		var score float64
@@ -156,10 +152,21 @@ func accuracy(m *model.Model, input, output *mat.Dense) float64 {
 		}
 		return n
 	}
-	for i := 0; i < batchSize; i++ {
-		if get(pred.RowView(i)) == get(output.RowView(i)) {
-			correct++
+
+	var correct int
+	var total int
+	for i := 0; i < len(data.images); i += batchSize {
+		if i+batchSize > len(data.images) {
+			break
 		}
+		input, output := getBatch(data, i)
+		pred := m.Predict(input)
+		for j := 0; j < batchSize; j++ {
+			if get(pred.RowView(j)) == get(output.RowView(j)) {
+				correct++
+			}
+		}
+		total += batchSize
 	}
-	return float64(correct) * 100 / batchSize
+	return float64(correct) * 100 / float64(total)
 }
