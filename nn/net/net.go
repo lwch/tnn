@@ -19,6 +19,7 @@ var loadFuncs = map[string]loadFunc{
 	"sigmoid":  activation.Load("sigmoid"),
 	"softplus": activation.Load("softplus"),
 	"tanh":     activation.Load("tanh"),
+	"relu":     activation.Load("relu"),
 }
 
 type Net struct {

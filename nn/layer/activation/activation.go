@@ -22,6 +22,8 @@ func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
 		fn = NewSoftplus
 	case "tanh":
 		fn = NewTanh
+	case "relu":
+		fn = NewReLU
 	default:
 		return nil
 	}
