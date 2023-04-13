@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"time"
 	"tnn/initializer"
@@ -64,7 +65,6 @@ func train() {
 	net.Set(
 		hidden1,
 		activation.NewSigmoid(),
-		layer.NewDropout(0.5),
 		hidden2,
 		activation.NewSigmoid(),
 		hidden3,
@@ -89,10 +89,11 @@ func train() {
 	for {
 		m.Train(input, output)
 		if i%100 == 0 {
+			acc := m.Accuracy(input, output)
 			loss := m.Loss(input, output)
-			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss)
+			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, math.Round(acc))
 			points = append(points, plotter.XY{X: float64(i), Y: loss})
-			if loss < 1e-10 {
+			if acc >= 100 {
 				break
 			}
 		}
@@ -123,7 +124,8 @@ func nextTrain() *model.Model {
 	for i := 0; i < 1000; i++ {
 		m.Train(input, output)
 		if i%100 == 0 {
-			fmt.Printf("Epoch: %d, Loss: %.05f\n", i, m.Loss(input, output))
+			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i,
+				m.Loss(input, output), m.Accuracy(input, output))
 		}
 	}
 	return &m

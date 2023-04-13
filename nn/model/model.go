@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"tnn/nn/loss"
 	"tnn/nn/net"
 	"tnn/nn/optimizer"
@@ -49,6 +50,22 @@ func (m *Model) Train(input, targets *mat.Dense) {
 func (m *Model) Loss(input, targets *mat.Dense) float64 {
 	pred := m.Predict(input)
 	return m.loss.Loss(pred, targets)
+}
+
+func (m *Model) Accuracy(input, targets *mat.Dense) float64 {
+	pred := m.Predict(input)
+	rows, cols := pred.Dims()
+	var correct float64
+	for i := 0; i < rows; i++ {
+		var delta float64
+		for j := 0; j < cols; j++ {
+			delta += math.Abs(pred.At(i, j) - targets.At(i, j))
+		}
+		if delta/float64(cols) < math.SmallestNonzeroFloat64 {
+			correct++
+		}
+	}
+	return float64(correct) * 100 / float64(rows)
 }
 
 func (m *Model) apply(grads []*params.Params) {
