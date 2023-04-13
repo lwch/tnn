@@ -28,21 +28,18 @@ func (*MAE) Loss(predict, targets *mat.Dense) float64 {
 }
 
 func (*MAE) Grad(predict, targets *mat.Dense) *mat.Dense {
-	rows, cols := predict.Dims()
-	grad := mat.NewDense(rows, cols, nil)
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			n := predict.At(i, j) - targets.At(i, j)
-			var sign float64
-			if n > 0 {
-				sign = 1
-			} else if n < 0 {
-				sign = -1
-			}
-			grad.Set(i, j, sign/float64(rows))
+	rows, _ := predict.Dims()
+	var grad mat.Dense
+	grad.Apply(func(i, j int, v float64) float64 {
+		n := v - targets.At(i, j)
+		if n > 0 {
+			return 1 / float64(rows)
+		} else if n < 0 {
+			return -1 / float64(rows)
 		}
-	}
-	return grad
+		return 0
+	}, predict)
+	return &grad
 }
 
 func (loss *MAE) Save() *pb.Loss {
