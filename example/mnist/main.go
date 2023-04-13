@@ -71,9 +71,9 @@ func train(train, test dataSet) {
 		activation.NewReLU(),
 		outputLayer,
 	)
-	loss := loss.NewMSE()
-	// optimizer := optimizer.NewSGD(lr, 0)
-	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
+	loss := loss.NewMAE()
+	optimizer := optimizer.NewSGD(lr, 0)
+	// optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
 
 	var i int
@@ -144,20 +144,20 @@ func predict(model *model.Model, data dataSet) {
 func accuracy(m *model.Model, input, output *mat.Dense) float64 {
 	pred := m.Predict(input)
 	var correct int
-	for i := 0; i < batchSize; i++ {
-		var pn, dn int
+	get := func(cols mat.Vector) int {
+		var n int
 		var score float64
-		for j := 0; j < 10; j++ {
-			at := pred.At(i, j)
-			if at > score {
-				pn = j
-				score = at
-			}
-			if output.At(i, j) > 0.5 {
-				dn = j
+		for i := 0; i < cols.Len(); i++ {
+			v := cols.At(i, 0)
+			if v > score {
+				n = i
+				score = v
 			}
 		}
-		if pn == dn {
+		return n
+	}
+	for i := 0; i < batchSize; i++ {
+		if get(pred.RowView(i)) == get(output.RowView(i)) {
 			correct++
 		}
 	}
