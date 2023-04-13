@@ -18,14 +18,13 @@ func (*MAE) Name() string {
 }
 
 func (*MAE) Loss(predict, targets *mat.Dense) float64 {
-	row, col := predict.Dims()
+	var tmp mat.Dense
 	var sum float64
-	for i := 0; i < row; i++ {
-		for j := 0; j < col; j++ {
-			sum += math.Abs(predict.At(i, j) - targets.At(i, j))
-		}
-	}
-	return sum / float64(row)
+	tmp.Apply(func(i, j int, v float64) float64 {
+		sum += math.Abs(v - targets.At(i, j))
+		return 0
+	}, predict)
+	return sum / float64(predict.RawMatrix().Rows)
 }
 
 func (*MAE) Grad(predict, targets *mat.Dense) *mat.Dense {
