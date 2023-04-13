@@ -78,11 +78,12 @@ func train(train, test dataSet) {
 
 	var i int
 	for {
-		input, output := getBatch(train)
+		input, output := getBatch(train, i%(len(train.images)-batchSize))
 		m.Train(input, output)
 		if i%100 == 0 {
 			loss := m.Loss(input, output)
-			input, output = getBatch(test)
+			n := rand.Intn(batchSize)
+			input, output = getBatch(test, n)
 			acc := accuracy(m, input, output)
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
 			// points = append(points, plotter.XY{X: float64(i), Y: loss})
@@ -101,7 +102,7 @@ func imageData(img image.Image) []float64 {
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			r, _, _, _ := img.At(i, j).RGBA()
-			ret[i*rows+j] = float64(r) / 65535
+			ret[i*rows+j] = float64(r) / 255
 		}
 	}
 	return ret
@@ -113,8 +114,7 @@ func onehot(label uint8) []float64 {
 	return ret
 }
 
-func getBatch(data dataSet) (*mat.Dense, *mat.Dense) {
-	n := rand.Intn(len(data.images) - batchSize)
+func getBatch(data dataSet, n int) (*mat.Dense, *mat.Dense) {
 	var input, output []float64
 	for i := 0; i < batchSize; i++ {
 		input = append(input, imageData(data.images[n+i])...)
