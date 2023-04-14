@@ -13,26 +13,26 @@ type Layer interface {
 	SetName(string)
 	Name() string
 	Class() string
-	Forward(input *mat.Dense) *mat.Dense
+	Forward(input mat.Matrix) mat.Matrix
 	Backward(grad *mat.Dense) *mat.Dense
 	Params() *params.Params
 	Context() params.Params
 	Print()
 }
 
-type shape struct {
-	m, n int
+type Shape struct {
+	M, N int
 }
 
-var noneShape = -1
+var NoneShape = -1
 
-type forwardFunc func(*mat.Dense) *mat.Dense
+type forwardFunc func(mat.Matrix) *mat.Dense
 type backwardFunc func(*mat.Dense) *mat.Dense
 
 type base struct {
 	class    string
 	name     string
-	shapes   map[string]shape
+	shapes   map[string]Shape
 	params   params.Params
 	input    mat.Dense
 	context  params.Params
@@ -42,7 +42,7 @@ type base struct {
 	backward backwardFunc
 }
 
-func new(class string, shapes map[string]shape, init initializer.Initializer,
+func new(class string, shapes map[string]Shape, init initializer.Initializer,
 	forward forwardFunc, backward backwardFunc) *base {
 	return &base{
 		class:    class,
@@ -61,8 +61,8 @@ func (layer *base) initParams() {
 	}
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
-		layer.params[name] = mat.NewDense(shape.m, shape.n, layer.init.RandN(shape.m*shape.n))
-		layer.context[name] = mat.NewDense(shape.m, shape.n, nil)
+		layer.params[name] = mat.NewDense(shape.M, shape.N, layer.init.RandN(shape.M*shape.N))
+		layer.context[name] = mat.NewDense(shape.M, shape.N, nil)
 	}
 	layer.hasInit = true
 }
@@ -82,7 +82,7 @@ func (layer *base) Name() string {
 	return layer.name
 }
 
-func (layer *base) Forward(input *mat.Dense) *mat.Dense {
+func (layer *base) Forward(input mat.Matrix) mat.Matrix {
 	layer.input.CloneFrom(input)
 	return layer.forward(input)
 }

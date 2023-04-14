@@ -20,7 +20,7 @@ func softplus(x float64) float64 {
 	return math.Log(1+math.Exp(-math.Abs(x))) + math.Max(x, 0)
 }
 
-func (layer *Softplus) activation(input *mat.Dense) *mat.Dense {
+func (layer *Softplus) activation(input mat.Matrix) *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(_, _ int, v float64) float64 {
 		return softplus(v)

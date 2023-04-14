@@ -11,7 +11,7 @@ type ReLU struct {
 }
 
 func NewReLU() Activation {
-	var layer Softplus
+	var layer ReLU
 	layer.base = new("relu", layer.activation, layer.derivative)
 	return &layer
 }
@@ -20,7 +20,7 @@ func relu(x float64) float64 {
 	return math.Max(x, 0)
 }
 
-func (layer *ReLU) activation(input *mat.Dense) *mat.Dense {
+func (layer *ReLU) activation(input mat.Matrix) *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(_, _ int, v float64) float64 {
 		return relu(v)

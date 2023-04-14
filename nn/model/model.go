@@ -34,11 +34,11 @@ func (m *Model) SetName(name string) {
 	m.name = name
 }
 
-func (m *Model) Predict(input *mat.Dense) *mat.Dense {
+func (m *Model) Predict(input mat.Matrix) mat.Matrix {
 	return m.net.Forward(input)
 }
 
-func (m *Model) Train(input, targets *mat.Dense) {
+func (m *Model) Train(input mat.Matrix, targets *mat.Dense) {
 	pred := m.Predict(input)
 	grad := m.loss.Grad(pred, targets)
 	grads := m.net.Backward(grad)

@@ -9,8 +9,8 @@ import (
 
 type Loss interface {
 	Name() string
-	Loss(predict, targets *mat.Dense) float64
-	Grad(predict, targets *mat.Dense) *mat.Dense
+	Loss(predict mat.Matrix, targets *mat.Dense) float64
+	Grad(predict mat.Matrix, targets *mat.Dense) *mat.Dense
 	Save() *pb.Loss
 }
 
@@ -22,6 +22,8 @@ func Load(loss *pb.Loss) Loss {
 		return NewMAE()
 	case "huber":
 		return NewHuber(loss.GetParams()["delta"])
+	case "softmax":
+		return NewSoftmax(loss.GetParams()["t"])
 	default:
 		panic("unsupported " + loss.Name + " loss function")
 	}

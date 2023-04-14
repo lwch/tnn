@@ -38,7 +38,7 @@ func (n *Net) Add(layer layer.Layer) {
 	n.layers = append(n.layers, layer)
 }
 
-func (n *Net) Forward(input *mat.Dense) *mat.Dense {
+func (n *Net) Forward(input mat.Matrix) mat.Matrix {
 	for i := 0; i < len(n.layers); i++ {
 		input = n.layers[i].Forward(input)
 	}

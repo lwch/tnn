@@ -19,7 +19,7 @@ func (*Huber) Name() string {
 	return "huber"
 }
 
-func (loss *Huber) Loss(predict, targets *mat.Dense) float64 {
+func (loss *Huber) Loss(predict mat.Matrix, targets *mat.Dense) float64 {
 	var tmp mat.Dense
 	var sum float64
 	tmp.Apply(func(i, j int, v float64) float64 {
@@ -36,10 +36,11 @@ func (loss *Huber) Loss(predict, targets *mat.Dense) float64 {
 		}
 		return 0
 	}, predict)
-	return sum / float64(predict.RawMatrix().Rows)
+	rows, _ := predict.Dims()
+	return sum / float64(rows)
 }
 
-func (loss *Huber) Grad(predict, targets *mat.Dense) *mat.Dense {
+func (loss *Huber) Grad(predict mat.Matrix, targets *mat.Dense) *mat.Dense {
 	rows, _ := predict.Dims()
 	var grad mat.Dense
 	grad.Apply(func(i, j int, v float64) float64 {

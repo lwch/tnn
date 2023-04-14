@@ -32,7 +32,7 @@ func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
 	}
 }
 
-type activationFunc func(*mat.Dense) *mat.Dense
+type activationFunc func(mat.Matrix) *mat.Dense
 type derivativeFunc func() *mat.Dense
 
 type base struct {
@@ -66,7 +66,7 @@ func (layer *base) Name() string {
 	return layer.name
 }
 
-func (layer *base) Forward(input *mat.Dense) *mat.Dense {
+func (layer *base) Forward(input mat.Matrix) mat.Matrix {
 	layer.input.CloneFrom(input)
 	return layer.activation(input)
 }

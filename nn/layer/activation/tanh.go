@@ -11,7 +11,7 @@ type Tanh struct {
 }
 
 func NewTanh() Activation {
-	var layer Softplus
+	var layer Tanh
 	layer.base = new("tanh", layer.activation, layer.derivative)
 	return &layer
 }
@@ -20,7 +20,7 @@ func tanh(x float64) float64 {
 	return math.Tanh(x)
 }
 
-func (layer *Tanh) activation(input *mat.Dense) *mat.Dense {
+func (layer *Tanh) activation(input mat.Matrix) *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(_, _ int, v float64) float64 {
 		return tanh(v)

@@ -20,7 +20,7 @@ func sigmoid(x float64) float64 {
 	return 1 / (1 + math.Exp(-x))
 }
 
-func (layer *Sigmoid) activation(input *mat.Dense) *mat.Dense {
+func (layer *Sigmoid) activation(input mat.Matrix) *mat.Dense {
 	var ret mat.Dense
 	ret.Apply(func(_, _ int, v float64) float64 {
 		return sigmoid(v)

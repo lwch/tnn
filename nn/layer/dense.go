@@ -14,9 +14,9 @@ type Dense struct {
 
 func NewDense(output int, init initializer.Initializer) *Dense {
 	var layer Dense
-	layer.base = new("dense", map[string]shape{
-		"w": {noneShape, output}, // rows reshape from input
-		"b": {noneShape, output}, // rows reshape from input
+	layer.base = new("dense", map[string]Shape{
+		"w": {NoneShape, output}, // rows reshape from input
+		"b": {NoneShape, output}, // rows reshape from input
 	}, init, layer.forward, layer.backward)
 	return &layer
 }
@@ -29,12 +29,12 @@ func LoadDense(name string, params map[string]*pb.Dense) Layer {
 	return &layer
 }
 
-func (layer *Dense) forward(input *mat.Dense) *mat.Dense {
+func (layer *Dense) forward(input mat.Matrix) *mat.Dense {
 	if !layer.hasInit {
 		shapeW := layer.shapes["w"]
 		shapeB := layer.shapes["b"]
-		_, shapeW.m = input.Dims()
-		shapeB.m, _ = input.Dims()
+		_, shapeW.M = input.Dims()
+		shapeB.M, _ = input.Dims()
 		layer.shapes["w"] = shapeW
 		layer.shapes["b"] = shapeB
 		layer.initParams()
