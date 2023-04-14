@@ -19,13 +19,13 @@ func NewConv2D(imgShape, kernel, stride Shape,
 	return &layer
 }
 
-func (layer *Conv2D) forward(input mat.Matrix) *mat.Dense {
+func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	if !layer.hasInit {
 		layer.initParams()
 	}
 	return nil
 }
 
-func (layer *Conv2D) backward(grad *mat.Dense) *mat.Dense {
+func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	return nil
 }

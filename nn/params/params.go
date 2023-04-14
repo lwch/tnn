@@ -3,11 +3,12 @@ package params
 import (
 	"fmt"
 	"tnn/nn/pb"
+	"tnn/nn/vector"
 
 	"gonum.org/v1/gonum/mat"
 )
 
-type Params map[string]*mat.Dense
+type Params map[string]mat.Matrix
 
 func New() *Params {
 	return &Params{}
@@ -28,17 +29,17 @@ func (params Params) Add(grads *Params) {
 		if p == nil {
 			continue
 		}
-		p.Add(p, grad)
+		p.(vector.Adder).Add(p, grad)
 	}
 }
 
 func (params *Params) Apply(fn func(i, j int, v float64) float64) {
 	for _, grad := range *params {
-		grad.Apply(fn, grad)
+		grad.(vector.Applyer).Apply(fn, grad)
 	}
 }
 
-func (params Params) Range(fn func(name string, dense *mat.Dense)) {
+func (params Params) Range(fn func(name string, dense mat.Matrix)) {
 	for name, dense := range params {
 		fn(name, dense)
 	}
@@ -48,7 +49,7 @@ func (params *Params) Init(name string, rows, cols int) {
 	(*params)[name] = mat.NewDense(rows, cols, nil)
 }
 
-func (params Params) Get(name string) *mat.Dense {
+func (params Params) Get(name string) mat.Matrix {
 	return params[name]
 }
 

@@ -20,7 +20,7 @@ func tanh(x float64) float64 {
 	return math.Tanh(x)
 }
 
-func (layer *Tanh) activation(input mat.Matrix) *mat.Dense {
+func (layer *Tanh) activation(input mat.Matrix) mat.Matrix {
 	var ret mat.Dense
 	ret.Apply(func(_, _ int, v float64) float64 {
 		return tanh(v)
@@ -28,7 +28,7 @@ func (layer *Tanh) activation(input mat.Matrix) *mat.Dense {
 	return &ret
 }
 
-func (layer *Tanh) derivative() *mat.Dense {
+func (layer *Tanh) derivative() mat.Matrix {
 	var ret mat.Dense
 	ret.Apply(func(i, j int, v float64) float64 {
 		return 1 - math.Pow(tanh(v), 2)

@@ -20,7 +20,7 @@ func relu(x float64) float64 {
 	return math.Max(x, 0)
 }
 
-func (layer *ReLU) activation(input mat.Matrix) *mat.Dense {
+func (layer *ReLU) activation(input mat.Matrix) mat.Matrix {
 	var ret mat.Dense
 	ret.Apply(func(_, _ int, v float64) float64 {
 		return relu(v)
@@ -28,7 +28,7 @@ func (layer *ReLU) activation(input mat.Matrix) *mat.Dense {
 	return &ret
 }
 
-func (layer *ReLU) derivative() *mat.Dense {
+func (layer *ReLU) derivative() mat.Matrix {
 	var ret mat.Dense
 	ret.Apply(func(i, j int, v float64) float64 {
 		if v > 0 {

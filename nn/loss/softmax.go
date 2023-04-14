@@ -67,7 +67,7 @@ func softmax(data mat.Matrix, t float64) *mat.Dense {
 	return &ret
 }
 
-func (loss *Softmax) Loss(predict mat.Matrix, targets *mat.Dense) float64 {
+func (loss *Softmax) Loss(predict, targets mat.Matrix) float64 {
 	softmax := logSoftmax(predict, loss.t)
 	softmax.Apply(func(i, j int, v float64) float64 {
 		return -v * targets.At(i, j)
@@ -80,7 +80,7 @@ func (loss *Softmax) Loss(predict mat.Matrix, targets *mat.Dense) float64 {
 	return mat.Sum(sum) / float64(rows)
 }
 
-func (loss *Softmax) Grad(predict mat.Matrix, targets *mat.Dense) *mat.Dense {
+func (loss *Softmax) Grad(predict, targets mat.Matrix) mat.Matrix {
 	softmax := softmax(predict, loss.t)
 	var grad mat.Dense
 	grad.Sub(softmax, targets)

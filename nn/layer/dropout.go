@@ -3,6 +3,7 @@ package layer
 import (
 	"tnn/initializer"
 	"tnn/nn/pb"
+	"tnn/nn/vector"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -34,7 +35,7 @@ func (layer *Dropout) Name() string {
 	return "dropout"
 }
 
-func (layer *Dropout) forward(input mat.Matrix) *mat.Dense {
+func (layer *Dropout) forward(input mat.Matrix) mat.Matrix {
 	if !layer.hasInit {
 		rows, cols := input.Dims()
 		layer.shapes["m"] = Shape{rows, cols}
@@ -42,7 +43,7 @@ func (layer *Dropout) forward(input mat.Matrix) *mat.Dense {
 	}
 	kp := layer.params["kp"].At(0, 0)
 	m := layer.context["m"]
-	m.Apply(func(i, j int, v float64) float64 {
+	m.(vector.Applyer).Apply(func(i, j int, v float64) float64 {
 		return layer.init.Rand() / kp
 	}, m)
 	var ret mat.Dense
@@ -52,7 +53,7 @@ func (layer *Dropout) forward(input mat.Matrix) *mat.Dense {
 	return &ret
 }
 
-func (layer *Dropout) backward(grad *mat.Dense) *mat.Dense {
+func (layer *Dropout) backward(grad mat.Matrix) mat.Matrix {
 	dm := layer.context["m"]
 
 	var ret mat.Dense

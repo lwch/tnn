@@ -32,8 +32,8 @@ func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
 	}
 }
 
-type activationFunc func(mat.Matrix) *mat.Dense
-type derivativeFunc func() *mat.Dense
+type activationFunc func(mat.Matrix) mat.Matrix
+type derivativeFunc func() mat.Matrix
 
 type base struct {
 	class      string
@@ -71,7 +71,7 @@ func (layer *base) Forward(input mat.Matrix) mat.Matrix {
 	return layer.activation(input)
 }
 
-func (layer *base) Backward(grad *mat.Dense) *mat.Dense {
+func (layer *base) Backward(grad mat.Matrix) mat.Matrix {
 	var ret mat.Dense
 	ret.Apply(func(i, j int, v float64) float64 {
 		return v * grad.At(i, j)

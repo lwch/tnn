@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"tnn/initializer"
 	"tnn/nn/pb"
+	"tnn/nn/vector"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -29,7 +30,7 @@ func LoadDense(name string, params map[string]*pb.Dense) Layer {
 	return &layer
 }
 
-func (layer *Dense) forward(input mat.Matrix) *mat.Dense {
+func (layer *Dense) forward(input mat.Matrix) mat.Matrix {
 	if !layer.hasInit {
 		shapeW := layer.shapes["w"]
 		shapeB := layer.shapes["b"]
@@ -45,12 +46,12 @@ func (layer *Dense) forward(input mat.Matrix) *mat.Dense {
 	return &ret
 }
 
-func (layer *Dense) backward(grad *mat.Dense) *mat.Dense {
+func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
-	dw.Mul(layer.input.T(), grad)
-	db.Copy(grad)
+	dw.(vector.Muler).Mul(layer.input.T(), grad)
+	db.(vector.Copyer).Copy(grad)
 
 	var ret mat.Dense
 	w := layer.params["w"]

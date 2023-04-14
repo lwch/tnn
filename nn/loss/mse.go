@@ -17,7 +17,7 @@ func (*MSE) Name() string {
 	return "mse"
 }
 
-func (*MSE) Loss(predict mat.Matrix, targets *mat.Dense) float64 {
+func (*MSE) Loss(predict, targets mat.Matrix) float64 {
 	var tmp mat.Dense
 	var sum float64
 	tmp.Apply(func(i, j int, v float64) float64 {
@@ -29,7 +29,7 @@ func (*MSE) Loss(predict mat.Matrix, targets *mat.Dense) float64 {
 	return 0.5 * sum / float64(rows)
 }
 
-func (*MSE) Grad(predict mat.Matrix, targets *mat.Dense) *mat.Dense {
+func (*MSE) Grad(predict, targets mat.Matrix) mat.Matrix {
 	var grad mat.Dense
 	grad.Sub(predict, targets)
 	rows, _ := predict.Dims()

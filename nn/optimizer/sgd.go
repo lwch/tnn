@@ -3,6 +3,7 @@ package optimizer
 import (
 	"tnn/nn/params"
 	"tnn/nn/pb"
+	"tnn/nn/vector"
 )
 
 type SGD struct {
@@ -19,7 +20,7 @@ func (sgd *SGD) compute(grads []*params.Params) []*params.Params {
 	for i := 0; i < len(grads); i++ {
 		params := grads[i]
 		for _, grad := range *params {
-			grad.Scale(-sgd.lr, grad)
+			grad.(vector.Scaler).Scale(-sgd.lr, grad)
 		}
 	}
 	return grads

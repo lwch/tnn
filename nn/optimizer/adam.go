@@ -5,6 +5,7 @@ import (
 	"math"
 	"tnn/nn/params"
 	"tnn/nn/pb"
+	"tnn/nn/vector"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -38,7 +39,7 @@ func (adam *Adam) initParams(grads []*params.Params) {
 		ps := grads[i]
 		adam.m[i] = params.New()
 		adam.v[i] = params.New()
-		ps.Range(func(name string, dense *mat.Dense) {
+		ps.Range(func(name string, dense mat.Matrix) {
 			rows, cols := dense.Dims()
 			adam.m[i].Init(name, rows, cols)
 			adam.v[i].Init(name, rows, cols)
@@ -54,7 +55,7 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 	adam.t++
 	for i := 0; i < len(grads); i++ {
 		ps := grads[i]
-		ps.Range(func(name string, dense *mat.Dense) {
+		ps.Range(func(name string, dense mat.Matrix) {
 			paramM := adam.m[i].Get(name)
 			paramV := adam.v[i].Get(name)
 			var deltaM, deltaV mat.Dense
@@ -64,8 +65,8 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 			deltaV.Apply(func(i, j int, v float64) float64 {
 				return (1 - adam.beta2) * (math.Pow(v, 2) - paramV.At(i, j))
 			}, dense)
-			paramM.Add(paramM, &deltaM)
-			paramV.Add(paramV, &deltaV)
+			paramM.(vector.Adder).Add(paramM, &deltaM)
+			paramV.(vector.Adder).Add(paramV, &deltaV)
 
 			deltaM.Apply(func(i, j int, v float64) float64 {
 				return v / (1 - math.Pow(adam.beta1, float64(adam.t)))
@@ -73,7 +74,7 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 			deltaV.Apply(func(i, j int, v float64) float64 {
 				return v / (1 - math.Pow(adam.beta2, float64(adam.t)))
 			}, paramV)
-			dense.Apply(func(i, j int, v float64) float64 {
+			dense.(vector.Applyer).Apply(func(i, j int, v float64) float64 {
 				return -adam.lr * deltaM.At(i, j) /
 					(math.Pow(deltaV.At(i, j), 0.5) + adam.epsilon)
 			}, dense)

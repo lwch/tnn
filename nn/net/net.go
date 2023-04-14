@@ -45,7 +45,7 @@ func (n *Net) Forward(input mat.Matrix) mat.Matrix {
 	return input
 }
 
-func (n *Net) Backward(grad *mat.Dense) []*params.Params {
+func (n *Net) Backward(grad mat.Matrix) []*params.Params {
 	ret := make([]*params.Params, len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
 		grad = n.layers[i].Backward(grad)
@@ -71,7 +71,7 @@ func (n *Net) ParamCount() uint64 {
 		if ps == nil {
 			continue
 		}
-		ps.Range(func(_ string, val *mat.Dense) {
+		ps.Range(func(_ string, val mat.Matrix) {
 			rows, cols := val.Dims()
 			count += uint64(rows * cols)
 		})
@@ -93,7 +93,7 @@ func (n *Net) SaveLayers() []*pb.Layer {
 			continue
 		}
 		ret[i].Params = make(map[string]*pb.Dense)
-		ps.Range(func(key string, val *mat.Dense) {
+		ps.Range(func(key string, val mat.Matrix) {
 			var dense pb.Dense
 			rows, cols := val.Dims()
 			dense.Rows, dense.Cols = int32(rows), int32(cols)

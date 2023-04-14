@@ -17,7 +17,7 @@ func (*MAE) Name() string {
 	return "mae"
 }
 
-func (*MAE) Loss(predict mat.Matrix, targets *mat.Dense) float64 {
+func (*MAE) Loss(predict, targets mat.Matrix) float64 {
 	var tmp mat.Dense
 	var sum float64
 	tmp.Apply(func(i, j int, v float64) float64 {
@@ -28,7 +28,7 @@ func (*MAE) Loss(predict mat.Matrix, targets *mat.Dense) float64 {
 	return sum / float64(rows)
 }
 
-func (*MAE) Grad(predict mat.Matrix, targets *mat.Dense) *mat.Dense {
+func (*MAE) Grad(predict, targets mat.Matrix) mat.Matrix {
 	rows, _ := predict.Dims()
 	var grad mat.Dense
 	grad.Apply(func(i, j int, v float64) float64 {

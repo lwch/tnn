@@ -14,7 +14,7 @@ type Layer interface {
 	Name() string
 	Class() string
 	Forward(input mat.Matrix) mat.Matrix
-	Backward(grad *mat.Dense) *mat.Dense
+	Backward(grad mat.Matrix) mat.Matrix
 	Params() *params.Params
 	Context() params.Params
 	Print()
@@ -26,8 +26,8 @@ type Shape struct {
 
 var NoneShape = -1
 
-type forwardFunc func(mat.Matrix) *mat.Dense
-type backwardFunc func(*mat.Dense) *mat.Dense
+type forwardFunc func(mat.Matrix) mat.Matrix
+type backwardFunc func(mat.Matrix) mat.Matrix
 
 type base struct {
 	class    string
@@ -87,7 +87,7 @@ func (layer *base) Forward(input mat.Matrix) mat.Matrix {
 	return layer.forward(input)
 }
 
-func (layer *base) Backward(grad *mat.Dense) *mat.Dense {
+func (layer *base) Backward(grad mat.Matrix) mat.Matrix {
 	return layer.backward(grad)
 }
 
@@ -102,7 +102,7 @@ func (layer *base) Context() params.Params {
 func (layer *base) loadParams(ps map[string]*pb.Dense) {
 	layer.params.Load(ps)
 	layer.context = make(params.Params)
-	layer.params.Range(func(name string, param *mat.Dense) {
+	layer.params.Range(func(name string, param mat.Matrix) {
 		rows, cols := param.Dims()
 		layer.context[name] = mat.NewDense(rows, cols, nil)
 	})

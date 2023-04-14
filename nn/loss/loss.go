@@ -9,8 +9,8 @@ import (
 
 type Loss interface {
 	Name() string
-	Loss(predict mat.Matrix, targets *mat.Dense) float64
-	Grad(predict mat.Matrix, targets *mat.Dense) *mat.Dense
+	Loss(predict, targets mat.Matrix) float64
+	Grad(predict, targets mat.Matrix) mat.Matrix
 	Save() *pb.Loss
 }
 
