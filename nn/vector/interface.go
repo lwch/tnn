@@ -21,3 +21,7 @@ type Applyer interface {
 type Scaler interface {
 	Scale(f float64, a mat.Matrix)
 }
+
+type RowViewer interface {
+	RowView(i int) mat.Vector
+}
