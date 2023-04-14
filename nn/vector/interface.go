@@ -10,6 +10,10 @@ type Muler interface {
 	Mul(a, b mat.Matrix)
 }
 
+type MulElemer interface {
+	MulElem(a, b mat.Matrix)
+}
+
 type Copyer interface {
 	Copy(a mat.Matrix) (r, c int)
 }
@@ -24,4 +28,8 @@ type Scaler interface {
 
 type RowViewer interface {
 	RowView(i int) mat.Vector
+}
+
+type Slicer interface {
+	Slice(i, k, j, l int) mat.Matrix
 }

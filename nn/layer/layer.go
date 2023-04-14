@@ -24,6 +24,10 @@ type Shape struct {
 	M, N int
 }
 
+type Stride struct {
+	X, Y int
+}
+
 var NoneShape = -1
 
 type forwardFunc func(mat.Matrix) mat.Matrix
