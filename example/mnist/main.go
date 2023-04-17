@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"image"
-	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/initializer"
@@ -16,18 +14,15 @@ import (
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
+	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 )
 
 const batchSize = 1
-const lr = 0.1
+const lr = 0.01
 
 const dataDir = "./data"
 const modelFile = "mnist.model"
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func main() {
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
@@ -64,8 +59,8 @@ func train(train, test dataSet) {
 		layer.NewDense(10, initializer),
 	)
 	loss := loss.NewMSE()
-	optimizer := optimizer.NewSGD(lr, 0)
-	// optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
+	// optimizer := optimizer.NewSGD(lr, 0)
+	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
 
 	var i int
@@ -73,9 +68,9 @@ func train(train, test dataSet) {
 		input, output := getBatch(train, i%(len(train.images)-batchSize))
 		m.Train(input, output)
 		if i%100 == 0 {
-			// loss := m.Loss(input, output)
-			// acc := accuracy(m, test)
-			// fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
+			loss := m.Loss(input, output)
+			acc := accuracy(m, test)
+			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
 			// points = append(points, plotter.XY{X: float64(i), Y: loss})
 			// if acc >= 100 {
 			// 	break
@@ -104,13 +99,14 @@ func onehot(label uint8) []float64 {
 	return ret
 }
 
-func getBatch(data dataSet, n int) (*mat.VecDense, *mat.Dense) {
+func getBatch(data dataSet, n int) (*mat.Dense, *mat.Dense) {
+	max := data.images[0].Bounds().Max
 	var input, output []float64
 	for i := 0; i < batchSize; i++ {
 		input = append(input, imageData(data.images[n+i])...)
 		output = append(output, onehot(data.labels[n+i])...)
 	}
-	return mat.NewVecDense(len(input), input),
+	return mat.NewDense(batchSize, max.X*max.Y, input),
 		mat.NewDense(batchSize, 10, output)
 }
 
@@ -144,7 +140,6 @@ func accuracy(m *model.Model, data dataSet) float64 {
 		}
 		return n
 	}
-	_ = get
 
 	var correct int
 	var total int
@@ -153,14 +148,12 @@ func accuracy(m *model.Model, data dataSet) float64 {
 			break
 		}
 		input, output := getBatch(data, i)
-		// pred := m.Predict(input)
-		// for j := 0; j < batchSize; j++ {
-		// 	if get(pred.RowView(j)) == get(output.RowView(j)) {
-		// 		correct++
-		// 	}
-		// }
-		_ = input
-		_ = output
+		pred := m.Predict(input)
+		for j := 0; j < batchSize; j++ {
+			if get(pred.(vector.RowViewer).RowView(j)) == get(output.RowView(j)) {
+				correct++
+			}
+		}
 		total += batchSize
 	}
 	return float64(correct) * 100 / float64(total)

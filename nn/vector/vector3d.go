@@ -42,7 +42,7 @@ func ReshapeVector(vec mat.Vector, rows, cols int) *Vector3D {
 	return &ret
 }
 
-func ReshapeDense(d mat.Dense, rows, cols int) *Vector3D {
+func ReshapeMatrix(d mat.Matrix, rows, cols int) *Vector3D {
 	srcRows, srcCols := d.Dims()
 	data := make([]float64, srcRows*srcCols)
 	idx := 0
