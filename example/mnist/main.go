@@ -5,11 +5,9 @@ import (
 	"image"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/initializer"
-	"github.com/lwch/tnn/internal/prof"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
@@ -27,7 +25,7 @@ const dataDir = "./data"
 const modelFile = "mnist.model"
 
 func main() {
-	go prof.CpuProfile("./cpu.pprof", 3*time.Minute)
+	// go prof.CpuProfile("./cpu.pprof", 3*time.Minute)
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		download()
 	}
