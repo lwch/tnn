@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/jpeg"
+	"image/png"
 	"io"
 	"net/http"
 	"os"
@@ -53,7 +53,7 @@ func downloadData(url, dir string) {
 		f, err := os.Create(dir)
 		runtime.Assert(err)
 		defer f.Close()
-		err = jpeg.Encode(f, img, nil)
+		err = png.Encode(f, img)
 		runtime.Assert(err)
 	}
 	for i := 0; i < int(hdr.Count); i++ {
@@ -67,7 +67,7 @@ func downloadData(url, dir string) {
 			}
 		}
 		os.MkdirAll(dir, 0755)
-		save(filepath.Join(dir, fmt.Sprintf("%d.jpg", i)), img)
+		save(filepath.Join(dir, fmt.Sprintf("%d.png", i)), img)
 		if i != 0 && i%1000 == 0 {
 			fmt.Printf("download %d/%d...\n", i, hdr.Count)
 		}
@@ -107,7 +107,7 @@ type dataSet struct {
 }
 
 func loadData(dir string) dataSet {
-	files, err := filepath.Glob(filepath.Join(dir, "*.jpg"))
+	files, err := filepath.Glob(filepath.Join(dir, "*.png"))
 	runtime.Assert(err)
 	sort.Slice(files, func(i, j int) bool {
 		aFile := filepath.Base(files[i])
@@ -125,7 +125,7 @@ func loadData(dir string) dataSet {
 		f, err := os.Open(file)
 		runtime.Assert(err)
 		defer f.Close()
-		img, err := jpeg.Decode(f)
+		img, err := png.Decode(f)
 		runtime.Assert(err)
 		return img
 	}

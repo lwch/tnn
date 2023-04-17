@@ -95,12 +95,12 @@ func train(train, test dataSet) {
 
 func imageData(img image.Image) []float64 {
 	pt := img.Bounds().Max
-	rows, cols := pt.X, pt.Y
+	rows, cols := pt.Y, pt.X
 	ret := make([]float64, rows*cols)
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			r, _, _, _ := img.At(i, j).RGBA()
-			ret[i*rows+j] = float64(r) / 65535
+			ret[i*cols+j] = float64(r) / 65535
 		}
 	}
 	return ret
