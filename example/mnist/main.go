@@ -47,14 +47,27 @@ func train(train, test dataSet) {
 
 	conv1 := layer.NewConv2D(
 		layer.Shape{M: pt.Y, N: pt.X}, // input shape
-		layer.Shape{M: 5, N: 5},       // kernel shape
+		layer.Shape{M: 10, N: 10},     // kernel shape
 		layer.Stride{Y: 1, X: 1},      // stride
 		initializer)
 	conv1.SetName("conv1")
 
+	conv2 := layer.NewConv2D(
+		conv1.OutputShape(),      // input shape
+		layer.Shape{M: 5, N: 5},  // kernel shape
+		layer.Stride{Y: 1, X: 1}, // stride
+		initializer)
+	conv2.SetName("conv2")
+
 	var net net.Net
 	net.Set(
 		conv1,
+		activation.NewReLU(),
+		conv2,
+		activation.NewReLU(),
+		layer.NewDense(120, initializer),
+		activation.NewReLU(),
+		layer.NewDense(84, initializer),
 		activation.NewReLU(),
 		layer.NewDense(10, initializer),
 	)
