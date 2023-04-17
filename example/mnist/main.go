@@ -83,15 +83,13 @@ func train(train, test dataSet) {
 	for {
 		input, output := getBatch(train, i%(len(train.images)-batchSize))
 		m.Train(input, output)
-		if i%100 == 0 {
-			loss := m.Loss(input, output)
-			acc := accuracy(m, test)
-			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
-			// points = append(points, plotter.XY{X: float64(i), Y: loss})
-			// if acc >= 100 {
-			// 	break
-			// }
-		}
+		loss := m.Loss(input, output)
+		acc := accuracy(m, test)
+		fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
+		// points = append(points, plotter.XY{X: float64(i), Y: loss})
+		// if acc >= 100 {
+		// 	break
+		// }
 		i++
 	}
 }
