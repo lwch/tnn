@@ -2,6 +2,7 @@ package vector
 
 import (
 	"math"
+	"sync"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -105,6 +106,7 @@ func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN int) *mat.Dense {
 		}
 	}
 	idx := 0
+	var wg sync.WaitGroup
 	for i := 0; i < v.Size(); i++ {
 		for j := 0; j < int(rows); j++ {
 			topLeftY := j * strideM
@@ -113,11 +115,16 @@ func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN int) *mat.Dense {
 				topLeftX := k * strideN
 				bottomRightX := topLeftX + kernelN
 				rect := v.data[i].(Slicer).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
-				copy(data[idx:], rect)
+				wg.Add(1)
+				go func(idx int, rect mat.Matrix) {
+					defer wg.Done()
+					copy(data[idx:], rect)
+				}(idx, rect)
 				idx += kernelM * kernelN
 			}
 		}
 	}
+	wg.Wait()
 	return mat.NewDense(v.Size()*int(rows)*int(cols), kernelM*kernelN, data)
 }
 

@@ -5,9 +5,11 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/internal/prof"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
@@ -18,13 +20,14 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-const batchSize = 100
+const batchSize = 1000
 const lr = 0.01
 
 const dataDir = "./data"
 const modelFile = "mnist.model"
 
 func main() {
+	go prof.CpuProfile("./cpu.pprof", 3*time.Minute)
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		download()
 	}
@@ -160,10 +163,12 @@ func accuracy(m *model.Model, data dataSet) float64 {
 		if i+batchSize > len(data.images) {
 			break
 		}
-		input, output := getBatch(data, i)
+		input, _ := getBatch(data, i)
 		pred := m.Predict(input)
 		for j := 0; j < batchSize; j++ {
-			if get(pred.(vector.RowViewer).RowView(j)) == get(output.RowView(j)) {
+			a := get(pred.(vector.RowViewer).RowView(j))
+			b := int(data.labels[i])
+			if a == b {
 				correct++
 			}
 		}
