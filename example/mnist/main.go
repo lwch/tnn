@@ -18,7 +18,7 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-const batchSize = 1
+const batchSize = 100
 const lr = 0.01
 
 const dataDir = "./data"
