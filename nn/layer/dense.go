@@ -2,10 +2,10 @@ package layer
 
 import (
 	"fmt"
-	"tnn/initializer"
-	"tnn/nn/pb"
-	"tnn/nn/vector"
 
+	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/nn/pb"
+	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 )
 

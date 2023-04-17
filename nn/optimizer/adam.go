@@ -3,10 +3,10 @@ package optimizer
 import (
 	"fmt"
 	"math"
-	"tnn/nn/params"
-	"tnn/nn/pb"
-	"tnn/nn/vector"
 
+	"github.com/lwch/tnn/nn/params"
+	"github.com/lwch/tnn/nn/pb"
+	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 )
 

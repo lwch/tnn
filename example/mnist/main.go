@@ -7,15 +7,15 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"tnn/initializer"
-	"tnn/nn/layer"
-	"tnn/nn/layer/activation"
-	"tnn/nn/loss"
-	"tnn/nn/model"
-	"tnn/nn/net"
-	"tnn/nn/optimizer"
 
 	"github.com/lwch/runtime"
+	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/nn/layer"
+	"github.com/lwch/tnn/nn/layer/activation"
+	"github.com/lwch/tnn/nn/loss"
+	"github.com/lwch/tnn/nn/model"
+	"github.com/lwch/tnn/nn/net"
+	"github.com/lwch/tnn/nn/optimizer"
 	"gonum.org/v1/gonum/mat"
 )
 

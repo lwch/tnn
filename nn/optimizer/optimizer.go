@@ -2,8 +2,9 @@ package optimizer
 
 import (
 	"fmt"
-	"tnn/nn/params"
-	"tnn/nn/pb"
+
+	"github.com/lwch/tnn/nn/params"
+	"github.com/lwch/tnn/nn/pb"
 )
 
 type Optimizer interface {

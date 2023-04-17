@@ -3,12 +3,12 @@ package model
 import (
 	"fmt"
 	"io/ioutil"
-	"tnn/nn/loss"
-	"tnn/nn/net"
-	"tnn/nn/optimizer"
-	"tnn/nn/params"
-	"tnn/nn/pb"
 
+	"github.com/lwch/tnn/nn/loss"
+	"github.com/lwch/tnn/nn/net"
+	"github.com/lwch/tnn/nn/optimizer"
+	"github.com/lwch/tnn/nn/params"
+	"github.com/lwch/tnn/nn/pb"
 	"gonum.org/v1/gonum/mat"
 	"google.golang.org/protobuf/proto"
 )
@@ -40,8 +40,6 @@ func (m *Model) Predict(input mat.Matrix) mat.Matrix {
 
 func (m *Model) Train(input mat.Matrix, targets mat.Matrix) {
 	pred := m.Predict(input)
-	fmt.Println(pred.Dims())
-	fmt.Println(targets.Dims())
 	grad := m.loss.Grad(pred, targets)
 	grads := m.net.Backward(grad)
 	m.apply(grads)

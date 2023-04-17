@@ -2,10 +2,10 @@ package activation
 
 import (
 	"fmt"
-	"tnn/nn/layer"
-	"tnn/nn/params"
-	"tnn/nn/pb"
 
+	"github.com/lwch/tnn/nn/layer"
+	"github.com/lwch/tnn/nn/params"
+	"github.com/lwch/tnn/nn/pb"
 	"gonum.org/v1/gonum/mat"
 )
 

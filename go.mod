@@ -1,4 +1,4 @@
-module tnn
+module github.com/lwch/tnn
 
 go 1.20
 

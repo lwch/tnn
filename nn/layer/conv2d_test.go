@@ -3,8 +3,8 @@ package layer
 import (
 	"fmt"
 	"testing"
-	"tnn/initializer"
 
+	"github.com/lwch/tnn/initializer"
 	"gonum.org/v1/gonum/mat"
 )
 

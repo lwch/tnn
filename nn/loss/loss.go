@@ -2,8 +2,8 @@ package loss
 
 import (
 	"fmt"
-	"tnn/nn/pb"
 
+	"github.com/lwch/tnn/nn/pb"
 	"gonum.org/v1/gonum/mat"
 )
 

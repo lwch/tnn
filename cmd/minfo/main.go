@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
-	"tnn/nn/model"
 
 	"github.com/lwch/runtime"
+	"github.com/lwch/tnn/nn/model"
 )
 
 func main() {

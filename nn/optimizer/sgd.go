@@ -1,9 +1,9 @@
 package optimizer
 
 import (
-	"tnn/nn/params"
-	"tnn/nn/pb"
-	"tnn/nn/vector"
+	"github.com/lwch/tnn/nn/params"
+	"github.com/lwch/tnn/nn/pb"
+	"github.com/lwch/tnn/nn/vector"
 )
 
 type SGD struct {
