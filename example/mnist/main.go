@@ -41,7 +41,7 @@ func main() {
 }
 
 func train(train, test dataSet) {
-	initializer := initializer.NewNormal(1, 0)
+	initializer := initializer.NewNormal(1, 0.5)
 
 	pt := train.images[0].Bounds().Max
 
