@@ -63,8 +63,8 @@ func train(train, test dataSet) {
 	net.Set(
 		conv1,
 		activation.NewReLU(),
-		conv2,
-		activation.NewReLU(),
+		// conv2,
+		// activation.NewReLU(),
 		layer.NewDense(120, initializer),
 		activation.NewReLU(),
 		layer.NewDense(84, initializer),
