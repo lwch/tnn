@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -79,7 +80,7 @@ func train(train, test dataSet) {
 
 	var i int
 	for {
-		input, output := getBatch(train, i%(len(train.images)-batchSize))
+		input, output := getBatch(train)
 		m.Train(input, output)
 		loss := m.Loss(input, output)
 		acc := accuracy(m, test)
@@ -111,12 +112,13 @@ func onehot(label uint8) []float64 {
 	return ret
 }
 
-func getBatch(data dataSet, n int) (*mat.Dense, *mat.Dense) {
+func getBatch(data dataSet) (*mat.Dense, *mat.Dense) {
 	max := data.images[0].Bounds().Max
 	var input, output []float64
 	for i := 0; i < batchSize; i++ {
-		input = append(input, imageData(data.images[n+i])...)
-		output = append(output, onehot(data.labels[n+i])...)
+		n := rand.Intn(len(data.images))
+		input = append(input, imageData(data.images[n])...)
+		output = append(output, onehot(data.labels[n])...)
 	}
 	return mat.NewDense(batchSize, max.X*max.Y, input),
 		mat.NewDense(batchSize, 10, output)
@@ -155,20 +157,15 @@ func accuracy(m *model.Model, data dataSet) float64 {
 
 	var correct int
 	var total int
-	for i := 0; i < len(data.images); i += batchSize {
-		if i+batchSize > len(data.images) {
-			break
+	input, output := getBatch(data)
+	pred := m.Predict(input)
+	for j := 0; j < batchSize; j++ {
+		a := get(pred.(vector.RowViewer).RowView(j))
+		b := get(output.RowView(j))
+		if a == b {
+			correct++
 		}
-		input, _ := getBatch(data, i)
-		pred := m.Predict(input)
-		for j := 0; j < batchSize; j++ {
-			a := get(pred.(vector.RowViewer).RowView(j))
-			b := int(data.labels[i])
-			if a == b {
-				correct++
-			}
-		}
-		total += batchSize
 	}
-	return float64(correct) * 100 / float64(total)
+	total += batchSize
+	return float64(correct) * 100 / float64(batchSize)
 }
