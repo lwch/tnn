@@ -40,6 +40,8 @@ func (m *Model) Predict(input mat.Matrix) mat.Matrix {
 
 func (m *Model) Train(input mat.Matrix, targets mat.Matrix) {
 	pred := m.Predict(input)
+	fmt.Println(pred.Dims())
+	fmt.Println(targets.Dims())
 	grad := m.loss.Grad(pred, targets)
 	grads := m.net.Backward(grad)
 	m.apply(grads)

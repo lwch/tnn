@@ -19,7 +19,7 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-const batchSize = 100
+const batchSize = 1
 const lr = 0.1
 
 const dataDir = "./data"
@@ -48,30 +48,22 @@ func main() {
 func train(train, test dataSet) {
 	initializer := initializer.NewNormal(1, 0)
 
-	hidden1 := layer.NewDense(200, initializer)
-	hidden1.SetName("hidden1")
-	hidden2 := layer.NewDense(100, initializer)
-	hidden2.SetName("hidden2")
-	hidden3 := layer.NewDense(70, initializer)
-	hidden3.SetName("hidden3")
-	hidden4 := layer.NewDense(30, initializer)
-	hidden4.SetName("hidden4")
-	outputLayer := layer.NewDense(10, initializer)
-	outputLayer.SetName("output")
+	pt := train.images[0].Bounds().Max
+
+	conv1 := layer.NewConv2D(
+		layer.Shape{M: pt.Y, N: pt.X}, // input shape
+		layer.Shape{M: 5, N: 5},       // kernel shape
+		layer.Stride{Y: 1, X: 1},      // stride
+		initializer)
+	conv1.SetName("conv1")
 
 	var net net.Net
 	net.Set(
-		hidden1,
+		conv1,
 		activation.NewReLU(),
-		hidden2,
-		activation.NewReLU(),
-		hidden3,
-		activation.NewReLU(),
-		hidden4,
-		activation.NewReLU(),
-		outputLayer,
+		layer.NewDense(10, initializer),
 	)
-	loss := loss.NewSoftmax(1)
+	loss := loss.NewMSE()
 	optimizer := optimizer.NewSGD(lr, 0)
 	// optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
@@ -81,9 +73,9 @@ func train(train, test dataSet) {
 		input, output := getBatch(train, i%(len(train.images)-batchSize))
 		m.Train(input, output)
 		if i%100 == 0 {
-			loss := m.Loss(input, output)
-			acc := accuracy(m, test)
-			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
+			// loss := m.Loss(input, output)
+			// acc := accuracy(m, test)
+			// fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
 			// points = append(points, plotter.XY{X: float64(i), Y: loss})
 			// if acc >= 100 {
 			// 	break
@@ -100,7 +92,7 @@ func imageData(img image.Image) []float64 {
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			r, _, _, _ := img.At(i, j).RGBA()
-			ret[i*rows+j] = float64(r) / 255
+			ret[i*rows+j] = float64(r) / 65535
 		}
 	}
 	return ret
@@ -112,13 +104,13 @@ func onehot(label uint8) []float64 {
 	return ret
 }
 
-func getBatch(data dataSet, n int) (*mat.Dense, *mat.Dense) {
+func getBatch(data dataSet, n int) (*mat.VecDense, *mat.Dense) {
 	var input, output []float64
 	for i := 0; i < batchSize; i++ {
 		input = append(input, imageData(data.images[n+i])...)
 		output = append(output, onehot(data.labels[n+i])...)
 	}
-	return mat.NewDense(batchSize, data.rows*data.cols, input),
+	return mat.NewVecDense(len(input), input),
 		mat.NewDense(batchSize, 10, output)
 }
 
@@ -152,6 +144,7 @@ func accuracy(m *model.Model, data dataSet) float64 {
 		}
 		return n
 	}
+	_ = get
 
 	var correct int
 	var total int
@@ -160,12 +153,14 @@ func accuracy(m *model.Model, data dataSet) float64 {
 			break
 		}
 		input, output := getBatch(data, i)
-		pred := m.Predict(input)
-		for j := 0; j < batchSize; j++ {
-			if get(pred.RowView(j)) == get(output.RowView(j)) {
-				correct++
-			}
-		}
+		// pred := m.Predict(input)
+		// for j := 0; j < batchSize; j++ {
+		// 	if get(pred.RowView(j)) == get(output.RowView(j)) {
+		// 		correct++
+		// 	}
+		// }
+		_ = input
+		_ = output
 		total += batchSize
 	}
 	return float64(correct) * 100 / float64(total)

@@ -1,6 +1,9 @@
 package vector
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"gonum.org/v1/gonum/blas/blas64"
+	"gonum.org/v1/gonum/mat"
+)
 
 type Adder interface {
 	Add(a, b mat.Matrix)
@@ -32,4 +35,12 @@ type RowViewer interface {
 
 type Slicer interface {
 	Slice(i, k, j, l int) mat.Matrix
+}
+
+type CloneFrom interface {
+	CloneFrom(a mat.Matrix)
+}
+
+type Raw interface {
+	RawMatrix() blas64.General
 }

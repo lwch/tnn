@@ -11,7 +11,15 @@ type Vector3D struct {
 	data       []mat.Matrix
 }
 
-func Reshape3D(vec mat.Vector, rows, cols int) *Vector3D {
+func NewVector3D(rows, cols int) *Vector3D {
+	var ret Vector3D
+	ret.rows = rows
+	ret.cols = cols
+	ret.data = append(ret.data, mat.NewDense(rows, cols, nil))
+	return &ret
+}
+
+func ReshapeVector(vec mat.Vector, rows, cols int) *Vector3D {
 	var ret Vector3D
 	ret.rows = rows
 	ret.cols = cols
@@ -32,6 +40,19 @@ func Reshape3D(vec mat.Vector, rows, cols int) *Vector3D {
 		i += rows * cols
 	}
 	return &ret
+}
+
+func ReshapeDense(d mat.Dense, rows, cols int) *Vector3D {
+	srcRows, srcCols := d.Dims()
+	data := make([]float64, srcRows*srcCols)
+	idx := 0
+	for i := 0; i < srcRows; i++ {
+		for j := 0; j < srcCols; j++ {
+			data[idx] = d.At(i, j)
+			idx++
+		}
+	}
+	return ReshapeVector(mat.NewVecDense(srcRows*srcCols, data), rows, cols)
 }
 
 func (v *Vector3D) Get(n int) mat.Matrix {
@@ -56,49 +77,76 @@ func (v *Vector3D) ToMatrix() mat.Matrix {
 }
 
 func (v *Vector3D) Pad(m, n int) {
-	offsetY := m >> 1
-	offsetX := n >> 1
 	for i := 0; i < v.Size(); i++ {
-		dense := mat.NewDense(v.rows+offsetY<<1, v.cols+offsetX<<1, nil)
+		dense := mat.NewDense(v.rows+m, v.cols+n, nil)
 		for j := 0; j < v.rows; j++ {
 			row := v.data[i].(RowViewer).RowView(j)
 			for k := 0; k < row.Len(); k++ {
-				dense.Set(j+offsetY, k+offsetX, row.AtVec(k))
+				dense.Set(j, k, row.AtVec(k))
 			}
 		}
 		v.data[i] = dense
 	}
-	v.rows += offsetY << 1
-	v.cols += offsetX << 1
+	v.rows += m
+	v.cols += n
 }
 
-func (v *Vector3D) Conv(kernel mat.Matrix, strideY, strideX int) *Vector3D {
-	var ret Vector3D
-	kernelM, kernelN := kernel.Dims()
-	dm := float64(v.rows - kernelM)
-	dn := float64(v.cols - kernelN)
-	ret.rows = int(math.Ceil(dm / float64(strideY)))
-	ret.cols = int(math.Ceil(dn / float64(strideX)))
-	ret.data = make([]mat.Matrix, v.Size())
-	for i := 0; i < v.Size(); i++ {
-		dense := mat.NewDense(ret.rows, ret.cols, nil)
-		for row := 0; row < v.rows-kernelM; row++ {
-			for col := 0; col < v.cols-kernelN; col++ {
-				a := v.data[i].(Slicer).Slice(row, row+kernelM, col, col+kernelN)
-				var tmp mat.Dense
-				tmp.MulElem(a, kernel)
-				dense.Set(row, col, mat.Sum(&tmp))
+func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN int) *mat.Dense {
+	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
+	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
+	data := make([]float64, v.Size()*int(rows)*int(cols)*kernelM*kernelN)
+	copy := func(dst []float64, rect mat.Matrix) {
+		rows, cols := rect.Dims()
+		for i := 0; i < rows; i++ {
+			row := rect.(RowViewer).RowView(i)
+			for j := 0; j < cols; j++ {
+				dst[i*cols+j] = row.AtVec(j)
 			}
 		}
-		ret.data[i] = dense
+	}
+	idx := 0
+	for i := 0; i < v.Size(); i++ {
+		for j := 0; j < int(rows); j++ {
+			topLeftY := j * strideM
+			bottomRightY := topLeftY + kernelM
+			for k := 0; k < int(cols); k++ {
+				topLeftX := k * strideN
+				bottomRightX := topLeftX + kernelN
+				rect := v.data[i].(Slicer).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
+				copy(data[idx:], rect)
+				idx += kernelM * kernelN
+			}
+		}
+	}
+	return mat.NewDense(v.Size()*int(rows)*int(cols), kernelM*kernelN, data)
+}
+
+func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
+	kernelM, kernelN := a.Dims()
+	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
+	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
+	idx := 0
+	for i := 0; i < int(rows); i += strideM {
+		for j := 0; j < int(cols); j += strideN {
+			rect := v.data[0].(Slicer).Slice(i, i+a.rows, j, j+a.cols)
+			rect.(Adder).Add(rect, a.data[idx])
+			idx++
+		}
+	}
+}
+
+func (v *Vector3D) Cut(rows, cols int) *Vector3D {
+	var ret Vector3D
+	ret.rows = rows
+	ret.cols = cols
+	ret.data = make([]mat.Matrix, v.Size())
+	for i := 0; i < v.Size(); i++ {
+		rect := v.data[i].(Slicer).Slice(0, rows, 0, cols)
+		ret.data[i] = mat.DenseCopyOf(rect)
 	}
 	return &ret
 }
 
-func (v *Vector3D) Add(bias mat.Matrix) {
-	for i := 0; i < v.Size(); i++ {
-		dense := v.data[i]
-		dense.(Adder).Add(dense, bias)
-		v.data[i] = dense
-	}
+func (v *Vector3D) Dims() (int, int) {
+	return v.rows, v.cols
 }
