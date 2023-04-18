@@ -26,7 +26,7 @@ import (
 
 const batchSize = 100
 const lr = 0.01
-const epoch = 100
+const epoch = 10000
 
 const dataDir = "./data"
 const modelFile = "mnist.model"
@@ -118,7 +118,7 @@ func train(train, test dataSet) {
 	for i := 0; i < epoch; i++ {
 		input, output := getBatch(train)
 		m.Train(input, output)
-		if i%10 == 0 {
+		if i%100 == 0 {
 			loss := m.Loss(input, output)
 			acc := accuracy(m, test)
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
