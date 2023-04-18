@@ -25,6 +25,11 @@ type Shape struct {
 	M, N int
 }
 
+type Kernel struct {
+	M, N            int
+	InChan, OutChan int
+}
+
 type Stride struct {
 	X, Y int
 }

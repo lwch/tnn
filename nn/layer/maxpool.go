@@ -11,17 +11,18 @@ import (
 
 type MaxPool struct {
 	*base
-	padedShape              Shape
-	imageShape, kernelShape Shape
-	stride                  Stride
-	idx                     [][]int
+	padedShape Shape
+	imageShape Shape
+	kernel     Kernel
+	stride     Stride
+	idx        [][]int
 }
 
-func NewMaxPool(imgShape, kernel Shape, stride Stride) *MaxPool {
+func NewMaxPool(imgShape Shape, kernel Kernel, stride Stride) *MaxPool {
 	var layer MaxPool
 	layer.base = new("maxpool", nil, nil, layer.forward, layer.backward)
 	layer.imageShape = imgShape
-	layer.kernelShape = kernel
+	layer.kernel = kernel
 	layer.stride = stride
 	return &layer
 }
@@ -31,13 +32,18 @@ func LoadMaxPool(name string, params map[string]*pb.Dense, args map[string]*pb.D
 		shape := args[name].GetData()
 		return Shape{M: int(shape[0]), N: int(shape[1])}
 	}
+	getKernel := func(name string) Kernel {
+		kernel := args[name].GetData()
+		return Kernel{M: int(kernel[0]), N: int(kernel[1]),
+			InChan: int(kernel[2]), OutChan: int(kernel[3])}
+	}
 	getStride := func(name string) Stride {
 		stride := args[name].GetData()
 		return Stride{X: int(stride[0]), Y: int(stride[1])}
 	}
 	var layer MaxPool
 	layer.imageShape = getShape("img.shape")
-	layer.kernelShape = getShape("kernel.shape")
+	layer.kernel = getKernel("kernel")
 	layer.stride = getStride("stride")
 	layer.base = new("maxpool", nil, nil, layer.forward, layer.backward)
 	layer.name = name
@@ -52,8 +58,8 @@ func LoadMaxPool(name string, params map[string]*pb.Dense, args map[string]*pb.D
 }
 
 func (layer *MaxPool) OutputShape() Shape {
-	dy := float64(layer.imageShape.M - layer.kernelShape.M)
-	dx := float64(layer.imageShape.N - layer.kernelShape.N)
+	dy := float64(layer.imageShape.M - layer.kernel.M)
+	dx := float64(layer.imageShape.N - layer.kernel.N)
 	y := math.Ceil(dy/float64(layer.stride.Y)) + 1
 	x := math.Ceil(dx/float64(layer.stride.X)) + 1
 	return Shape{int(y), int(x)}
@@ -66,7 +72,7 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 		layer.initParams()
 		layer.idx = make([][]int, batch)
 		for i := 0; i < batch; i++ {
-			layer.idx[i] = make([]int, outputShape.M*outputShape.N)
+			layer.idx[i] = make([]int, outputShape.M*outputShape.N*layer.kernel.InChan)
 		}
 	}
 	pad := layer.pad(input)
@@ -86,20 +92,24 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 		}
 		return max, idx
 	}
-	ret := mat.NewDense(batch, outputShape.M*outputShape.N, nil)
+	ret := mat.NewDense(batch, outputShape.M*outputShape.N*layer.kernel.InChan, nil)
+	var idx int
 	for i := 0; i < pad.Size(); i++ {
+		batchID := math.Floor(float64(i) / float64(layer.kernel.InChan))
 		img := pad.Get(i)
-		idx := 0
+		if i%layer.kernel.InChan == 0 {
+			idx = 0
+		}
 		for j := 0; j < outputShape.M; j++ {
 			topLeftY := j * layer.stride.Y
-			bottomRightY := topLeftY + layer.kernelShape.M
+			bottomRightY := topLeftY + layer.kernel.M
 			for k := 0; k < outputShape.N; k++ {
 				topLeftX := k * layer.stride.X
-				bottomRightX := topLeftX + layer.kernelShape.N
+				bottomRightX := topLeftX + layer.kernel.N
 				rect := img.(vector.Slicer).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
 				var value float64
-				value, layer.idx[i][idx] = maxFunc(rect)
-				ret.Set(i, idx, value)
+				value, layer.idx[int(batchID)][idx] = maxFunc(rect)
+				ret.Set(int(batchID), idx, value)
 				idx++
 			}
 		}
@@ -121,8 +131,8 @@ func (layer *MaxPool) backward(grad mat.Matrix) mat.Matrix {
 				startX := k * layer.stride.X
 				g := rv.AtVec(idx)
 				n := layer.idx[i][idx]
-				dy := math.Floor(float64(n) / float64(layer.kernelShape.N))
-				dx := n % layer.kernelShape.N
+				dy := math.Floor(float64(n) / float64(layer.kernel.N))
+				dx := n % layer.kernel.N
 				g += img.At(startY+int(dy), startX+dx)
 				img.(vector.Seter).Set(startY+int(dy), startX+dx, g)
 				idx++
@@ -146,12 +156,17 @@ func (layer *MaxPool) Args() map[string]mat.Matrix {
 	buildShape := func(shape Shape) mat.Matrix {
 		return mat.NewVecDense(2, []float64{float64(shape.M), float64(shape.N)})
 	}
+	buildKernel := func(kernel Kernel) mat.Matrix {
+		return mat.NewVecDense(4, []float64{
+			float64(kernel.M), float64(kernel.N),
+			float64(kernel.InChan), float64(kernel.OutChan)})
+	}
 	buildStride := func(stride Stride) mat.Matrix {
 		return mat.NewVecDense(2, []float64{float64(stride.X), float64(stride.Y)})
 	}
 	return map[string]mat.Matrix{
 		"img.shape":    buildShape(layer.imageShape),
-		"kernel.shape": buildShape(layer.kernelShape),
+		"kernel.shape": buildKernel(layer.kernel),
 		"stride":       buildStride(layer.stride),
 		"batch":        mat.NewVecDense(1, []float64{float64(len(layer.idx))}),
 	}
@@ -161,8 +176,10 @@ func (layer *MaxPool) Print() {
 	layer.base.Print()
 	fmt.Println("    Image Shape:",
 		fmt.Sprintf("%dx%d", layer.imageShape.M, layer.imageShape.N))
-	fmt.Println("    Kernel Shape:",
-		fmt.Sprintf("%dx%d", layer.kernelShape.M, layer.kernelShape.N))
+	fmt.Println("    Kernel:",
+		fmt.Sprintf("%dx%d", layer.kernel.M, layer.kernel.N),
+		fmt.Sprintf("input_channel=%d", layer.kernel.InChan),
+		fmt.Sprintf("output_channel=%d", layer.kernel.OutChan))
 	fmt.Println("    Stride:",
 		fmt.Sprintf("x=%d", layer.stride.X), fmt.Sprintf("y=%d", layer.stride.Y))
 }

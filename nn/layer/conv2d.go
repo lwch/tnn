@@ -12,20 +12,21 @@ import (
 
 type Conv2D struct {
 	*base
-	padedShape              Shape
-	imageShape, kernelShape Shape
-	stride                  Stride
+	padedShape Shape
+	imageShape Shape
+	kernel     Kernel
+	stride     Stride
 }
 
-func NewConv2D(imgShape, kernel Shape, stride Stride,
+func NewConv2D(imgShape Shape, kernel Kernel, stride Stride,
 	init initializer.Initializer) *Conv2D {
 	var layer Conv2D
 	layer.base = new("conv2d", map[string]Shape{
-		"w": {kernel.M * kernel.N, 1},
-		"b": {imgShape.M * imgShape.N, 1},
+		"w": {kernel.M * kernel.N, kernel.OutChan},
+		"b": {imgShape.M * imgShape.N * kernel.InChan, kernel.OutChan},
 	}, init, layer.forward, layer.backward)
 	layer.imageShape = imgShape
-	layer.kernelShape = kernel
+	layer.kernel = kernel
 	layer.stride = stride
 	return &layer
 }
@@ -35,13 +36,18 @@ func LoadConv2D(name string, params map[string]*pb.Dense, args map[string]*pb.De
 		shape := args[name].GetData()
 		return Shape{M: int(shape[0]), N: int(shape[1])}
 	}
+	getKernel := func(name string) Kernel {
+		kernel := args[name].GetData()
+		return Kernel{M: int(kernel[0]), N: int(kernel[1]),
+			InChan: int(kernel[2]), OutChan: int(kernel[3])}
+	}
 	getStride := func(name string) Stride {
 		stride := args[name].GetData()
 		return Stride{X: int(stride[0]), Y: int(stride[1])}
 	}
 	var layer Conv2D
 	layer.imageShape = getShape("img.shape")
-	layer.kernelShape = getShape("kernel.shape")
+	layer.kernel = getKernel("kernel")
 	layer.stride = getStride("stride")
 	layer.base = new("conv2d", nil, nil, layer.forward, layer.backward)
 	layer.name = name
@@ -63,7 +69,7 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	}
 	pad := layer.pad(input)
 	layer.padedShape.M, layer.padedShape.N = pad.Dims()
-	col := pad.Im2Col(layer.kernelShape.M, layer.kernelShape.N, layer.stride.Y, layer.stride.X)
+	col := pad.Im2Col(layer.kernel.M, layer.kernel.N, layer.stride.Y, layer.stride.X)
 	layer.input = *col
 	var ret mat.Dense
 	ret.Mul(col, layer.params["w"])
@@ -75,16 +81,16 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
-	rows, cols := grad.Dims()
-	flatGrad := utils.ReshapeRows(grad, rows*cols)
+	rows, _ := grad.Dims()
+	flatGrad := utils.ReshapeCols(grad, layer.kernel.OutChan)
 	dw.(vector.Muler).Mul(layer.input.T(), flatGrad)
 	db.(vector.Copyer).Copy(flatGrad)
 
 	var ret mat.Dense
 	w := layer.params["w"]
-	tGrad := utils.ReshapeRows(grad.T(), rows*cols)
+	tGrad := utils.ReshapeCols(grad.T(), layer.kernel.OutChan)
 	ret.Mul(tGrad, w.T())
-	ret3D := vector.ReshapeMatrix(&ret, layer.kernelShape.M, layer.kernelShape.N)
+	ret3D := vector.ReshapeMatrix(&ret, layer.kernel.M, layer.kernel.N)
 
 	tmp := vector.NewVector3D(rows, layer.padedShape.M, layer.padedShape.N)
 	tmp.ConvAdd(ret3D, layer.stride.Y, layer.stride.X)
@@ -93,7 +99,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 
 func (layer *Conv2D) pad(input mat.Matrix) *vector.Vector3D {
 	reshape := vector.ReshapeMatrix(input, layer.imageShape.M, layer.imageShape.N)
-	reshape.Pad(layer.kernelShape.M-1, layer.kernelShape.N-1)
+	reshape.Pad(layer.kernel.M-1, layer.kernel.N-1)
 	return reshape
 }
 
@@ -101,13 +107,18 @@ func (layer *Conv2D) Args() map[string]mat.Matrix {
 	buildShape := func(shape Shape) mat.Matrix {
 		return mat.NewVecDense(2, []float64{float64(shape.M), float64(shape.N)})
 	}
+	buildKernel := func(kernel Kernel) mat.Matrix {
+		return mat.NewVecDense(4, []float64{
+			float64(kernel.M), float64(kernel.N),
+			float64(kernel.InChan), float64(kernel.OutChan)})
+	}
 	buildStride := func(stride Stride) mat.Matrix {
 		return mat.NewVecDense(2, []float64{float64(stride.X), float64(stride.Y)})
 	}
 	return map[string]mat.Matrix{
-		"img.shape":    buildShape(layer.imageShape),
-		"kernel.shape": buildShape(layer.kernelShape),
-		"stride":       buildStride(layer.stride),
+		"img.shape": buildShape(layer.imageShape),
+		"kernel":    buildKernel(layer.kernel),
+		"stride":    buildStride(layer.stride),
 	}
 }
 
@@ -115,8 +126,10 @@ func (layer *Conv2D) Print() {
 	layer.base.Print()
 	fmt.Println("    Image Shape:",
 		fmt.Sprintf("%dx%d", layer.imageShape.M, layer.imageShape.N))
-	fmt.Println("    Kernel Shape:",
-		fmt.Sprintf("%dx%d", layer.kernelShape.M, layer.kernelShape.N))
+	fmt.Println("    Kernel:",
+		fmt.Sprintf("%dx%d", layer.kernel.M, layer.kernel.N),
+		fmt.Sprintf("input_channel=%d", layer.kernel.InChan),
+		fmt.Sprintf("output_channel=%d", layer.kernel.OutChan))
 	fmt.Println("    Stride:",
 		fmt.Sprintf("x=%d", layer.stride.X), fmt.Sprintf("y=%d", layer.stride.Y))
 }

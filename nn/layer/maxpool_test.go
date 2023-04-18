@@ -17,7 +17,7 @@ func TestMaxPool(t *testing.T) {
 		1, 0,
 		0, 1,
 	})
-	layer := NewMaxPool(Shape{3, 3}, Shape{2, 2}, Stride{2, 2})
+	layer := NewMaxPool(Shape{3, 3}, Kernel{2, 2, 1, 1}, Stride{2, 2})
 	pred := layer.Forward(input)
 	var grad mat.Dense
 	grad.Sub(output, pred)

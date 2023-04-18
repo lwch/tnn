@@ -54,29 +54,29 @@ func train(train, test dataSet) {
 	pt := train.images[0].Bounds().Max
 
 	conv1 := layer.NewConv2D(
-		layer.Shape{M: pt.Y, N: pt.X}, // input shape
-		layer.Shape{M: 10, N: 10},     // kernel shape
-		layer.Stride{Y: 1, X: 1},      // stride
+		layer.Shape{M: pt.Y, N: pt.X},                   // input shape
+		layer.Kernel{M: 5, N: 5, InChan: 1, OutChan: 6}, // kernel
+		layer.Stride{Y: 1, X: 1},                        // stride
 		initializer)
 	conv1.SetName("conv1")
 
 	pool1 := layer.NewMaxPool(
-		conv1.OutputShape(),      // input shape
-		layer.Shape{M: 2, N: 2},  // kernel shape
-		layer.Stride{Y: 2, X: 2}) // stride
+		conv1.OutputShape(),                             // input shape
+		layer.Kernel{M: 2, N: 2, InChan: 6, OutChan: 6}, // kernel
+		layer.Stride{Y: 2, X: 2})                        // stride
 	pool1.SetName("pool1")
 
 	conv2 := layer.NewConv2D(
-		pool1.OutputShape(),      // input shape
-		layer.Shape{M: 5, N: 5},  // kernel shape
-		layer.Stride{Y: 1, X: 1}, // stride
+		pool1.OutputShape(), // input shape
+		layer.Kernel{M: 5, N: 5, InChan: 6, OutChan: 16}, // kernel
+		layer.Stride{Y: 1, X: 1},                         // stride
 		initializer)
 	conv2.SetName("conv2")
 
 	pool2 := layer.NewMaxPool(
-		conv2.OutputShape(),      // input shape
-		layer.Shape{M: 2, N: 2},  // kernel shape
-		layer.Stride{Y: 2, X: 2}) // stride
+		conv2.OutputShape(), // input shape
+		layer.Kernel{M: 2, N: 2, InChan: 16, OutChan: 16}, // kernel shape
+		layer.Stride{Y: 2, X: 2})                          // stride
 
 	var relus []layer.Layer
 	for i := 0; i < 4; i++ {
