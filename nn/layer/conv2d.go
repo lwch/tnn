@@ -82,7 +82,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	ret.Mul(tGrad, w.T())
 	ret3D := vector.ReshapeMatrix(&ret, layer.kernelShape.M, layer.kernelShape.N)
 
-	tmp := vector.NewVector3D(layer.padedShape.M, layer.padedShape.N)
+	tmp := vector.NewVector3D(rows, layer.padedShape.M, layer.padedShape.N)
 	tmp.ConvAdd(ret3D, layer.stride.Y, layer.stride.X)
 	return tmp.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
 }

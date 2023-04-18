@@ -12,11 +12,13 @@ type Vector3D struct {
 	data       []mat.Matrix
 }
 
-func NewVector3D(rows, cols int) *Vector3D {
+func NewVector3D(batch, rows, cols int) *Vector3D {
 	var ret Vector3D
 	ret.rows = rows
 	ret.cols = cols
-	ret.data = append(ret.data, mat.NewDense(rows, cols, nil))
+	for i := 0; i < batch; i++ {
+		ret.data = append(ret.data, mat.NewDense(rows, cols, nil))
+	}
 	return &ret
 }
 
