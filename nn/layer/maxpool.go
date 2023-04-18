@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/nn/pb"
 	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
@@ -15,7 +16,7 @@ type MaxPool struct {
 	imageShape Shape
 	kernel     Kernel
 	stride     Stride
-	idx        [][]int
+	idx        [][][]int
 }
 
 func NewMaxPool(imgShape Shape, kernel Kernel, stride Stride) *MaxPool {
@@ -49,10 +50,13 @@ func LoadMaxPool(name string, params map[string]*pb.Dense, args map[string]*pb.D
 	layer.name = name
 	layer.base.loadParams(params)
 	batch := int(args["batch"].GetData()[0])
-	layer.idx = make([][]int, batch)
+	layer.idx = make([][][]int, batch)
 	outputShape := layer.OutputShape()
 	for i := 0; i < batch; i++ {
-		layer.idx[i] = make([]int, outputShape.M*outputShape.N)
+		layer.idx[i] = make([][]int, layer.kernel.InChan)
+		for j := 0; j < layer.kernel.InChan; j++ {
+			layer.idx[i][j] = make([]int, outputShape.M*outputShape.N)
+		}
 	}
 	return &layer
 }
@@ -70,9 +74,12 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 	outputShape := layer.OutputShape()
 	if !layer.hasInit {
 		layer.initParams()
-		layer.idx = make([][]int, batch)
+		layer.idx = make([][][]int, batch)
 		for i := 0; i < batch; i++ {
-			layer.idx[i] = make([]int, outputShape.M*outputShape.N*layer.kernel.InChan)
+			layer.idx[i] = make([][]int, layer.kernel.InChan)
+			for j := 0; j < layer.kernel.InChan; j++ {
+				layer.idx[i][j] = make([]int, outputShape.M*outputShape.N)
+			}
 		}
 	}
 	pad := layer.pad(input)
@@ -93,13 +100,14 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 		return max, idx
 	}
 	ret := mat.NewDense(batch, outputShape.M*outputShape.N*layer.kernel.InChan, nil)
-	var idx int
+	var layerID int
 	for i := 0; i < pad.Size(); i++ {
 		batchID := math.Floor(float64(i) / float64(layer.kernel.InChan))
 		img := pad.Get(i)
 		if i%layer.kernel.InChan == 0 {
-			idx = 0
+			layerID = 0
 		}
+		var idx int
 		for j := 0; j < outputShape.M; j++ {
 			topLeftY := j * layer.stride.Y
 			bottomRightY := topLeftY + layer.kernel.M
@@ -108,38 +116,44 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 				bottomRightX := topLeftX + layer.kernel.N
 				rect := img.(vector.Slicer).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
 				var value float64
-				value, layer.idx[int(batchID)][idx] = maxFunc(rect)
+				value, layer.idx[int(batchID)][layerID][idx] = maxFunc(rect)
 				ret.Set(int(batchID), idx, value)
 				idx++
 			}
 		}
+		layerID++
 	}
 	return ret
 }
 
 func (layer *MaxPool) backward(grad mat.Matrix) mat.Matrix {
 	batch, _ := grad.Dims()
-	ret := vector.NewVector3D(batch, layer.padedShape.M, layer.padedShape.N)
+	ret := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	outputShape := layer.OutputShape()
 	for i := 0; i < batch; i++ {
-		img := ret.Get(i)
-		idx := 0
 		rv := grad.(vector.RowViewer).RowView(i)
-		for j := 0; j < outputShape.M; j++ {
-			startY := j * layer.stride.Y
-			for k := 0; k < outputShape.N; k++ {
-				startX := k * layer.stride.X
-				g := rv.AtVec(idx)
-				n := layer.idx[i][idx]
-				dy := math.Floor(float64(n) / float64(layer.kernel.N))
-				dx := n % layer.kernel.N
-				g += img.At(startY+int(dy), startX+dx)
-				img.(vector.Seter).Set(startY+int(dy), startX+dx, g)
-				idx++
+		var gradIdx int
+		for layerID := 0; layerID < layer.kernel.InChan; layerID++ {
+			img := ret.Get(i*layer.kernel.InChan + layerID)
+			var idx int
+			for j := 0; j < outputShape.M; j++ {
+				startY := j * layer.stride.Y
+				for k := 0; k < outputShape.N; k++ {
+					startX := k * layer.stride.X
+					g := rv.AtVec(gradIdx)
+					n := layer.idx[i][layerID][idx]
+					dy := math.Floor(float64(n) / float64(layer.kernel.N))
+					dx := n % layer.kernel.N
+					g += img.At(startY+int(dy), startX+dx)
+					img.(vector.Seter).Set(startY+int(dy), startX+dx, g)
+					idx++
+					gradIdx++
+				}
 			}
 		}
 	}
-	return ret.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
+	tmp := ret.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
+	return utils.ReshapeRows(tmp, batch)
 }
 
 func (layer *MaxPool) pad(input mat.Matrix) *vector.Vector3D {

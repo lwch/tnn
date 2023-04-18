@@ -43,6 +43,8 @@ func (n *Net) Add(layer layer.Layer) {
 func (n *Net) Forward(input mat.Matrix) mat.Matrix {
 	for i := 0; i < len(n.layers); i++ {
 		input = n.layers[i].Forward(input)
+		// fmt.Println(n.layers[i].Name())
+		// fmt.Println(input.Dims())
 	}
 	return input
 }
@@ -51,6 +53,8 @@ func (n *Net) Backward(grad mat.Matrix) []*params.Params {
 	ret := make([]*params.Params, len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
 		grad = n.layers[i].Backward(grad)
+		// fmt.Println(n.layers[i].Name())
+		// fmt.Println(grad.Dims())
 		var p params.Params
 		p.Copy(n.layers[i].Context())
 		ret[i] = &p

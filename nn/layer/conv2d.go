@@ -22,8 +22,8 @@ func NewConv2D(imgShape Shape, kernel Kernel, stride Stride,
 	init initializer.Initializer) *Conv2D {
 	var layer Conv2D
 	layer.base = new("conv2d", map[string]Shape{
-		"w": {kernel.M * kernel.N, kernel.OutChan},
-		"b": {imgShape.M * imgShape.N * kernel.InChan, kernel.OutChan},
+		"w": {kernel.M * kernel.N * kernel.InChan, kernel.OutChan},
+		"b": {imgShape.M * imgShape.N, kernel.OutChan},
 	}, init, layer.forward, layer.backward)
 	layer.imageShape = imgShape
 	layer.kernel = kernel
@@ -69,7 +69,9 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	}
 	pad := layer.pad(input)
 	layer.padedShape.M, layer.padedShape.N = pad.Dims()
-	col := pad.Im2Col(layer.kernel.M, layer.kernel.N, layer.stride.Y, layer.stride.X)
+	col := pad.Im2Col(layer.kernel.M, layer.kernel.N,
+		layer.stride.Y, layer.stride.X,
+		layer.kernel.InChan)
 	layer.input = *col
 	var ret mat.Dense
 	ret.Mul(col, layer.params["w"])
@@ -92,9 +94,10 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	ret.Mul(tGrad, w.T())
 	ret3D := vector.ReshapeMatrix(&ret, layer.kernel.M, layer.kernel.N)
 
-	tmp := vector.NewVector3D(rows, layer.padedShape.M, layer.padedShape.N)
+	tmp := vector.NewVector3D(rows*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	tmp.ConvAdd(ret3D, layer.stride.Y, layer.stride.X)
-	return tmp.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
+	cuted := tmp.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
+	return utils.ReshapeRows(cuted, rows)
 }
 
 func (layer *Conv2D) pad(input mat.Matrix) *vector.Vector3D {

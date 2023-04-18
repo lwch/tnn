@@ -59,12 +59,14 @@ func train(train, test dataSet) {
 		layer.Stride{Y: 1, X: 1},                        // stride
 		initializer)
 	conv1.SetName("conv1")
+	// output: (100, 28*28*6) => (100, 4704)
 
 	pool1 := layer.NewMaxPool(
 		conv1.OutputShape(),                             // input shape
 		layer.Kernel{M: 2, N: 2, InChan: 6, OutChan: 6}, // kernel
 		layer.Stride{Y: 2, X: 2})                        // stride
 	pool1.SetName("pool1")
+	// output: (100, 14*14*6) => (100, 1176)
 
 	conv2 := layer.NewConv2D(
 		pool1.OutputShape(), // input shape
@@ -72,11 +74,14 @@ func train(train, test dataSet) {
 		layer.Stride{Y: 1, X: 1},                         // stride
 		initializer)
 	conv2.SetName("conv2")
+	// output: (100, 14*14*16) => (100, 3136)
 
 	pool2 := layer.NewMaxPool(
 		conv2.OutputShape(), // input shape
 		layer.Kernel{M: 2, N: 2, InChan: 16, OutChan: 16}, // kernel shape
 		layer.Stride{Y: 2, X: 2})                          // stride
+	pool2.SetName("pool2")
+	// output: (100, 7*7*16) => (100, 784)
 
 	var relus []layer.Layer
 	for i := 0; i < 4; i++ {

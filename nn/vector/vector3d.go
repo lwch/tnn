@@ -94,7 +94,7 @@ func (v *Vector3D) Pad(m, n int) {
 	v.cols += n
 }
 
-func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN int) *mat.Dense {
+func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN, channelSize int) *mat.Dense {
 	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
 	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
 	data := make([]float64, v.Size()*int(rows)*int(cols)*kernelM*kernelN)
@@ -127,7 +127,7 @@ func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN int) *mat.Dense {
 		}
 	}
 	wg.Wait()
-	return mat.NewDense(v.Size()*int(rows)*int(cols), kernelM*kernelN, data)
+	return mat.NewDense(v.Size()*int(rows)*int(cols)/channelSize, kernelM*kernelN*channelSize, data)
 }
 
 func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
@@ -135,11 +135,13 @@ func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
 	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
 	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
 	idx := 0
-	for i := 0; i < int(rows); i += strideM {
-		for j := 0; j < int(cols); j += strideN {
-			rect := v.data[0].(Slicer).Slice(i, i+a.rows, j, j+a.cols)
-			rect.(Adder).Add(rect, a.data[idx])
-			idx++
+	for batch := 0; batch < v.Size(); batch++ {
+		for i := 0; i < int(rows); i += strideM {
+			for j := 0; j < int(cols); j += strideN {
+				rect := v.data[batch].(Slicer).Slice(i, i+a.rows, j, j+a.cols)
+				rect.(Adder).Add(rect, a.data[idx])
+				idx++
+			}
 		}
 	}
 }
