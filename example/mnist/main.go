@@ -63,8 +63,8 @@ func train(train, test dataSet) {
 
 	var relus []layer.Layer
 	for i := 0; i < 4; i++ {
-		relu := activation.NewSigmoid()
-		relu.SetName(fmt.Sprintf("sigmoid%d", i+1))
+		relu := activation.NewReLU()
+		relu.SetName(fmt.Sprintf("relu%d", i+1))
 		relus = append(relus, relu)
 	}
 
