@@ -73,9 +73,7 @@ func (layer *base) Forward(input mat.Matrix) mat.Matrix {
 
 func (layer *base) Backward(grad mat.Matrix) mat.Matrix {
 	var ret mat.Dense
-	ret.Apply(func(i, j int, v float64) float64 {
-		return v * grad.At(i, j)
-	}, layer.derivative())
+	ret.MulElem(layer.derivative(), grad)
 	return &ret
 }
 

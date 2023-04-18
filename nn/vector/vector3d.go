@@ -74,7 +74,7 @@ func (v *Vector3D) ToMatrix() mat.Matrix {
 			}
 		}
 	}
-	return mat.NewVecDense(size, raw)
+	return mat.NewDense(v.Size(), v.rows*v.cols, raw)
 }
 
 func (v *Vector3D) Pad(m, n int) {

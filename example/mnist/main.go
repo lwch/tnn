@@ -61,16 +61,23 @@ func train(train, test dataSet) {
 		initializer)
 	conv2.SetName("conv2")
 
+	var relus []layer.Layer
+	for i := 0; i < 4; i++ {
+		relu := activation.NewReLU()
+		relu.SetName(fmt.Sprintf("relu%d", i+1))
+		relus = append(relus, relu)
+	}
+
 	var net net.Net
 	net.Set(
 		conv1,
-		activation.NewReLU(),
-		// conv2,
-		// activation.NewReLU(),
+		relus[0],
+		conv2,
+		relus[1],
 		layer.NewDense(120, initializer),
-		activation.NewReLU(),
+		relus[2],
 		layer.NewDense(84, initializer),
-		activation.NewReLU(),
+		relus[3],
 		layer.NewDense(10, initializer),
 	)
 	loss := loss.NewSoftmax(1)
