@@ -73,7 +73,7 @@ func train(train, test dataSet) {
 		activation.NewReLU(),
 		layer.NewDense(10, initializer),
 	)
-	loss := loss.NewMSE()
+	loss := loss.NewSoftmax(1)
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
