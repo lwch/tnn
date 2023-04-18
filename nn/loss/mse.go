@@ -1,8 +1,6 @@
 package loss
 
 import (
-	"math"
-
 	"github.com/lwch/tnn/nn/pb"
 	"gonum.org/v1/gonum/mat"
 )
@@ -19,14 +17,10 @@ func (*MSE) Name() string {
 
 func (*MSE) Loss(predict, targets mat.Matrix) float64 {
 	var tmp mat.Dense
-	var sum float64
-	tmp.Apply(func(i, j int, v float64) float64 {
-		diff := v - targets.At(i, j)
-		sum += math.Pow(diff, 2)
-		return 0
-	}, predict)
+	tmp.Sub(predict, targets)
+	tmp.Pow(&tmp, 2)
 	rows, _ := predict.Dims()
-	return 0.5 * sum / float64(rows)
+	return 0.5 * mat.Sum(&tmp) / float64(rows)
 }
 
 func (*MSE) Grad(predict, targets mat.Matrix) mat.Matrix {
