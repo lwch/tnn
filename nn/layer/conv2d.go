@@ -20,9 +20,6 @@ func NewConv2D(imgShape, kernel Shape, stride Stride,
 	layer.base = new("conv2d", map[string]Shape{
 		"w": {kernel.M * kernel.N, 1},
 		"b": {imgShape.M * imgShape.N, 1},
-		// "img":    {1, 2},
-		// "kernel": {1, 2},
-		// "stride": {1, 2},
 	}, init, layer.forward, layer.backward)
 	layer.imageShape = imgShape
 	layer.kernelShape = kernel
@@ -41,21 +38,6 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 		shape.M *= batch
 		layer.shapes["b"] = shape
 		layer.initParams()
-		buildShape := func(shape Shape) mat.Matrix {
-			var data [2]float64
-			data[0] = float64(shape.M)
-			data[1] = float64(shape.N)
-			return mat.NewVecDense(2, data[:])
-		}
-		buildStride := func(stride Stride) mat.Matrix {
-			var data [2]float64
-			data[0] = float64(stride.Y)
-			data[1] = float64(stride.X)
-			return mat.NewVecDense(2, data[:])
-		}
-		layer.params["img"] = buildShape(layer.imageShape)
-		layer.params["kernel"] = buildShape(layer.kernelShape)
-		layer.params["stride"] = buildStride(layer.stride)
 	}
 	pad := layer.pad(input)
 	layer.padedShape.M, layer.padedShape.N = pad.Dims()

@@ -44,3 +44,7 @@ type CloneFrom interface {
 type Raw interface {
 	RawMatrix() blas64.General
 }
+
+type Seter interface {
+	Set(i, j int, v float64)
+}

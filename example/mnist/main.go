@@ -54,12 +54,23 @@ func train(train, test dataSet) {
 		initializer)
 	conv1.SetName("conv1")
 
-	conv2 := layer.NewConv2D(
+	pool1 := layer.NewMaxPool(
 		conv1.OutputShape(),      // input shape
+		layer.Shape{M: 2, N: 2},  // kernel shape
+		layer.Stride{Y: 2, X: 2}) // stride
+	pool1.SetName("pool1")
+
+	conv2 := layer.NewConv2D(
+		pool1.OutputShape(),      // input shape
 		layer.Shape{M: 5, N: 5},  // kernel shape
 		layer.Stride{Y: 1, X: 1}, // stride
 		initializer)
 	conv2.SetName("conv2")
+
+	pool2 := layer.NewMaxPool(
+		conv2.OutputShape(),      // input shape
+		layer.Shape{M: 2, N: 2},  // kernel shape
+		layer.Stride{Y: 2, X: 2}) // stride
 
 	var relus []layer.Layer
 	for i := 0; i < 4; i++ {
@@ -72,8 +83,10 @@ func train(train, test dataSet) {
 	net.Set(
 		conv1,
 		relus[0],
+		pool1,
 		conv2,
 		relus[1],
+		pool2,
 		layer.NewDense(120, initializer),
 		relus[2],
 		layer.NewDense(84, initializer),
@@ -174,5 +187,5 @@ func accuracy(m *model.Model, data dataSet) float64 {
 		}
 	}
 	total += batchSize
-	return float64(correct) * 100 / float64(batchSize)
+	return float64(correct) * 100 / float64(total)
 }
