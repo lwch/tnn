@@ -17,6 +17,7 @@ type Layer interface {
 	Backward(grad mat.Matrix) mat.Matrix
 	Params() *params.Params
 	Context() params.Params
+	Args() map[string]mat.Matrix
 	Print()
 }
 
@@ -114,5 +115,10 @@ func (layer *base) loadParams(ps map[string]*pb.Dense) {
 }
 
 func (layer *base) Print() {
-	fmt.Println("  - Name:", layer.Name())
+	fmt.Println("  - Class:", layer.Class())
+	fmt.Println("    Name:", layer.Name())
+}
+
+func (layer *base) Args() map[string]mat.Matrix {
+	return nil
 }

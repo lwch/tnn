@@ -1,8 +1,11 @@
 package layer
 
 import (
+	"fmt"
+
 	"github.com/lwch/tnn/initializer"
 	"github.com/lwch/tnn/internal/utils"
+	"github.com/lwch/tnn/nn/pb"
 	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 )
@@ -24,6 +27,25 @@ func NewConv2D(imgShape, kernel Shape, stride Stride,
 	layer.imageShape = imgShape
 	layer.kernelShape = kernel
 	layer.stride = stride
+	return &layer
+}
+
+func LoadConv2D(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) Layer {
+	getShape := func(name string) Shape {
+		shape := args[name].GetData()
+		return Shape{M: int(shape[0]), N: int(shape[1])}
+	}
+	getStride := func(name string) Stride {
+		stride := args[name].GetData()
+		return Stride{X: int(stride[0]), Y: int(stride[1])}
+	}
+	var layer Conv2D
+	layer.imageShape = getShape("img.shape")
+	layer.kernelShape = getShape("kernel.shape")
+	layer.stride = getStride("stride")
+	layer.base = new("conv2d", nil, nil, layer.forward, layer.backward)
+	layer.name = name
+	layer.base.loadParams(params)
 	return &layer
 }
 
@@ -73,4 +95,28 @@ func (layer *Conv2D) pad(input mat.Matrix) *vector.Vector3D {
 	reshape := vector.ReshapeMatrix(input, layer.imageShape.M, layer.imageShape.N)
 	reshape.Pad(layer.kernelShape.M-1, layer.kernelShape.N-1)
 	return reshape
+}
+
+func (layer *Conv2D) Args() map[string]mat.Matrix {
+	buildShape := func(shape Shape) mat.Matrix {
+		return mat.NewVecDense(2, []float64{float64(shape.M), float64(shape.N)})
+	}
+	buildStride := func(stride Stride) mat.Matrix {
+		return mat.NewVecDense(2, []float64{float64(stride.X), float64(stride.Y)})
+	}
+	return map[string]mat.Matrix{
+		"img.shape":    buildShape(layer.imageShape),
+		"kernel.shape": buildShape(layer.kernelShape),
+		"stride":       buildStride(layer.stride),
+	}
+}
+
+func (layer *Conv2D) Print() {
+	layer.base.Print()
+	fmt.Println("    Image Shape:",
+		fmt.Sprintf("%dx%d", layer.imageShape.M, layer.imageShape.N))
+	fmt.Println("    Kernel Shape:",
+		fmt.Sprintf("%dx%d", layer.kernelShape.M, layer.kernelShape.N))
+	fmt.Println("    Stride:",
+		fmt.Sprintf("x=%d", layer.stride.X), fmt.Sprintf("y=%d", layer.stride.Y))
 }

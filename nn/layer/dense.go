@@ -22,7 +22,7 @@ func NewDense(output int, init initializer.Initializer) *Dense {
 	return &layer
 }
 
-func LoadDense(name string, params map[string]*pb.Dense) Layer {
+func LoadDense(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) Layer {
 	var layer Dense
 	layer.base = new("dense", nil, nil, layer.forward, layer.backward)
 	layer.name = name

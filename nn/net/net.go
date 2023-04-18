@@ -10,11 +10,13 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-type loadFunc func(string, map[string]*pb.Dense) layer.Layer
+type loadFunc func(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"dense":   layer.LoadDense,
 	"dropout": layer.LoadDropout,
+	"conv2d":  layer.LoadConv2D,
+	"maxpool": layer.LoadMaxPool,
 	// activation
 	"sigmoid":  activation.Load("sigmoid"),
 	"softplus": activation.Load("softplus"),
@@ -86,20 +88,27 @@ func (n *Net) SaveLayers() []*pb.Layer {
 		ret[i].Class = n.layers[i].Class()
 		ret[i].Name = n.layers[i].Name()
 		ps := n.layers[i].Params()
-		if ps == nil {
-			continue
+		if ps != nil && ps.Size() > 0 {
+			ret[i].Params = make(map[string]*pb.Dense)
+			ps.Range(func(key string, val mat.Matrix) {
+				var dense pb.Dense
+				rows, cols := val.Dims()
+				dense.Rows, dense.Cols = int32(rows), int32(cols)
+				dense.Data = mat.DenseCopyOf(val).RawMatrix().Data
+				ret[i].Params[key] = &dense
+			})
 		}
-		if ps.Size() == 0 {
-			continue
+		args := n.layers[i].Args()
+		if len(args) > 0 {
+			ret[i].Args = make(map[string]*pb.Dense)
+			for k, v := range args {
+				var dense pb.Dense
+				rows, cols := v.Dims()
+				dense.Rows, dense.Cols = int32(rows), int32(cols)
+				dense.Data = mat.DenseCopyOf(v).RawMatrix().Data
+				ret[i].Args[k] = &dense
+			}
 		}
-		ret[i].Params = make(map[string]*pb.Dense)
-		ps.Range(func(key string, val mat.Matrix) {
-			var dense pb.Dense
-			rows, cols := val.Dims()
-			dense.Rows, dense.Cols = int32(rows), int32(cols)
-			dense.Data = mat.DenseCopyOf(val).RawMatrix().Data
-			ret[i].Params[key] = &dense
-		})
 	}
 	return ret
 }
@@ -113,7 +122,7 @@ func (n *Net) LoadLayers(layers []*pb.Layer) {
 			panic("unsupported " + class + " layer")
 		}
 		name := layers[i].GetName()
-		n.layers[i] = fn(name, layers[i].GetParams())
+		n.layers[i] = fn(name, layers[i].GetParams(), layers[i].GetArgs())
 	}
 }
 

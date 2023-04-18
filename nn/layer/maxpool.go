@@ -1,8 +1,10 @@
 package layer
 
 import (
+	"fmt"
 	"math"
 
+	"github.com/lwch/tnn/nn/pb"
 	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 )
@@ -17,10 +19,35 @@ type MaxPool struct {
 
 func NewMaxPool(imgShape, kernel Shape, stride Stride) *MaxPool {
 	var layer MaxPool
-	layer.base = new("conv2d", nil, nil, layer.forward, layer.backward)
+	layer.base = new("maxpool", nil, nil, layer.forward, layer.backward)
 	layer.imageShape = imgShape
 	layer.kernelShape = kernel
 	layer.stride = stride
+	return &layer
+}
+
+func LoadMaxPool(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) Layer {
+	getShape := func(name string) Shape {
+		shape := args[name].GetData()
+		return Shape{M: int(shape[0]), N: int(shape[1])}
+	}
+	getStride := func(name string) Stride {
+		stride := args[name].GetData()
+		return Stride{X: int(stride[0]), Y: int(stride[1])}
+	}
+	var layer MaxPool
+	layer.imageShape = getShape("img.shape")
+	layer.kernelShape = getShape("kernel.shape")
+	layer.stride = getStride("stride")
+	layer.base = new("maxpool", nil, nil, layer.forward, layer.backward)
+	layer.name = name
+	layer.base.loadParams(params)
+	batch := int(args["batch"].GetData()[0])
+	layer.idx = make([][]int, batch)
+	outputShape := layer.OutputShape()
+	for i := 0; i < batch; i++ {
+		layer.idx[i] = make([]int, outputShape.M*outputShape.N)
+	}
 	return &layer
 }
 
@@ -113,4 +140,29 @@ func (layer *MaxPool) pad(input mat.Matrix) *vector.Vector3D {
 		reshape.Pad(padY, padX)
 	}
 	return reshape
+}
+
+func (layer *MaxPool) Args() map[string]mat.Matrix {
+	buildShape := func(shape Shape) mat.Matrix {
+		return mat.NewVecDense(2, []float64{float64(shape.M), float64(shape.N)})
+	}
+	buildStride := func(stride Stride) mat.Matrix {
+		return mat.NewVecDense(2, []float64{float64(stride.X), float64(stride.Y)})
+	}
+	return map[string]mat.Matrix{
+		"img.shape":    buildShape(layer.imageShape),
+		"kernel.shape": buildShape(layer.kernelShape),
+		"stride":       buildStride(layer.stride),
+		"batch":        mat.NewVecDense(1, []float64{float64(len(layer.idx))}),
+	}
+}
+
+func (layer *MaxPool) Print() {
+	layer.base.Print()
+	fmt.Println("    Image Shape:",
+		fmt.Sprintf("%dx%d", layer.imageShape.M, layer.imageShape.N))
+	fmt.Println("    Kernel Shape:",
+		fmt.Sprintf("%dx%d", layer.kernelShape.M, layer.kernelShape.N))
+	fmt.Println("    Stride:",
+		fmt.Sprintf("x=%d", layer.stride.X), fmt.Sprintf("y=%d", layer.stride.Y))
 }

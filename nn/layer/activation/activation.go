@@ -13,7 +13,7 @@ type Activation interface {
 	layer.Layer
 }
 
-func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
+func Load(class string) func(string, map[string]*pb.Dense, map[string]*pb.Dense) layer.Layer {
 	var fn func() Activation
 	switch class {
 	case "sigmoid":
@@ -27,7 +27,7 @@ func Load(class string) func(string, map[string]*pb.Dense) layer.Layer {
 	default:
 		return nil
 	}
-	return func(name string, _ map[string]*pb.Dense) layer.Layer {
+	return func(name string, _ map[string]*pb.Dense, _ map[string]*pb.Dense) layer.Layer {
 		return fn()
 	}
 }
@@ -87,4 +87,8 @@ func (*base) Context() params.Params {
 
 func (layer *base) Print() {
 	fmt.Println("  - Name:", layer.Name())
+}
+
+func (*base) Args() map[string]mat.Matrix {
+	return nil
 }
