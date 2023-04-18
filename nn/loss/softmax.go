@@ -23,23 +23,30 @@ func logSoftmax(data mat.Matrix, t float64) *mat.Dense {
 	var x mat.Dense
 	x.Scale(1/t, data)
 
-	rows, _ := data.Dims()
-	max := make([]float64, rows)
+	rows, cols := data.Dims()
+	max := mat.NewDense(rows, cols, nil)
 	for i := 0; i < rows; i++ {
-		max[i] = mat.Max(x.RowView(i))
+		value := mat.Max(x.RowView(i))
+		for j := 0; j < cols; j++ {
+			max.Set(i, j, value)
+		}
 	}
 	var exps mat.Dense
+	exps.Sub(&x, max)
 	exps.Apply(func(i, j int, v float64) float64 {
-		return math.Exp(v - max[i])
-	}, &x)
-	sum := make([]float64, rows)
+		return math.Exp(v)
+	}, &exps)
+	sum := mat.NewDense(rows, cols, nil)
 	for i := 0; i < rows; i++ {
-		sum[i] = mat.Sum(exps.RowView(i))
+		value := mat.Sum(exps.RowView(i))
+		value = math.Log(value)
+		for j := 0; j < cols; j++ {
+			sum.Set(i, j, value)
+		}
 	}
 	var ret mat.Dense
-	ret.Apply(func(i, j int, v float64) float64 {
-		return v - max[i] - math.Log(sum[i])
-	}, data)
+	ret.Sub(&x, max)
+	ret.Sub(&ret, sum)
 	return &ret
 }
 
@@ -47,35 +54,39 @@ func softmax(data mat.Matrix, t float64) *mat.Dense {
 	var x mat.Dense
 	x.Scale(1/t, data)
 
-	rows, _ := data.Dims()
-	max := make([]float64, rows)
+	rows, cols := data.Dims()
+	max := mat.NewDense(rows, cols, nil)
 	for i := 0; i < rows; i++ {
-		max[i] = mat.Max(x.RowView(i))
+		value := mat.Max(x.RowView(i))
+		for j := 0; j < cols; j++ {
+			max.Set(i, j, value)
+		}
 	}
 	var exps mat.Dense
+	exps.Sub(&x, max)
 	exps.Apply(func(i, j int, v float64) float64 {
-		return math.Exp(v - max[i])
-	}, &x)
-	sum := make([]float64, rows)
+		return math.Exp(v)
+	}, &exps)
+	sum := mat.NewDense(rows, cols, nil)
 	for i := 0; i < rows; i++ {
-		sum[i] = mat.Sum(exps.RowView(i))
+		value := 1 / mat.Sum(exps.RowView(i))
+		for j := 0; j < cols; j++ {
+			sum.Set(i, j, value)
+		}
 	}
 	var ret mat.Dense
-	ret.Apply(func(i, j int, v float64) float64 {
-		return v / sum[i]
-	}, &exps)
+	ret.MulElem(&exps, sum)
 	return &ret
 }
 
 func (loss *Softmax) Loss(predict, targets mat.Matrix) float64 {
 	softmax := logSoftmax(predict, loss.t)
-	softmax.Apply(func(i, j int, v float64) float64 {
-		return -v * targets.At(i, j)
-	}, softmax)
+	softmax.MulElem(softmax, targets)
+	softmax.Scale(-1, softmax)
 	rows, _ := softmax.Dims()
-	sum := mat.NewDense(rows, 1, nil)
+	sum := mat.NewVecDense(rows, nil)
 	for i := 0; i < rows; i++ {
-		sum.Set(i, 0, mat.Sum(softmax.RowView(i)))
+		sum.SetVec(i, mat.Sum(softmax.RowView(i)))
 	}
 	return mat.Sum(sum) / float64(rows)
 }
