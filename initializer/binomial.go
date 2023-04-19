@@ -26,3 +26,11 @@ func (rand *Binomial) RandN(n int) []float64 {
 	}
 	return ret
 }
+
+func (rand *Binomial) RandShape(m, n int) []float64 {
+	ret := make([]float64, m*n)
+	for i := 0; i < m*n; i++ {
+		ret[i] = rand.n.Rand()
+	}
+	return ret
+}

@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
@@ -72,11 +72,11 @@ func (m *Model) Save(dir string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(dir, data, 0644)
+	return os.WriteFile(dir, data, 0644)
 }
 
 func (m *Model) Load(dir string) error {
-	data, err := ioutil.ReadFile(dir)
+	data, err := os.ReadFile(dir)
 	if err != nil {
 		return err
 	}

@@ -25,7 +25,7 @@ import (
 
 const batchSize = 100
 const lr = 0.001
-const epoch = 10000
+const epoch = 10
 
 const dataDir = "./data"
 const modelFile = "mnist.model"
@@ -48,7 +48,7 @@ func main() {
 }
 
 func train(train, test *dataSet, rows, cols int) {
-	initializer := initializer.NewNormal(1, 0.5)
+	initializer := initializer.NewXavierUniform(1)
 
 	conv1 := layer.NewConv2D(
 		layer.Shape{M: rows, N: cols},                   // input shape
@@ -97,33 +97,33 @@ func train(train, test *dataSet, rows, cols int) {
 	output.SetName("output")
 
 	var net net.Net
-	// net.Set(
-	// 	conv1,
-	// 	relus[0],
-	// 	pool1,
-	// 	conv2,
-	// 	relus[1],
-	// 	pool2,
-	// 	dense1,
-	// 	relus[2],
-	// 	dense2,
-	// 	relus[3],
-	// 	output,
-	// )
 	net.Set(
-		layer.NewDense(200, initializer),
-		activation.NewReLU(),
-		layer.NewDense(100, initializer),
-		activation.NewReLU(),
-		layer.NewDense(70, initializer),
-		activation.NewReLU(),
-		layer.NewDense(30, initializer),
-		activation.NewReLU(),
+		conv1,
+		relus[0],
+		pool1,
+		conv2,
+		relus[1],
+		pool2,
+		dense1,
+		relus[2],
+		dense2,
+		relus[3],
 		output,
 	)
-	loss := loss.NewMSE()
-	optimizer := optimizer.NewSGD(lr, 0)
-	// optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
+	// net.Set(
+	// 	layer.NewDense(200, initializer),
+	// 	activation.NewReLU(),
+	// 	layer.NewDense(100, initializer),
+	// 	activation.NewReLU(),
+	// 	layer.NewDense(70, initializer),
+	// 	activation.NewReLU(),
+	// 	layer.NewDense(30, initializer),
+	// 	activation.NewReLU(),
+	// 	output,
+	// )
+	loss := loss.NewSoftmax(1)
+	// optimizer := optimizer.NewSGD(lr, 0)
+	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
 
 	var lossPoints, accPoints plotter.XYs
@@ -134,7 +134,7 @@ func train(train, test *dataSet, rows, cols int) {
 		cost := time.Since(begin)
 		loss := avgLoss(m, test)
 		acc := accuracy(m, test)
-		fmt.Printf("Epoch: %d, Cost: %s, Loss: %.05f, Accuracy: %.02f%%\n",
+		fmt.Printf("\rEpoch: %d, Cost: %s, Loss: %.05f, Accuracy: %.02f%%\n",
 			i, cost.String(), loss, acc)
 		lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
 		accPoints = append(accPoints, plotter.XY{X: float64(i), Y: acc})
@@ -180,21 +180,15 @@ func train(train, test *dataSet, rows, cols int) {
 
 func trainEpoch(m *model.Model, data *dataSet) {
 	data.Shuffle()
+	begin := time.Now()
 	for i := 0; i < data.Size(); i += batchSize {
 		if i+batchSize > data.Size() {
 			break
 		}
 		input, output := data.Batch(i, batchSize)
 		m.Train(input, output)
-		pred := m.Predict(input)
-		var correct int
-		for j := 0; j < batchSize; j++ {
-			if getLabel(pred.(vector.RowViewer).RowView(j)) ==
-				getLabel(output.RowView(j)) {
-				correct++
-			}
-		}
-		fmt.Printf("acc: %d%%\n", correct*100/batchSize)
+		fmt.Printf("train: %d/%d, cost: %s\r", i, data.Size(),
+			time.Since(begin).String())
 	}
 }
 
@@ -265,6 +259,7 @@ func avgLoss(m *model.Model, data *dataSet) float64 {
 func accuracy(m *model.Model, data *dataSet) float64 {
 	var correct int
 	var total int
+	begin := time.Now()
 	for i := 0; i < data.Size(); i += batchSize {
 		if i+batchSize > data.Size() {
 			break
@@ -279,6 +274,8 @@ func accuracy(m *model.Model, data *dataSet) float64 {
 			}
 		}
 		total += batchSize
+		fmt.Printf("predict: %d/%d, cost: %s, accuracy: %.02f%%\r", i, data.Size(),
+			time.Since(begin).String(), float64(correct)*100/float64(total))
 	}
 	return float64(correct) * 100 / float64(total)
 }

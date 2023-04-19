@@ -71,7 +71,7 @@ func (layer *base) initParams() {
 	}
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
-		layer.params[name] = mat.NewDense(shape.M, shape.N, layer.init.RandN(shape.M*shape.N))
+		layer.params[name] = mat.NewDense(shape.M, shape.N, layer.init.RandShape(shape.M, shape.N))
 		layer.context[name] = mat.NewDense(shape.M, shape.N, nil)
 	}
 	layer.hasInit = true

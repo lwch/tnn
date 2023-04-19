@@ -2,24 +2,24 @@ package initializer
 
 import "gonum.org/v1/gonum/stat/distuv"
 
-type Normal struct {
-	n distuv.Normal
+type Uniform struct {
+	n distuv.Uniform
 }
 
-func NewNormal(mean, stddev float64) *Normal {
-	return &Normal{
-		n: distuv.Normal{
-			Mu:    mean,
-			Sigma: stddev,
+func NewUniform(min, max float64) *Uniform {
+	return &Uniform{
+		n: distuv.Uniform{
+			Min: min,
+			Max: max,
 		},
 	}
 }
 
-func (rand *Normal) Rand() float64 {
+func (rand *Uniform) Rand() float64 {
 	return rand.n.Rand()
 }
 
-func (rand *Normal) RandN(n int) []float64 {
+func (rand *Uniform) RandN(n int) []float64 {
 	ret := make([]float64, n)
 	for i := 0; i < n; i++ {
 		ret[i] = rand.n.Rand()
@@ -27,7 +27,7 @@ func (rand *Normal) RandN(n int) []float64 {
 	return ret
 }
 
-func (rand *Normal) RandShape(m, n int) []float64 {
+func (rand *Uniform) RandShape(m, n int) []float64 {
 	ret := make([]float64, m*n)
 	for i := 0; i < m*n; i++ {
 		ret[i] = rand.n.Rand()
