@@ -158,7 +158,8 @@ func (ds dataSet) Size() int {
 }
 
 func (ds dataSet) Batch(n, cnt int) (*mat.Dense, *mat.Dense) {
-	var input, output []float64
+	input := make([]float64, 0, cnt*ds.rows*ds.cols)
+	output := make([]float64, 0, cnt*10)
 	for i := 0; i < cnt; i++ {
 		input = append(input, ds.images[n+i]...)
 		output = append(output, ds.labels[n+i]...)
