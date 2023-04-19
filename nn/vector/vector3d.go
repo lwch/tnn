@@ -97,37 +97,41 @@ func (v *Vector3D) Pad(m, n int) {
 func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN, channelSize int) *mat.Dense {
 	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
 	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
-	data := make([]float64, v.Size()*int(rows)*int(cols)*kernelM*kernelN)
+	batch := v.Size() / channelSize
+	ret := mat.NewDense(batch*int(rows)*int(cols), kernelM*kernelN*channelSize, nil)
 	copy := func(dst []float64, rect mat.Matrix) {
 		rows, cols := rect.Dims()
 		for i := 0; i < rows; i++ {
 			row := rect.(RowViewer).RowView(i)
-			for j := 0; j < cols; j++ {
-				dst[i*cols+j] = row.AtVec(j)
-			}
+			idx := i * cols
+			copy(dst[idx:idx+row.Len()], row.(*mat.VecDense).RawVector().Data)
 		}
 	}
-	idx := 0
 	var wg sync.WaitGroup
-	for i := 0; i < v.Size(); i++ {
+	for i := 0; i < batch; i++ {
+		offset := i * int(rows) * int(cols)
 		for j := 0; j < int(rows); j++ {
 			topLeftY := j * strideM
 			bottomRightY := topLeftY + kernelM
 			for k := 0; k < int(cols); k++ {
 				topLeftX := k * strideN
 				bottomRightX := topLeftX + kernelN
-				rect := v.data[i].(Slicer).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
-				wg.Add(1)
-				go func(idx int, rect mat.Matrix) {
-					defer wg.Done()
-					copy(data[idx:], rect)
-				}(idx, rect)
-				idx += kernelM * kernelN
+				row := ret.RowView(offset + j*int(cols) + k)
+				data := row.(*mat.VecDense).RawVector().Data
+				for channel := 0; channel < channelSize; channel++ {
+					rect := v.data[i*channelSize+channel].(Slicer).
+						Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
+					wg.Add(1)
+					go func(channel int, rect mat.Matrix) {
+						defer wg.Done()
+						copy(data[channel*kernelM*kernelN:], rect)
+					}(channel, rect)
+				}
 			}
 		}
 	}
 	wg.Wait()
-	return mat.NewDense(v.Size()*int(rows)*int(cols)/channelSize, kernelM*kernelN*channelSize, data)
+	return ret
 }
 
 func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
