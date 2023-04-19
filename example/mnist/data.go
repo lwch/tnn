@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/png"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -142,4 +143,15 @@ func loadData(dir string) dataSet {
 		ret.labels = append(ret.labels, v)
 	}
 	return ret
+}
+
+func (ds *dataSet) Shuffle() {
+	rand.Shuffle(len(ds.images), func(i, j int) {
+		ds.images[i], ds.images[j] = ds.images[j], ds.images[i]
+		ds.labels[i], ds.labels[j] = ds.labels[j], ds.labels[i]
+	})
+}
+
+func (ds dataSet) Size() int {
+	return len(ds.images)
 }

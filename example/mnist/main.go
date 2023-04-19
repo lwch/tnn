@@ -121,15 +121,15 @@ func train(train, test dataSet) {
 	var lossPoints, accPoints plotter.XYs
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
-		input, output := getBatch(train)
-		m.Train(input, output)
-		if i%100 == 0 {
-			loss := m.Loss(input, output)
-			acc := accuracy(m, test)
-			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
-			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
-			accPoints = append(accPoints, plotter.XY{X: float64(i), Y: acc})
-		}
+		begin := time.Now()
+		trainEpoch(m, train)
+		cost := time.Since(begin)
+		loss := avgLoss(m, test)
+		acc := accuracy(m, test)
+		fmt.Printf("Epoch: %d, Cost: %s, Loss: %.05f, Accuracy: %.02f%%\n",
+			i, cost.String(), loss, acc)
+		lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
+		accPoints = append(accPoints, plotter.XY{X: float64(i), Y: acc})
 	}
 	fmt.Printf("train cost: %s, param count: %d\n",
 		time.Since(begin).String(), m.ParamCount())
@@ -170,6 +170,17 @@ func train(train, test dataSet) {
 	runtime.Assert(m.Save(modelFile))
 }
 
+func trainEpoch(m *model.Model, data dataSet) {
+	data.Shuffle()
+	for i := 0; i < data.Size(); i += batchSize {
+		if i+batchSize > data.Size() {
+			break
+		}
+		input, output := getBatch(data, i)
+		m.Train(input, output)
+	}
+}
+
 func imageData(img image.Image) []float64 {
 	pt := img.Bounds().Max
 	rows, cols := pt.Y, pt.X
@@ -189,13 +200,12 @@ func onehot(label uint8) []float64 {
 	return ret
 }
 
-func getBatch(data dataSet) (*mat.Dense, *mat.Dense) {
+func getBatch(data dataSet, n int) (*mat.Dense, *mat.Dense) {
 	max := data.images[0].Bounds().Max
 	var input, output []float64
 	for i := 0; i < batchSize; i++ {
-		n := rand.Intn(len(data.images))
-		input = append(input, imageData(data.images[n])...)
-		output = append(output, onehot(data.labels[n])...)
+		input = append(input, imageData(data.images[n+i])...)
+		output = append(output, onehot(data.labels[n+i])...)
 	}
 	return mat.NewDense(batchSize, max.X*max.Y, input),
 		mat.NewDense(batchSize, 10, output)
@@ -205,7 +215,7 @@ func nextTrain(data dataSet) *model.Model {
 	var m model.Model
 	runtime.Assert(m.Load(modelFile))
 	for i := 0; i < 100; i++ {
-		input, output := getBatch(data)
+		input, output := getBatch(data, rand.Intn(data.Size()))
 		m.Train(input, output)
 		if i%10 == 0 {
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i,
@@ -251,18 +261,37 @@ func getLabel(cols mat.Vector) int {
 	return n
 }
 
+func avgLoss(m *model.Model, data dataSet) float64 {
+	var sum float64
+	var cnt float64
+	for i := 0; i < data.Size(); i += batchSize {
+		if i+batchSize > data.Size() {
+			break
+		}
+		input, output := getBatch(data, i)
+		sum += m.Loss(input, output)
+		cnt++
+	}
+	return sum / cnt
+}
+
 func accuracy(m *model.Model, data dataSet) float64 {
 	var correct int
 	var total int
-	input, output := getBatch(data)
-	pred := m.Predict(input)
-	for j := 0; j < batchSize; j++ {
-		a := getLabel(pred.(vector.RowViewer).RowView(j))
-		b := getLabel(output.RowView(j))
-		if a == b {
-			correct++
+	for i := 0; i < data.Size(); i += batchSize {
+		if i+batchSize > data.Size() {
+			break
 		}
+		input, output := getBatch(data, i)
+		pred := m.Predict(input)
+		for j := 0; j < batchSize; j++ {
+			a := getLabel(pred.(vector.RowViewer).RowView(j))
+			b := getLabel(output.RowView(j))
+			if a == b {
+				correct++
+			}
+		}
+		total += batchSize
 	}
-	total += batchSize
 	return float64(correct) * 100 / float64(total)
 }
