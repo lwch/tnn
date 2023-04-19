@@ -175,6 +175,15 @@ func trainEpoch(m *model.Model, data *dataSet) {
 		}
 		input, output := data.Batch(i, batchSize)
 		m.Train(input, output)
+		pred := m.Predict(input)
+		var correct int
+		for j := 0; j < batchSize; j++ {
+			if getLabel(pred.(vector.RowViewer).RowView(j)) ==
+				getLabel(output.RowView(j)) {
+				correct++
+			}
+		}
+		fmt.Printf("acc: %d\n", correct*100/batchSize)
 	}
 }
 
