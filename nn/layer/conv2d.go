@@ -90,7 +90,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 
 	var ret mat.Dense
 	w := layer.params["w"]
-	ret.Mul(flatGrad, w.T())
+	ret.Mul(flatGrad, utils.ReshapeCols(w, layer.kernel.OutChan).T())
 	ret3D := vector.ReshapeMatrix(&ret, layer.kernel.M, layer.kernel.N)
 
 	tmp := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
