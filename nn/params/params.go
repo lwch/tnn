@@ -33,12 +33,6 @@ func (params Params) Add(grads *Params) {
 	}
 }
 
-func (params *Params) Apply(fn func(i, j int, v float64) float64) {
-	for _, grad := range *params {
-		grad.(vector.Applyer).Apply(fn, grad)
-	}
-}
-
 func (params Params) Range(fn func(name string, dense mat.Matrix)) {
 	for name, dense := range params {
 		fn(name, dense)

@@ -9,6 +9,10 @@ type Adder interface {
 	Add(a, b mat.Matrix)
 }
 
+type Suber interface {
+	Sub(a, b mat.Matrix)
+}
+
 type Muler interface {
 	Mul(a, b mat.Matrix)
 }

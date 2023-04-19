@@ -5,6 +5,8 @@ import (
 
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/pb"
+	"github.com/lwch/tnn/nn/vector"
+	"gonum.org/v1/gonum/mat"
 )
 
 type Optimizer interface {
@@ -49,9 +51,11 @@ func Load(opt *pb.Optimizer) Optimizer {
 func (opt *base) Update(grads, params []*params.Params) {
 	grads = opt.compute(grads)
 	for i := 0; i < len(grads); i++ {
-		grads[i].Apply(func(i, j int, v float64) float64 {
-			return v - opt.lr*opt.weightDecay*v
-		})
+		for _, grad := range *grads[i] {
+			var tmp mat.Dense
+			tmp.Scale(opt.lr*opt.weightDecay, grad)
+			grad.(vector.Suber).Sub(grad, &tmp)
+		}
 	}
 	for i := 0; i < len(params); i++ {
 		if params[i] == nil {
