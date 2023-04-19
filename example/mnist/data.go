@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/lwch/runtime"
+	"gonum.org/v1/gonum/mat"
 )
 
 var trainData = "https://gist.github.com/lwch/e4b01d01ee3f2549fa32379fe2c6d79b/raw/0c4a44f202af9772b4ff61371a0145f3010bb741/train-images-idx3-ubyte"
@@ -154,4 +155,33 @@ func (ds *dataSet) Shuffle() {
 
 func (ds dataSet) Size() int {
 	return len(ds.images)
+}
+
+func (ds dataSet) Batch(n, cnt int) (*mat.Dense, *mat.Dense) {
+	var input, output []float64
+	for i := 0; i < cnt; i++ {
+		input = append(input, imageData(ds.images[n+i])...)
+		output = append(output, onehot(ds.labels[n+i])...)
+	}
+	return mat.NewDense(cnt, ds.rows*ds.cols, input),
+		mat.NewDense(cnt, 10, output)
+}
+
+func imageData(img image.Image) []float64 {
+	pt := img.Bounds().Max
+	rows, cols := pt.Y, pt.X
+	ret := make([]float64, rows*cols)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			r, _, _, _ := img.At(i, j).RGBA()
+			ret[i*cols+j] = float64(r) / 65535
+		}
+	}
+	return ret
+}
+
+func onehot(label uint8) []float64 {
+	ret := make([]float64, 10)
+	ret[label] = 1
+	return ret
 }

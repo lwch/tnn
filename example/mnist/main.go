@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"image"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -176,46 +175,16 @@ func trainEpoch(m *model.Model, data dataSet) {
 		if i+batchSize > data.Size() {
 			break
 		}
-		input, output := getBatch(data, i)
+		input, output := data.Batch(i, batchSize)
 		m.Train(input, output)
 	}
-}
-
-func imageData(img image.Image) []float64 {
-	pt := img.Bounds().Max
-	rows, cols := pt.Y, pt.X
-	ret := make([]float64, rows*cols)
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			r, _, _, _ := img.At(i, j).RGBA()
-			ret[i*cols+j] = float64(r) / 65535
-		}
-	}
-	return ret
-}
-
-func onehot(label uint8) []float64 {
-	ret := make([]float64, 10)
-	ret[label] = 1
-	return ret
-}
-
-func getBatch(data dataSet, n int) (*mat.Dense, *mat.Dense) {
-	max := data.images[0].Bounds().Max
-	var input, output []float64
-	for i := 0; i < batchSize; i++ {
-		input = append(input, imageData(data.images[n+i])...)
-		output = append(output, onehot(data.labels[n+i])...)
-	}
-	return mat.NewDense(batchSize, max.X*max.Y, input),
-		mat.NewDense(batchSize, 10, output)
 }
 
 func nextTrain(data dataSet) *model.Model {
 	var m model.Model
 	runtime.Assert(m.Load(modelFile))
 	for i := 0; i < 100; i++ {
-		input, output := getBatch(data, rand.Intn(data.Size()))
+		input, output := data.Batch(rand.Intn(data.Size()), batchSize)
 		m.Train(input, output)
 		if i%10 == 0 {
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i,
@@ -268,7 +237,7 @@ func avgLoss(m *model.Model, data dataSet) float64 {
 		if i+batchSize > data.Size() {
 			break
 		}
-		input, output := getBatch(data, i)
+		input, output := data.Batch(i, batchSize)
 		sum += m.Loss(input, output)
 		cnt++
 	}
@@ -282,7 +251,7 @@ func accuracy(m *model.Model, data dataSet) float64 {
 		if i+batchSize > data.Size() {
 			break
 		}
-		input, output := getBatch(data, i)
+		input, output := data.Batch(i, batchSize)
 		pred := m.Predict(input)
 		for j := 0; j < batchSize; j++ {
 			a := getLabel(pred.(vector.RowViewer).RowView(j))
