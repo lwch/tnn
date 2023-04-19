@@ -18,7 +18,7 @@ func (*MSE) Name() string {
 func (*MSE) Loss(predict, targets mat.Matrix) float64 {
 	var tmp mat.Dense
 	tmp.Sub(predict, targets)
-	tmp.Pow(&tmp, 2)
+	tmp.MulElem(&tmp, &tmp)
 	rows, _ := predict.Dims()
 	return 0.5 * mat.Sum(&tmp) / float64(rows)
 }
