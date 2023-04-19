@@ -66,7 +66,7 @@ func train(train, test *dataSet, rows, cols int) {
 	// output: (100, 14*14*6) => (100, 1176)
 
 	conv2 := layer.NewConv2D(
-		conv1.OutputShape(), // input shape
+		pool1.OutputShape(), // input shape
 		layer.Kernel{M: 5, N: 5, InChan: 6, OutChan: 16}, // kernel
 		layer.Stride{Y: 1, X: 1},                         // stride
 		initializer)
@@ -97,20 +97,31 @@ func train(train, test *dataSet, rows, cols int) {
 	output.SetName("output")
 
 	var net net.Net
+	// net.Set(
+	// 	conv1,
+	// 	relus[0],
+	// 	pool1,
+	// 	conv2,
+	// 	relus[1],
+	// 	pool2,
+	// 	dense1,
+	// 	relus[2],
+	// 	dense2,
+	// 	relus[3],
+	// 	output,
+	// )
 	net.Set(
-		conv1,
-		relus[0],
-		// pool1,
-		conv2,
-		relus[1],
-		// pool2,
-		dense1,
-		relus[2],
-		dense2,
-		relus[3],
+		layer.NewDense(200, initializer),
+		activation.NewReLU(),
+		layer.NewDense(100, initializer),
+		activation.NewReLU(),
+		layer.NewDense(70, initializer),
+		activation.NewReLU(),
+		layer.NewDense(30, initializer),
+		activation.NewReLU(),
 		output,
 	)
-	loss := loss.NewSoftmax(1)
+	loss := loss.NewMSE()
 	optimizer := optimizer.NewSGD(lr, 0)
 	// optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
@@ -183,7 +194,7 @@ func trainEpoch(m *model.Model, data *dataSet) {
 				correct++
 			}
 		}
-		fmt.Printf("acc: %d\n", correct*100/batchSize)
+		fmt.Printf("acc: %d%%\n", correct*100/batchSize)
 	}
 }
 
@@ -228,7 +239,7 @@ func getLabel(cols mat.Vector) int {
 	var n int
 	var score float64
 	for i := 0; i < cols.Len(); i++ {
-		v := cols.At(i, 0)
+		v := cols.AtVec(i)
 		if v > score {
 			n = i
 			score = v

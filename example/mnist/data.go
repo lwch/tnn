@@ -174,8 +174,8 @@ func imageData(img image.Image) []float64 {
 	ret := make([]float64, rows*cols)
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
-			r, _, _, _ := img.At(i, j).RGBA()
-			ret[i*cols+j] = float64(r) / 65535
+			r, _, _, _ := img.At(j, i).RGBA()
+			ret[i*cols+j] = float64(r&0xff) / 255
 		}
 	}
 	return ret
