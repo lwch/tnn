@@ -104,8 +104,8 @@ func downloadLabel(url, dir string) {
 
 type dataSet struct {
 	rows, cols int
-	images     []image.Image
-	labels     []uint8
+	images     [][]float64
+	labels     [][]float64
 }
 
 func loadData(dir string) dataSet {
@@ -137,11 +137,11 @@ func loadData(dir string) dataSet {
 		pt := img.Bounds().Max
 		ret.rows = pt.X
 		ret.cols = pt.Y
-		ret.images = append(ret.images, img)
+		ret.images = append(ret.images, imageData(img))
 		var v uint8
 		err = binary.Read(label, binary.BigEndian, &v)
 		runtime.Assert(err)
-		ret.labels = append(ret.labels, v)
+		ret.labels = append(ret.labels, onehot(v))
 	}
 	return ret
 }
@@ -160,8 +160,8 @@ func (ds dataSet) Size() int {
 func (ds dataSet) Batch(n, cnt int) (*mat.Dense, *mat.Dense) {
 	var input, output []float64
 	for i := 0; i < cnt; i++ {
-		input = append(input, imageData(ds.images[n+i])...)
-		output = append(output, onehot(ds.labels[n+i])...)
+		input = append(input, ds.images[n+i]...)
+		output = append(output, ds.labels[n+i]...)
 	}
 	return mat.NewDense(cnt, ds.rows*ds.cols, input),
 		mat.NewDense(cnt, 10, output)

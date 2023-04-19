@@ -40,20 +40,18 @@ func main() {
 	fmt.Println("loading test data...")
 	testData := loadData(filepath.Join(dataDir, "test"))
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
-		train(trainData, testData)
+		train(&trainData, &testData, testData.rows, testData.cols)
 		return
 	}
-	model := nextTrain(trainData)
-	predict(model, testData)
+	model := nextTrain(&trainData)
+	predict(model, &testData)
 }
 
-func train(train, test dataSet) {
+func train(train, test *dataSet, rows, cols int) {
 	initializer := initializer.NewNormal(1, 0.5)
 
-	pt := train.images[0].Bounds().Max
-
 	conv1 := layer.NewConv2D(
-		layer.Shape{M: pt.Y, N: pt.X},                   // input shape
+		layer.Shape{M: rows, N: cols},                   // input shape
 		layer.Kernel{M: 5, N: 5, InChan: 1, OutChan: 6}, // kernel
 		layer.Stride{Y: 1, X: 1},                        // stride
 		initializer)
@@ -169,7 +167,7 @@ func train(train, test dataSet) {
 	runtime.Assert(m.Save(modelFile))
 }
 
-func trainEpoch(m *model.Model, data dataSet) {
+func trainEpoch(m *model.Model, data *dataSet) {
 	data.Shuffle()
 	for i := 0; i < data.Size(); i += batchSize {
 		if i+batchSize > data.Size() {
@@ -180,34 +178,34 @@ func trainEpoch(m *model.Model, data dataSet) {
 	}
 }
 
-func nextTrain(data dataSet) *model.Model {
+func nextTrain(data *dataSet) *model.Model {
 	var m model.Model
 	runtime.Assert(m.Load(modelFile))
 	for i := 0; i < 100; i++ {
 		input, output := data.Batch(rand.Intn(data.Size()), batchSize)
+		begin := time.Now()
 		m.Train(input, output)
+		cost := time.Since(begin)
 		if i%10 == 0 {
-			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i,
-				m.Loss(input, output), accuracy(&m, data))
+			fmt.Printf("Epoch: %d, Cost: %s, Loss: %.05f, Accuracy: %.02f%%\n", i,
+				cost.String(), m.Loss(input, output), accuracy(&m, data))
 		}
 	}
 	return &m
 }
 
-func predict(model *model.Model, data dataSet) {
+func predict(model *model.Model, data *dataSet) {
 	var correct int
 	var total int
 	for i := 0; i < len(data.images); i += batchSize {
-		var inputData []float64
-		var labels []int
-		for i := 0; i < batchSize; i++ {
-			inputData = append(inputData, imageData(data.images[i])...)
-			labels = append(labels, int(data.labels[i]))
+		if i+batchSize > data.Size() {
+			break
 		}
-		input := mat.NewDense(batchSize, data.rows*data.cols, inputData)
+		input, output := data.Batch(i, batchSize)
 		pred := model.Predict(input)
 		for i := 0; i < batchSize; i++ {
-			if getLabel(pred.(vector.RowViewer).RowView(i)) == labels[i] {
+			if getLabel(pred.(vector.RowViewer).RowView(i)) ==
+				getLabel(output.RowView(i)) {
 				correct++
 			}
 		}
@@ -230,7 +228,7 @@ func getLabel(cols mat.Vector) int {
 	return n
 }
 
-func avgLoss(m *model.Model, data dataSet) float64 {
+func avgLoss(m *model.Model, data *dataSet) float64 {
 	var sum float64
 	var cnt float64
 	for i := 0; i < data.Size(); i += batchSize {
@@ -244,7 +242,7 @@ func avgLoss(m *model.Model, data dataSet) float64 {
 	return sum / cnt
 }
 
-func accuracy(m *model.Model, data dataSet) float64 {
+func accuracy(m *model.Model, data *dataSet) float64 {
 	var correct int
 	var total int
 	for i := 0; i < data.Size(); i += batchSize {
