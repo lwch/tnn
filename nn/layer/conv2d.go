@@ -72,7 +72,7 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	col := pad.Im2Col(layer.kernel.M, layer.kernel.N,
 		layer.stride.Y, layer.stride.X,
 		layer.kernel.InChan)
-	layer.input = *col
+	layer.input.CloneFrom(col)
 	var ret mat.Dense
 	ret.Mul(col, layer.params["w"])
 	ret.Add(&ret, layer.params["b"])
@@ -83,7 +83,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
-	rows, _ := grad.Dims()
+	batch, _ := grad.Dims()
 	flatGrad := utils.ReshapeCols(grad, layer.kernel.OutChan)
 	dw.(vector.Muler).Mul(layer.input.T(), flatGrad)
 	db.(vector.Copyer).Copy(flatGrad)
@@ -94,10 +94,10 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	ret.Mul(tGrad, w.T())
 	ret3D := vector.ReshapeMatrix(&ret, layer.kernel.M, layer.kernel.N)
 
-	tmp := vector.NewVector3D(rows*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
+	tmp := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	tmp.ConvAdd(ret3D, layer.stride.Y, layer.stride.X)
 	cuted := tmp.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
-	return utils.ReshapeRows(cuted, rows)
+	return utils.ReshapeRows(cuted, batch)
 }
 
 func (layer *Conv2D) pad(input mat.Matrix) *vector.Vector3D {
