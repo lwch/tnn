@@ -34,11 +34,11 @@ const modelDir = "./model"
 
 func main() {
 	pred := flag.String("predict", "", "predict image")
-	model := flag.String("model", "./model/latest.model", "model file")
+	modelFile := flag.String("model", "./model/latest.model", "model file")
 	flag.Parse()
 
 	if len(*pred) > 0 {
-		predictImage(*pred, *model)
+		predictImage(*pred, *modelFile)
 		return
 	}
 
