@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"image"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -31,6 +33,15 @@ const dataDir = "./data"
 const modelDir = "./model"
 
 func main() {
+	pred := flag.String("predict", "", "predict image")
+	model := flag.String("model", "./model/latest.model", "model file")
+	flag.Parse()
+
+	if len(*pred) > 0 {
+		predictImage(*pred, *model)
+		return
+	}
+
 	// go prof.CpuProfile("./cpu.pprof", 3*time.Minute)
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		download()
@@ -291,4 +302,24 @@ func getLatestModel() string {
 		return dir
 	}
 	return ""
+}
+
+func predictImage(dir, modelFile string) {
+	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
+		fmt.Println("model file not found")
+		return
+	}
+	var m model.Model
+	runtime.Assert(m.Load(modelFile))
+	m.Print()
+	f, err := os.Open(dir)
+	runtime.Assert(err)
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	runtime.Assert(err)
+	max := img.Bounds().Max
+	input := mat.NewDense(batchSize, max.X*max.Y, nil)
+	input.SetRow(0, imageData(img))
+	output := m.Predict(input)
+	fmt.Printf("Predict Output: %d\n", getLabel(output.(utils.DenseRowView).RowView(0)))
 }
