@@ -25,10 +25,10 @@ import (
 
 const batchSize = 100
 const lr = 0.001
-const epoch = 10
+const epoch = 100
 
 const dataDir = "./data"
-const modelFile = "mnist.model"
+const modelDir = "./model"
 
 func main() {
 	// go prof.CpuProfile("./cpu.pprof", 3*time.Minute)
@@ -39,7 +39,9 @@ func main() {
 	trainData := loadData(filepath.Join(dataDir, "train"))
 	fmt.Println("loading test data...")
 	testData := loadData(filepath.Join(dataDir, "test"))
-	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
+	os.MkdirAll(modelDir, 0755)
+	file := getLatestModel()
+	if len(file) == 0 {
 		train(&trainData, &testData, testData.rows, testData.cols)
 		return
 	}
@@ -56,14 +58,14 @@ func train(train, test *dataSet, rows, cols int) {
 		layer.Stride{Y: 1, X: 1},                        // stride
 		initializer)
 	conv1.SetName("conv1")
-	// output: (100, 28*28*6) => (100, 4704)
+	// output: (batch, 28*28*6) => (batch, 4704)
 
 	pool1 := layer.NewMaxPool(
 		conv1.OutputShape(),                 // input shape
 		layer.Kernel{M: 2, N: 2, InChan: 6}, // kernel
 		layer.Stride{Y: 2, X: 2})            // stride
 	pool1.SetName("pool1")
-	// output: (100, 14*14*6) => (100, 1176)
+	// output: (batch, 14*14*6) => (batch, 1176)
 
 	conv2 := layer.NewConv2D(
 		pool1.OutputShape(), // input shape
@@ -71,20 +73,20 @@ func train(train, test *dataSet, rows, cols int) {
 		layer.Stride{Y: 1, X: 1},                         // stride
 		initializer)
 	conv2.SetName("conv2")
-	// output: (100, 14*14*16) => (100, 3136)
+	// output: (batch, 14*14*16) => (batch, 3136)
 
 	pool2 := layer.NewMaxPool(
 		conv2.OutputShape(),                  // input shape
 		layer.Kernel{M: 2, N: 2, InChan: 16}, // kernel shape
 		layer.Stride{Y: 2, X: 2})             // stride
 	pool2.SetName("pool2")
-	// output: (100, 7*7*16) => (100, 784)
+	// output: (batch, 7*7*16) => (batch, 784)
 
-	var relus []layer.Layer
+	var sigmoids []layer.Layer
 	for i := 0; i < 4; i++ {
 		relu := activation.NewReLU()
-		relu.SetName(fmt.Sprintf("relu%d", i+1))
-		relus = append(relus, relu)
+		relu.SetName(fmt.Sprintf("sigmoid%d", i+1))
+		sigmoids = append(sigmoids, relu)
 	}
 
 	dense1 := layer.NewDense(120, initializer)
@@ -99,15 +101,15 @@ func train(train, test *dataSet, rows, cols int) {
 	var net net.Net
 	net.Set(
 		conv1,
-		relus[0],
+		sigmoids[0],
 		pool1,
 		conv2,
-		relus[1],
+		sigmoids[1],
 		pool2,
 		dense1,
-		relus[2],
+		sigmoids[2],
 		dense2,
-		relus[3],
+		sigmoids[3],
 		output,
 	)
 	// net.Set(
@@ -121,7 +123,7 @@ func train(train, test *dataSet, rows, cols int) {
 	// 	activation.NewReLU(),
 	// 	output,
 	// )
-	loss := loss.NewSoftmax(1)
+	loss := loss.NewMSE()
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
@@ -138,6 +140,8 @@ func train(train, test *dataSet, rows, cols int) {
 			i, cost.String(), loss, acc)
 		lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
 		accPoints = append(accPoints, plotter.XY{X: float64(i), Y: acc})
+		m.Save(filepath.Join(modelDir, fmt.Sprintf("%d.model", i)))
+		m.Save(filepath.Join(modelDir, "latest.model"))
 	}
 	fmt.Printf("train cost: %s, param count: %d\n",
 		time.Since(begin).String(), m.ParamCount())
@@ -174,8 +178,6 @@ func train(train, test *dataSet, rows, cols int) {
 	p.Legend.XOffs = -20
 	p.Legend.YOffs = 6 * vg.Inch
 	p.Save(8*vg.Inch, 8*vg.Inch, "mnist.png")
-
-	runtime.Assert(m.Save(modelFile))
 }
 
 func trainEpoch(m *model.Model, data *dataSet) {
@@ -194,7 +196,7 @@ func trainEpoch(m *model.Model, data *dataSet) {
 
 func nextTrain(data *dataSet) *model.Model {
 	var m model.Model
-	runtime.Assert(m.Load(modelFile))
+	runtime.Assert(m.Load(filepath.Join(modelDir, "latest.model")))
 	for i := 0; i < 100; i++ {
 		input, output := data.Batch(rand.Intn(data.Size()), batchSize)
 		begin := time.Now()
@@ -281,4 +283,12 @@ func accuracy(m *model.Model, data *dataSet) float64 {
 			time.Since(begin).String(), float64(correct)*100/float64(total))
 	}
 	return float64(correct) * 100 / float64(total)
+}
+
+func getLatestModel() string {
+	dir := filepath.Join(modelDir, "latest.model")
+	if _, err := os.Stat(dir); err == nil {
+		return dir
+	}
+	return ""
 }
