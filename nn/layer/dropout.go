@@ -46,9 +46,7 @@ func (layer *Dropout) forward(input mat.Matrix) mat.Matrix {
 		return layer.init.Rand() / layer.keepProb
 	}, m)
 	var ret mat.Dense
-	ret.Apply(func(i, j int, v float64) float64 {
-		return v * m.At(i, j)
-	}, input)
+	ret.MulElem(input, m)
 	return &ret
 }
 
@@ -56,9 +54,7 @@ func (layer *Dropout) backward(grad mat.Matrix) mat.Matrix {
 	dm := layer.context["m"]
 
 	var ret mat.Dense
-	ret.Apply(func(i, j int, v float64) float64 {
-		return v * dm.At(i, j)
-	}, grad)
+	ret.MulElem(grad, dm)
 	return &ret
 }
 
