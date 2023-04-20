@@ -59,6 +59,8 @@ func (layer *Conv2D) OutputShape() Shape {
 	return layer.imageShape
 }
 
+// input:  [batch, w*h*inChan]
+// output: [batch, w*h*outChan]
 func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	batch, _ := input.Dims()
 	if !layer.hasInit {
@@ -67,8 +69,33 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 		layer.shapes["b"] = shape
 		layer.initParams()
 	}
+	// pad right and bottom on each channel, output shape is (input.M+kernel.M-1, input.N+kernel.N-1)
+	// input: | 1 2 3 |   kernel: | 1 2 |
+	//  (3x3) | 4 5 6 |    (2x2)  | 3 4 |
+	//        | 7 8 9 |
+	// padding output: (4x4)
+	// | 1 2 3 0 |
+	// | 4 5 6 0 |
+	// | 7 8 9 0 |
+	// | 0 0 0 0 |
+	// this example is only for input channel is 1
 	pad := layer.pad(input)
 	layer.padedShape.M, layer.padedShape.N = pad.Dims()
+	// get convolution rectangle, output shape is (input.M*input.N, kernel.M*kernel.N*kernel.InChan)
+	// input: | 1 2 3 0 |   kernel: | 1 2 |
+	//  (4x4) | 4 5 6 0 |    (2x2)  | 3 4 |
+	//        | 7 8 9 0 |
+	//        | 0 0 0 0 |
+	// output list:
+	// | 1 2 |  | 2 3 |  | 3 0 |
+	// | 3 4 |  | 5 6 |  | 6 0 |
+	//
+	// | 4 5 |  | 5 6 |  | 6 0 |
+	// | 7 8 |  | 8 9 |  | 9 0 |
+	//
+	// | 7 8 |  | 8 9 |  | 9 0 |
+	// | 0 0 |  | 0 0 |  | 0 0 |
+	// this example is only for input channel is 1, stride is (1, 1)
 	col := pad.Im2Col(layer.kernel.M, layer.kernel.N,
 		layer.stride.Y, layer.stride.X,
 		layer.kernel.InChan)
@@ -83,6 +110,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
+	// same as dense layer
 	batch, _ := grad.Dims()
 	flatGrad := utils.ReshapeCols(grad, layer.kernel.OutChan)
 	dw.(utils.DenseMul).Mul(layer.input.T(), flatGrad)
@@ -93,8 +121,10 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	ret.Mul(flatGrad, utils.ReshapeCols(w, layer.kernel.OutChan).T())
 	ret3D := vector.ReshapeMatrix(&ret, layer.kernel.M, layer.kernel.N)
 
+	// the output shape is same of input shape
 	tmp := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	tmp.ConvAdd(ret3D, layer.stride.Y, layer.stride.X)
+	// cut the padding
 	cuted := tmp.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
 	return utils.ReshapeRows(cuted, batch)
 }

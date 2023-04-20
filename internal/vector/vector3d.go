@@ -81,6 +81,7 @@ func (v *Vector3D) ToMatrix() mat.Matrix {
 	return mat.NewDense(v.BatchSize(), v.rows*v.cols, raw)
 }
 
+// Pad padding matrix on right and bottom
 func (v *Vector3D) Pad(m, n int) {
 	for i := 0; i < v.BatchSize(); i++ {
 		dense := mat.NewDense(v.rows+m, v.cols+n, nil)
@@ -96,6 +97,7 @@ func (v *Vector3D) Pad(m, n int) {
 	v.cols += n
 }
 
+// Im2Col get convolution matrix, output shape is (batch * conved.rows * conved.cols, kernelM * kernelN * channelSize)
 func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN, channelSize int) *mat.Dense {
 	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
 	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
@@ -136,6 +138,7 @@ func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN, channelSize int) *
 	return ret
 }
 
+// ConvAdd add gradient to each channel
 func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
 	kernelM, kernelN := a.Dims()
 	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
@@ -152,6 +155,7 @@ func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
 	}
 }
 
+// Cut cut matrix to (rows, cols)
 func (v *Vector3D) Cut(rows, cols int) *Vector3D {
 	var ret Vector3D
 	ret.rows = rows
