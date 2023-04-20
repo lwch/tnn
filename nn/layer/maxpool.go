@@ -190,8 +190,7 @@ func (layer *MaxPool) Print() {
 		fmt.Sprintf("%dx%d", layer.imageShape.M, layer.imageShape.N))
 	fmt.Println("    Kernel:",
 		fmt.Sprintf("%dx%d", layer.kernel.M, layer.kernel.N),
-		fmt.Sprintf("input_channel=%d", layer.kernel.InChan),
-		fmt.Sprintf("output_channel=%d", layer.kernel.OutChan))
+		fmt.Sprintf("channel=%d", layer.kernel.InChan))
 	fmt.Println("    Stride:",
 		fmt.Sprintf("x=%d", layer.stride.X), fmt.Sprintf("y=%d", layer.stride.Y))
 }
