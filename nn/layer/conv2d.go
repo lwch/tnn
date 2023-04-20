@@ -23,7 +23,7 @@ func NewConv2D(imgShape Shape, kernel Kernel, stride Stride,
 	var layer Conv2D
 	layer.base = new("conv2d", map[string]Shape{
 		"w": {kernel.M * kernel.N * kernel.InChan, kernel.OutChan},
-		"b": {imgShape.M * imgShape.N, kernel.OutChan},
+		"b": {1, kernel.OutChan},
 	}, init, layer.forward, layer.backward)
 	layer.imageShape = imgShape
 	layer.kernel = kernel
@@ -64,9 +64,6 @@ func (layer *Conv2D) OutputShape() Shape {
 func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	batch, _ := input.Dims()
 	if !layer.hasInit {
-		shape := layer.shapes["b"]
-		shape.M *= batch
-		layer.shapes["b"] = shape
 		layer.initParams()
 	}
 	// pad right and bottom on each channel, output shape is (input.M+kernel.M-1, input.N+kernel.N-1)
@@ -102,7 +99,12 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	layer.input.CloneFrom(col)
 	var ret mat.Dense
 	ret.Mul(col, layer.params["w"])
-	ret.Add(&ret, layer.params["b"])
+	b := layer.params["b"].(utils.DenseRowView).RowView(0)
+	rows, _ := ret.Dims()
+	for i := 0; i < rows; i++ {
+		row := ret.RowView(i)
+		row.(utils.AddVec).AddVec(row, b)
+	}
 	return utils.ReshapeRows(&ret, batch)
 }
 
@@ -114,7 +116,11 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	batch, _ := grad.Dims()
 	flatGrad := utils.ReshapeCols(grad, layer.kernel.OutChan)
 	dw.(utils.DenseMul).Mul(layer.input.T(), flatGrad)
-	db.(utils.DenseCopy).Copy(flatGrad)
+	db0 := db.(utils.DenseRowView).RowView(0)
+	rows, _ := flatGrad.Dims()
+	for i := 0; i < rows; i++ {
+		db0.(utils.AddVec).AddVec(db0, flatGrad.RowView(i))
+	}
 
 	var ret mat.Dense
 	w := layer.params["w"]

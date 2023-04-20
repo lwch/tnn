@@ -41,3 +41,8 @@ type DenseSlice interface {
 type DenseSet interface {
 	Set(i, j int, v float64)
 }
+
+// vector
+type AddVec interface {
+	AddVec(a, b mat.Vector)
+}

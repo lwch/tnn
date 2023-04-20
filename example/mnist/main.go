@@ -27,7 +27,7 @@ import (
 
 const batchSize = 100
 const lr = 0.001
-const epoch = 100
+const epoch = 10
 
 const dataDir = "./data"
 const modelDir = "./model"
