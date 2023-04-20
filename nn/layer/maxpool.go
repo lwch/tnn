@@ -177,10 +177,10 @@ func (layer *MaxPool) Args() map[string]mat.Matrix {
 		return mat.NewVecDense(2, []float64{float64(stride.X), float64(stride.Y)})
 	}
 	return map[string]mat.Matrix{
-		"img.shape":    buildShape(layer.imageShape),
-		"kernel.shape": buildKernel(layer.kernel),
-		"stride":       buildStride(layer.stride),
-		"batch":        mat.NewVecDense(1, []float64{float64(len(layer.idx))}),
+		"img.shape": buildShape(layer.imageShape),
+		"kernel":    buildKernel(layer.kernel),
+		"stride":    buildStride(layer.stride),
+		"batch":     mat.NewVecDense(1, []float64{float64(len(layer.idx))}),
 	}
 }
 
