@@ -322,5 +322,11 @@ func predictImage(dir, modelFile string) {
 	input := mat.NewDense(batchSize, max.X*max.Y, nil)
 	input.SetRow(0, imageData(img))
 	output := m.Predict(input)
-	fmt.Printf("Predict Output: %d\n", getLabel(output.(utils.DenseRowView).RowView(0)))
+	fmt.Println("==================================")
+	fmt.Println("Predict:")
+	v := output.(utils.DenseRowView).RowView(0)
+	for i := 0; i < v.Len(); i++ {
+		fmt.Printf("%d: %.05f\n", i, v.AtVec(i))
+	}
+	fmt.Printf("Result: %d\n", getLabel(output.(utils.DenseRowView).RowView(0)))
 }
