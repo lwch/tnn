@@ -245,6 +245,7 @@ func getLabel(cols mat.Vector) int {
 func avgLoss(m *model.Model, data *dataSet) float64 {
 	var sum float64
 	var cnt float64
+	begin := time.Now()
 	for i := 0; i < data.Size(); i += batchSize {
 		if i+batchSize > data.Size() {
 			break
@@ -252,6 +253,8 @@ func avgLoss(m *model.Model, data *dataSet) float64 {
 		input, output := data.Batch(i, batchSize)
 		sum += m.Loss(input, output)
 		cnt++
+		fmt.Printf("loss: %d/%d, cost: %s, loss: %.05f\r", i, data.Size(),
+			time.Since(begin).String(), sum/cnt)
 	}
 	return sum / cnt
 }
