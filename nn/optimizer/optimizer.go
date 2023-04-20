@@ -3,9 +3,9 @@ package optimizer
 import (
 	"fmt"
 
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/nn/params"
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -54,7 +54,7 @@ func (opt *base) Update(grads, params []*params.Params) {
 		for _, grad := range *grads[i] {
 			var tmp mat.Dense
 			tmp.Scale(opt.lr*opt.weightDecay, grad)
-			grad.(vector.Suber).Sub(grad, &tmp)
+			grad.(utils.DenseSub).Sub(grad, &tmp)
 		}
 	}
 	for i := 0; i < len(params); i++ {

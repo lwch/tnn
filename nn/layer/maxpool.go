@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
+	"github.com/lwch/tnn/internal/vector"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -114,7 +114,7 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 			for k := 0; k < outputShape.N; k++ {
 				topLeftX := k * layer.stride.X
 				bottomRightX := topLeftX + layer.kernel.N
-				rect := img.(vector.Slicer).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
+				rect := img.(utils.DenseSlice).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
 				var value float64
 				value, layer.idx[int(batchID)][layerID][idx] = maxFunc(rect)
 				ret.Set(int(batchID), idx, value)
@@ -131,7 +131,7 @@ func (layer *MaxPool) backward(grad mat.Matrix) mat.Matrix {
 	ret := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	outputShape := layer.OutputShape()
 	for i := 0; i < batch; i++ {
-		rv := grad.(vector.RowViewer).RowView(i)
+		rv := grad.(utils.DenseRowView).RowView(i)
 		var gradIdx int
 		for layerID := 0; layerID < layer.kernel.InChan; layerID++ {
 			img := ret.Get(i*layer.kernel.InChan + layerID)
@@ -145,7 +145,7 @@ func (layer *MaxPool) backward(grad mat.Matrix) mat.Matrix {
 					dy := math.Floor(float64(n) / float64(layer.kernel.N))
 					dx := n % layer.kernel.N
 					g += img.At(startY+int(dy), startX+dx)
-					img.(vector.Seter).Set(startY+int(dy), startX+dx, g)
+					img.(utils.DenseSet).Set(startY+int(dy), startX+dx, g)
 					idx++
 					gradIdx++
 				}

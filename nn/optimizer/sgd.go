@@ -1,9 +1,9 @@
 package optimizer
 
 import (
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/nn/params"
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
 )
 
 type SGD struct {
@@ -20,7 +20,7 @@ func (sgd *SGD) compute(grads []*params.Params) []*params.Params {
 	for i := 0; i < len(grads); i++ {
 		params := grads[i]
 		for _, grad := range *params {
-			grad.(vector.Scaler).Scale(-sgd.lr, grad)
+			grad.(utils.DenseScale).Scale(-sgd.lr, grad)
 		}
 	}
 	return grads

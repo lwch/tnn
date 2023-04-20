@@ -3,9 +3,9 @@ package layer
 import (
 	"fmt"
 
-	"github.com/lwch/tnn/initializer"
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/internal/utils"
+	"github.com/lwch/tnn/nn/initializer"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -50,8 +50,8 @@ func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
 	dw := layer.context["w"]
 	db := layer.context["b"]
 
-	dw.(vector.Muler).Mul(layer.input.T(), grad)
-	db.(vector.Copyer).Copy(grad)
+	dw.(utils.DenseMul).Mul(layer.input.T(), grad)
+	db.(utils.DenseCopy).Copy(grad)
 
 	var ret mat.Dense
 	w := layer.params["w"]

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/lwch/runtime"
-	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"

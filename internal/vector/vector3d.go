@@ -4,6 +4,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/lwch/tnn/internal/utils"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -83,7 +84,7 @@ func (v *Vector3D) Pad(m, n int) {
 	for i := 0; i < v.Size(); i++ {
 		dense := mat.NewDense(v.rows+m, v.cols+n, nil)
 		for j := 0; j < v.rows; j++ {
-			row := v.data[i].(RowViewer).RowView(j)
+			row := v.data[i].(utils.DenseRowView).RowView(j)
 			for k := 0; k < row.Len(); k++ {
 				dense.Set(j, k, row.AtVec(k))
 			}
@@ -102,7 +103,7 @@ func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN, channelSize int) *
 	copy := func(dst []float64, rect mat.Matrix) {
 		rows, cols := rect.Dims()
 		for i := 0; i < rows; i++ {
-			row := rect.(RowViewer).RowView(i)
+			row := rect.(utils.DenseRowView).RowView(i)
 			idx := i * cols
 			copy(dst[idx:idx+row.Len()], row.(*mat.VecDense).RawVector().Data)
 		}
@@ -119,7 +120,7 @@ func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN, channelSize int) *
 				row := ret.RowView(offset + j*int(cols) + k)
 				data := row.(*mat.VecDense).RawVector().Data
 				for channel := 0; channel < channelSize; channel++ {
-					rect := v.data[i*channelSize+channel].(Slicer).
+					rect := v.data[i*channelSize+channel].(utils.DenseSlice).
 						Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
 					wg.Add(1)
 					go func(channel int, rect mat.Matrix) {
@@ -142,8 +143,8 @@ func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
 	for batch := 0; batch < v.Size(); batch++ {
 		for i := 0; i < int(rows); i += strideM {
 			for j := 0; j < int(cols); j += strideN {
-				rect := v.data[batch].(Slicer).Slice(i, i+a.rows, j, j+a.cols)
-				rect.(Adder).Add(rect, a.data[idx])
+				rect := v.data[batch].(utils.DenseSlice).Slice(i, i+a.rows, j, j+a.cols)
+				rect.(utils.DenseAdd).Add(rect, a.data[idx])
 				idx++
 			}
 		}
@@ -156,7 +157,7 @@ func (v *Vector3D) Cut(rows, cols int) *Vector3D {
 	ret.cols = cols
 	ret.data = make([]mat.Matrix, v.Size())
 	for i := 0; i < v.Size(); i++ {
-		rect := v.data[i].(Slicer).Slice(0, rows, 0, cols)
+		rect := v.data[i].(utils.DenseSlice).Slice(0, rows, 0, cols)
 		ret.data[i] = mat.DenseCopyOf(rect)
 	}
 	return &ret

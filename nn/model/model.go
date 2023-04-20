@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
-	"github.com/lwch/tnn/nn/pb"
 	"gonum.org/v1/gonum/mat"
 	"google.golang.org/protobuf/proto"
 )

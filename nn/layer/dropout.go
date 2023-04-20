@@ -1,9 +1,9 @@
 package layer
 
 import (
-	"github.com/lwch/tnn/initializer"
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/internal/utils"
+	"github.com/lwch/tnn/nn/initializer"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -42,7 +42,7 @@ func (layer *Dropout) forward(input mat.Matrix) mat.Matrix {
 		layer.initParams()
 	}
 	m := layer.context["m"]
-	m.(vector.Applyer).Apply(func(i, j int, v float64) float64 {
+	m.(utils.DenseApply).Apply(func(i, j int, v float64) float64 {
 		return layer.init.Rand() / layer.keepProb
 	}, m)
 	var ret mat.Dense

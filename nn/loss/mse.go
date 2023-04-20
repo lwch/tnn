@@ -1,7 +1,7 @@
 package loss
 
 import (
-	"github.com/lwch/tnn/nn/pb"
+	"github.com/lwch/tnn/internal/pb"
 	"gonum.org/v1/gonum/mat"
 )
 

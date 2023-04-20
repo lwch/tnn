@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/nn/params"
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -65,19 +65,19 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 			deltaV.Apply(func(i, j int, v float64) float64 {
 				return (1 - adam.beta2) * (math.Pow(v, 2) - paramV.At(i, j))
 			}, dense)
-			paramM.(vector.Adder).Add(paramM, &deltaM)
-			paramV.(vector.Adder).Add(paramV, &deltaV)
+			paramM.(utils.DenseAdd).Add(paramM, &deltaM)
+			paramV.(utils.DenseAdd).Add(paramV, &deltaV)
 
 			deltaM.Apply(func(i, j int, v float64) float64 {
 				return v / (1 - math.Pow(adam.beta1, float64(adam.t)))
 			}, paramM)
-			deltaV.Apply(func(i, j int, v float64) float64 {
-				return v / (1 - math.Pow(adam.beta2, float64(adam.t)))
+			var tmp mat.Dense
+			tmp.Apply(func(i, j int, v float64) float64 {
+				v = v / (1 - math.Pow(adam.beta2, float64(adam.t)))
+				return math.Pow(v, 0.5) + adam.epsilon
 			}, paramV)
-			dense.(vector.Applyer).Apply(func(i, j int, v float64) float64 {
-				return -adam.lr * deltaM.At(i, j) /
-					(math.Pow(deltaV.At(i, j), 0.5) + adam.epsilon)
-			}, dense)
+			dense.(utils.DenseScale).Scale(-adam.lr, &deltaM)
+			dense.(utils.DenseDivElem).DivElem(dense, &tmp)
 		})
 	}
 	return grads

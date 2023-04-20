@@ -3,10 +3,10 @@ package layer
 import (
 	"fmt"
 
-	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
+	"github.com/lwch/tnn/internal/vector"
+	"github.com/lwch/tnn/nn/initializer"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -85,8 +85,8 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 
 	batch, _ := grad.Dims()
 	flatGrad := utils.ReshapeCols(grad, layer.kernel.OutChan)
-	dw.(vector.Muler).Mul(layer.input.T(), flatGrad)
-	db.(vector.Copyer).Copy(flatGrad)
+	dw.(utils.DenseMul).Mul(layer.input.T(), flatGrad)
+	db.(utils.DenseCopy).Copy(flatGrad)
 
 	var ret mat.Dense
 	w := layer.params["w"]

@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/lwch/runtime"
-	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/internal/utils"
+	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
-	"github.com/lwch/tnn/nn/vector"
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -218,7 +218,7 @@ func predict(model *model.Model, data *dataSet) {
 		input, output := data.Batch(i, batchSize)
 		pred := model.Predict(input)
 		for i := 0; i < batchSize; i++ {
-			if getLabel(pred.(vector.RowViewer).RowView(i)) ==
+			if getLabel(pred.(utils.DenseRowView).RowView(i)) ==
 				getLabel(output.RowView(i)) {
 				correct++
 			}
@@ -267,7 +267,7 @@ func accuracy(m *model.Model, data *dataSet) float64 {
 		input, output := data.Batch(i, batchSize)
 		pred := m.Predict(input)
 		for j := 0; j < batchSize; j++ {
-			a := getLabel(pred.(vector.RowViewer).RowView(j))
+			a := getLabel(pred.(utils.DenseRowView).RowView(j))
 			b := getLabel(output.RowView(j))
 			if a == b {
 				correct++

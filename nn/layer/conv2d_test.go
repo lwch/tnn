@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/nn/initializer"
 	"gonum.org/v1/gonum/mat"
 )
 

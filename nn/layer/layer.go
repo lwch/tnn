@@ -3,9 +3,9 @@ package layer
 import (
 	"fmt"
 
-	"github.com/lwch/tnn/initializer"
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/params"
-	"github.com/lwch/tnn/nn/pb"
 	"gonum.org/v1/gonum/mat"
 )
 

@@ -3,10 +3,10 @@ package net
 import (
 	"fmt"
 
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/params"
-	"github.com/lwch/tnn/nn/pb"
 	"gonum.org/v1/gonum/mat"
 )
 

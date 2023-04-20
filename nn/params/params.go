@@ -3,8 +3,8 @@ package params
 import (
 	"fmt"
 
-	"github.com/lwch/tnn/nn/pb"
-	"github.com/lwch/tnn/nn/vector"
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/internal/utils"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -29,7 +29,7 @@ func (params Params) Add(grads *Params) {
 		if p == nil {
 			continue
 		}
-		p.(vector.Adder).Add(p, grad)
+		p.(utils.DenseAdd).Add(p, grad)
 	}
 }
 
