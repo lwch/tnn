@@ -2,6 +2,7 @@ package layer
 
 import (
 	"fmt"
+	"image"
 	"math"
 
 	"github.com/lwch/tnn/internal/pb"
@@ -16,7 +17,7 @@ type MaxPool struct {
 	imageShape Shape
 	kernel     Kernel
 	stride     Stride
-	idx        [][][]int
+	idx        [][][]image.Point // batch => channel => index
 }
 
 func NewMaxPool(imgShape Shape, kernel Kernel, stride Stride) *MaxPool {
@@ -50,12 +51,12 @@ func LoadMaxPool(name string, params map[string]*pb.Dense, args map[string]*pb.D
 	layer.name = name
 	layer.base.loadParams(params)
 	batch := int(args["batch"].GetData()[0])
-	layer.idx = make([][][]int, batch)
+	layer.idx = make([][][]image.Point, batch)
 	outputShape := layer.OutputShape()
 	for i := 0; i < batch; i++ {
-		layer.idx[i] = make([][]int, layer.kernel.InChan)
+		layer.idx[i] = make([][]image.Point, layer.kernel.InChan)
 		for j := 0; j < layer.kernel.InChan; j++ {
-			layer.idx[i][j] = make([]int, outputShape.M*outputShape.N)
+			layer.idx[i][j] = make([]image.Point, outputShape.M*outputShape.N)
 		}
 	}
 	return &layer
@@ -74,39 +75,36 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 	outputShape := layer.OutputShape()
 	if !layer.hasInit {
 		layer.initParams()
-		layer.idx = make([][][]int, batch)
+		layer.idx = make([][][]image.Point, batch)
 		for i := 0; i < batch; i++ {
-			layer.idx[i] = make([][]int, layer.kernel.InChan)
+			layer.idx[i] = make([][]image.Point, layer.kernel.InChan)
 			for j := 0; j < layer.kernel.InChan; j++ {
-				layer.idx[i][j] = make([]int, outputShape.M*outputShape.N)
+				layer.idx[i][j] = make([]image.Point, outputShape.M*outputShape.N)
 			}
 		}
 	}
 	pad := layer.pad(input)
 	layer.padedShape.M, layer.padedShape.N = pad.Dims()
-	maxFunc := func(m mat.Matrix) (float64, int) {
+	maxFunc := func(m mat.Matrix) (float64, image.Point) {
 		rows, cols := m.Dims()
 		max := math.Inf(-1)
-		idx := -1
+		var pt image.Point
 		for i := 0; i < rows; i++ {
 			for j := 0; j < cols; j++ {
 				v := m.At(i, j)
 				if v > max {
 					max = v
-					idx = i*cols + j
+					pt = image.Point{X: j, Y: i}
 				}
 			}
 		}
-		return max, idx
+		return max, pt
 	}
-	ret := mat.NewDense(batch, outputShape.M*outputShape.N*layer.kernel.InChan, nil)
-	var layerID int
+	ret := mat.NewDense(batch*layer.kernel.InChan, outputShape.M*outputShape.N, nil)
 	for i := 0; i < pad.BatchSize(); i++ {
-		batchID := math.Floor(float64(i) / float64(layer.kernel.InChan))
+		batchID := int(math.Floor(float64(i) / float64(layer.kernel.InChan)))
+		channelID := i % layer.kernel.InChan
 		img := pad.Get(i)
-		if i%layer.kernel.InChan == 0 {
-			layerID = 0
-		}
 		var idx int
 		for j := 0; j < outputShape.M; j++ {
 			topLeftY := j * layer.stride.Y
@@ -116,36 +114,36 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 				bottomRightX := topLeftX + layer.kernel.N
 				rect := img.(utils.DenseSlice).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
 				var value float64
-				value, layer.idx[int(batchID)][layerID][idx] = maxFunc(rect)
-				ret.Set(int(batchID), idx, value)
+				value, layer.idx[batchID][channelID][idx] = maxFunc(rect)
+				ret.Set(i, idx, value)
 				idx++
 			}
 		}
-		layerID++
+		channelID++
 	}
-	return ret
+	return utils.ReshapeRows(ret, batch)
 }
 
 func (layer *MaxPool) backward(grad mat.Matrix) mat.Matrix {
 	batch, _ := grad.Dims()
 	ret := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	outputShape := layer.OutputShape()
-	for i := 0; i < batch; i++ {
-		rv := grad.(utils.DenseRowView).RowView(i)
+	for batchID := 0; batchID < batch; batchID++ {
+		rv := grad.(utils.DenseRowView).RowView(batchID)
 		var gradIdx int
-		for layerID := 0; layerID < layer.kernel.InChan; layerID++ {
-			img := ret.Get(i*layer.kernel.InChan + layerID)
+		for channelID := 0; channelID < layer.kernel.InChan; channelID++ {
+			img := ret.Get(batchID*layer.kernel.InChan + channelID)
 			var idx int
 			for j := 0; j < outputShape.M; j++ {
 				startY := j * layer.stride.Y
 				for k := 0; k < outputShape.N; k++ {
 					startX := k * layer.stride.X
 					g := rv.AtVec(gradIdx)
-					n := layer.idx[i][layerID][idx]
-					dy := math.Floor(float64(n) / float64(layer.kernel.N))
-					dx := n % layer.kernel.N
-					g += img.At(startY+int(dy), startX+dx)
-					img.(utils.DenseSet).Set(startY+int(dy), startX+dx, g)
+					pt := layer.idx[batchID][channelID][idx]
+					dy := startY + pt.Y
+					dx := startX + pt.X
+					g += img.At(dy, dx)
+					img.(utils.DenseSet).Set(dy, dx, g)
 					idx++
 					gradIdx++
 				}

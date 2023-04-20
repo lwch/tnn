@@ -59,9 +59,9 @@ func train(train, test *dataSet, rows, cols int) {
 	// output: (100, 28*28*6) => (100, 4704)
 
 	pool1 := layer.NewMaxPool(
-		conv1.OutputShape(),                             // input shape
-		layer.Kernel{M: 2, N: 2, InChan: 6, OutChan: 6}, // kernel
-		layer.Stride{Y: 2, X: 2})                        // stride
+		conv1.OutputShape(),                 // input shape
+		layer.Kernel{M: 2, N: 2, InChan: 6}, // kernel
+		layer.Stride{Y: 2, X: 2})            // stride
 	pool1.SetName("pool1")
 	// output: (100, 14*14*6) => (100, 1176)
 
@@ -74,9 +74,9 @@ func train(train, test *dataSet, rows, cols int) {
 	// output: (100, 14*14*16) => (100, 3136)
 
 	pool2 := layer.NewMaxPool(
-		conv2.OutputShape(), // input shape
-		layer.Kernel{M: 2, N: 2, InChan: 16, OutChan: 16}, // kernel shape
-		layer.Stride{Y: 2, X: 2})                          // stride
+		conv2.OutputShape(),                  // input shape
+		layer.Kernel{M: 2, N: 2, InChan: 16}, // kernel shape
+		layer.Stride{Y: 2, X: 2})             // stride
 	pool2.SetName("pool2")
 	// output: (100, 7*7*16) => (100, 784)
 

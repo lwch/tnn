@@ -8,19 +8,18 @@ import (
 )
 
 func TestMaxPool(t *testing.T) {
-	input := mat.NewDense(1, 9, []float64{
+	input := mat.NewDense(1, 18, []float64{
 		1, 2, 3,
 		4, 5, 6,
 		7, 8, 9,
+
+		10, 11, 12,
+		13, 14, 15,
+		16, 17, 18,
 	})
-	output := mat.NewDense(1, 4, []float64{
-		1, 0,
-		0, 1,
-	})
-	layer := NewMaxPool(Shape{3, 3}, Kernel{2, 2, 1, 1}, Stride{2, 2})
+	layer := NewMaxPool(Shape{3, 3}, Kernel{2, 2, 2, 2}, Stride{2, 2})
 	pred := layer.Forward(input)
-	var grad mat.Dense
-	grad.Sub(output, pred)
-	g := layer.Backward(&grad)
+	fmt.Println(mat.Formatted(pred))
+	g := layer.Backward(pred)
 	fmt.Println(mat.Formatted(g))
 }
