@@ -21,7 +21,8 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-const lr = 0.001
+const lr = 1e-4
+const epoch = 40000
 const modelFile = "xor.model"
 
 var input = mat.NewDense(4, 2, []float64{
@@ -48,15 +49,15 @@ func main() {
 }
 
 func train() {
-	initializer := initializer.NewNormal(1, 0.5)
+	initializer := initializer.NewXavierUniform(1)
 
-	hidden1 := layer.NewDense(100, initializer)
+	hidden1 := layer.NewDense(16, initializer)
 	hidden1.SetName("hidden1")
-	hidden2 := layer.NewDense(70, initializer)
+	hidden2 := layer.NewDense(8, initializer)
 	hidden2.SetName("hidden2")
-	hidden3 := layer.NewDense(30, initializer)
+	hidden3 := layer.NewDense(4, initializer)
 	hidden3.SetName("hidden3")
-	hidden4 := layer.NewDense(10, initializer)
+	hidden4 := layer.NewDense(2, initializer)
 	hidden4.SetName("hidden4")
 	outputLayer := layer.NewDense(1, initializer)
 	outputLayer.SetName("output")
@@ -85,8 +86,7 @@ func train() {
 
 	var points plotter.XYs
 	begin := time.Now()
-	var i int
-	for {
+	for i := 0; i < epoch; i++ {
 		m.Train(input, output)
 		if i%100 == 0 {
 			acc := accuracy(m, input, output)
@@ -97,7 +97,6 @@ func train() {
 				break
 			}
 		}
-		i++
 	}
 	fmt.Printf("train cost: %s, param count: %d\n",
 		time.Since(begin).String(), m.ParamCount())

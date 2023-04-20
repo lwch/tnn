@@ -17,7 +17,7 @@ func NewDense(output int, init initializer.Initializer) *Dense {
 	var layer Dense
 	layer.base = new("dense", map[string]Shape{
 		"w": {NoneShape, output}, // rows reshape from input
-		"b": {NoneShape, output}, // rows reshape from input
+		"b": {1, output},         // rows reshape from input
 	}, init, layer.forward, layer.backward)
 	return &layer
 }
@@ -33,16 +33,18 @@ func LoadDense(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense)
 func (layer *Dense) forward(input mat.Matrix) mat.Matrix {
 	if !layer.hasInit {
 		shapeW := layer.shapes["w"]
-		shapeB := layer.shapes["b"]
 		_, shapeW.M = input.Dims()
-		shapeB.M, _ = input.Dims()
 		layer.shapes["w"] = shapeW
-		layer.shapes["b"] = shapeB
 		layer.initParams()
 	}
 	var ret mat.Dense
 	ret.Mul(input, layer.params["w"])
-	ret.Add(&ret, layer.params["b"])
+	b := layer.params["b"].(utils.DenseRowView).RowView(0)
+	rows, _ := ret.Dims()
+	for i := 0; i < rows; i++ {
+		row := ret.RowView(i)
+		row.(utils.AddVec).AddVec(row, b)
+	}
 	return &ret
 }
 
@@ -51,7 +53,11 @@ func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
 	db := layer.context["b"]
 
 	dw.(utils.DenseMul).Mul(layer.input.T(), grad)
-	db.(utils.DenseCopy).Copy(grad)
+	db0 := db.(utils.DenseRowView).RowView(0)
+	rows, _ := grad.Dims()
+	for i := 0; i < rows; i++ {
+		db0.(utils.AddVec).AddVec(db0, grad.(utils.DenseRowView).RowView(i))
+	}
 
 	var ret mat.Dense
 	w := layer.params["w"]
