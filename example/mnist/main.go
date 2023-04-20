@@ -138,6 +138,7 @@ func train(train, test *dataSet, rows, cols int) {
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
+	m.SetName("cnn")
 
 	var lossPoints, accPoints plotter.XYs
 	begin := time.Now()
