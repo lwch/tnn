@@ -101,7 +101,7 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 	}
 	ret := mat.NewDense(batch, outputShape.M*outputShape.N*layer.kernel.InChan, nil)
 	var layerID int
-	for i := 0; i < pad.Size(); i++ {
+	for i := 0; i < pad.BatchSize(); i++ {
 		batchID := math.Floor(float64(i) / float64(layer.kernel.InChan))
 		img := pad.Get(i)
 		if i%layer.kernel.InChan == 0 {

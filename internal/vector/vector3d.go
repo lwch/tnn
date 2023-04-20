@@ -47,6 +47,7 @@ func ReshapeVector(vec mat.Vector, rows, cols int) *Vector3D {
 }
 
 func ReshapeMatrix(d mat.Matrix, rows, cols int) *Vector3D {
+	// TODO: reuse input matrix
 	srcRows, srcCols := d.Dims()
 	data := make([]float64, srcRows*srcCols)
 	idx := 0
@@ -59,29 +60,29 @@ func ReshapeMatrix(d mat.Matrix, rows, cols int) *Vector3D {
 	return ReshapeVector(mat.NewVecDense(srcRows*srcCols, data), rows, cols)
 }
 
-func (v *Vector3D) Get(n int) mat.Matrix {
-	return v.data[n]
+func (v *Vector3D) Get(batch int) mat.Matrix {
+	return v.data[batch]
 }
 
-func (v *Vector3D) Size() int {
+func (v *Vector3D) BatchSize() int {
 	return len(v.data)
 }
 
 func (v *Vector3D) ToMatrix() mat.Matrix {
-	size := v.Size() * v.rows * v.cols
+	size := v.BatchSize() * v.rows * v.cols
 	raw := make([]float64, size)
-	for i := 0; i < v.Size(); i++ {
+	for i := 0; i < v.BatchSize(); i++ {
 		for j := 0; j < v.rows; j++ {
 			for k := 0; k < v.cols; k++ {
 				raw[i*v.rows*v.cols+j*v.cols+k] = v.data[i].At(j, k)
 			}
 		}
 	}
-	return mat.NewDense(v.Size(), v.rows*v.cols, raw)
+	return mat.NewDense(v.BatchSize(), v.rows*v.cols, raw)
 }
 
 func (v *Vector3D) Pad(m, n int) {
-	for i := 0; i < v.Size(); i++ {
+	for i := 0; i < v.BatchSize(); i++ {
 		dense := mat.NewDense(v.rows+m, v.cols+n, nil)
 		for j := 0; j < v.rows; j++ {
 			row := v.data[i].(utils.DenseRowView).RowView(j)
@@ -98,7 +99,7 @@ func (v *Vector3D) Pad(m, n int) {
 func (v *Vector3D) Im2Col(kernelM, kernelN, strideM, strideN, channelSize int) *mat.Dense {
 	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
 	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
-	batch := v.Size() / channelSize
+	batch := v.BatchSize() / channelSize
 	ret := mat.NewDense(batch*int(rows)*int(cols), kernelM*kernelN*channelSize, nil)
 	copy := func(dst []float64, rect mat.Matrix) {
 		rows, cols := rect.Dims()
@@ -140,7 +141,7 @@ func (v *Vector3D) ConvAdd(a *Vector3D, strideM, strideN int) {
 	rows := math.Ceil(float64(v.rows-kernelM)/float64(strideM)) + 1
 	cols := math.Ceil(float64(v.cols-kernelN)/float64(strideN)) + 1
 	idx := 0
-	for batch := 0; batch < v.Size(); batch++ {
+	for batch := 0; batch < v.BatchSize(); batch++ {
 		for i := 0; i < int(rows); i += strideM {
 			for j := 0; j < int(cols); j += strideN {
 				rect := v.data[batch].(utils.DenseSlice).Slice(i, i+a.rows, j, j+a.cols)
@@ -155,8 +156,8 @@ func (v *Vector3D) Cut(rows, cols int) *Vector3D {
 	var ret Vector3D
 	ret.rows = rows
 	ret.cols = cols
-	ret.data = make([]mat.Matrix, v.Size())
-	for i := 0; i < v.Size(); i++ {
+	ret.data = make([]mat.Matrix, v.BatchSize())
+	for i := 0; i < v.BatchSize(); i++ {
 		rect := v.data[i].(utils.DenseSlice).Slice(0, rows, 0, cols)
 		ret.data[i] = mat.DenseCopyOf(rect)
 	}
