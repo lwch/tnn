@@ -58,6 +58,7 @@ func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
 	for i := 0; i < rows; i++ {
 		db0.(utils.AddVec).AddVec(db0, grad.(utils.DenseRowView).RowView(i))
 	}
+	db0.(utils.ScaleVec).ScaleVec(1/float64(rows), db0)
 
 	var ret mat.Dense
 	w := layer.params["w"]

@@ -46,3 +46,7 @@ type DenseSet interface {
 type AddVec interface {
 	AddVec(a, b mat.Vector)
 }
+
+type ScaleVec interface {
+	ScaleVec(alpha float64, a mat.Vector)
+}
