@@ -29,6 +29,7 @@ func ReshapeVector(vec mat.Vector, rows, cols int) *Vector3D {
 	ret.cols = cols
 	size := rows * cols
 	data := vec.(utils.RawVector).RawVector().Data
+	ret.data = make([]mat.Matrix, 0, vec.Len()/size)
 	for i := 0; i < vec.Len(); i += size {
 		tmp := make([]float64, size)
 		copy(tmp, data[i:i+size])
