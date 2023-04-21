@@ -102,7 +102,7 @@ func train(train, test *dataSet, rows, cols int) {
 
 	var sigmoids []layer.Layer
 	for i := 0; i < 4; i++ {
-		relu := activation.NewReLU()
+		relu := activation.NewSigmoid()
 		relu.SetName(fmt.Sprintf("sigmoid%d", i+1))
 		sigmoids = append(sigmoids, relu)
 	}
@@ -141,7 +141,7 @@ func train(train, test *dataSet, rows, cols int) {
 	// 	activation.NewReLU(),
 	// 	output,
 	// )
-	loss := loss.NewMSE()
+	loss := loss.NewSoftmax(1)
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
