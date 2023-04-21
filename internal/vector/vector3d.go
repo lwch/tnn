@@ -38,17 +38,9 @@ func ReshapeVector(vec mat.Vector, rows, cols int) *Vector3D {
 }
 
 func ReshapeMatrix(d mat.Matrix, rows, cols int) *Vector3D {
-	// TODO: reuse input matrix
 	srcRows, srcCols := d.Dims()
-	data := make([]float64, srcRows*srcCols)
-	idx := 0
-	for i := 0; i < srcRows; i++ {
-		for j := 0; j < srcCols; j++ {
-			data[idx] = d.At(i, j)
-			idx++
-		}
-	}
-	return ReshapeVector(mat.NewVecDense(srcRows*srcCols, data), rows, cols)
+	return ReshapeVector(mat.NewVecDense(
+		srcRows*srcCols, d.(utils.RawMatrix).RawMatrix().Data), rows, cols)
 }
 
 func (v *Vector3D) Get(batch int) mat.Matrix {

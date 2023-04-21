@@ -5,6 +5,7 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// dense
 type DenseAdd interface {
 	Add(a, b mat.Matrix)
 }
@@ -43,6 +44,10 @@ type DenseSlice interface {
 
 type DenseSet interface {
 	Set(i, j int, v float64)
+}
+
+type RawMatrix interface {
+	RawMatrix() blas64.General
 }
 
 // vector
