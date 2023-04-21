@@ -275,20 +275,26 @@ func avgLoss(m *model.Model, data *dataSet) float64 {
 
 func accuracy(m *model.Model, data *dataSet) float64 {
 	var correct int
-	input, output := data.All()
+	var total int
 	begin := time.Now()
-	pred := m.Predict(input)
-	cost := time.Since(begin)
-	for j := 0; j < data.Size(); j++ {
-		a := getLabel(pred.(utils.DenseRowView).RowView(j))
-		b := getLabel(output.RowView(j))
-		if a == b {
-			correct++
+	for i := 0; i < data.Size(); i += batchSize {
+		if i+batchSize > data.Size() {
+			break
 		}
+		input, output := data.Batch(i, batchSize)
+		pred := m.Predict(input)
+		for j := 0; j < batchSize; j++ {
+			a := getLabel(pred.(utils.DenseRowView).RowView(j))
+			b := getLabel(output.RowView(j))
+			if a == b {
+				correct++
+			}
+		}
+		total += batchSize
+		fmt.Printf("predict: %d/%d, cost: %s, accuracy: %.02f%%\r", i, data.Size(),
+			time.Since(begin).String(), float64(correct)*100/float64(total))
 	}
-	fmt.Printf("predict cost: %s, accuracy: %.02f%%\r",
-		cost.String(), float64(correct)*100/float64(data.Size()))
-	return float64(correct) * 100 / float64(data.Size())
+	return float64(correct) * 100 / float64(total)
 }
 
 func getLatestModel() string {

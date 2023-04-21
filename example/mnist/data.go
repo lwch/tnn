@@ -168,17 +168,6 @@ func (ds *dataSet) Batch(n, cnt int) (*mat.Dense, *mat.Dense) {
 		mat.NewDense(cnt, 10, output)
 }
 
-func (ds *dataSet) All() (*mat.Dense, *mat.Dense) {
-	input := make([]float64, 0, ds.Size()*ds.rows*ds.cols)
-	output := make([]float64, 0, ds.Size()*10)
-	for i := 0; i < ds.Size(); i++ {
-		input = append(input, ds.images[i]...)
-		output = append(output, ds.labels[i]...)
-	}
-	return mat.NewDense(ds.Size(), ds.rows*ds.cols, input),
-		mat.NewDense(ds.Size(), 10, output)
-}
-
 func imageData(img image.Image) []float64 {
 	pt := img.Bounds().Max
 	rows, cols := pt.Y, pt.X
