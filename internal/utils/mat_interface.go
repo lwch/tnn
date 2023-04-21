@@ -1,6 +1,9 @@
 package utils
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"gonum.org/v1/gonum/blas/blas64"
+	"gonum.org/v1/gonum/mat"
+)
 
 type DenseAdd interface {
 	Add(a, b mat.Matrix)
@@ -49,4 +52,8 @@ type AddVec interface {
 
 type ScaleVec interface {
 	ScaleVec(alpha float64, a mat.Vector)
+}
+
+type RawVector interface {
+	RawVector() blas64.Vector
 }
