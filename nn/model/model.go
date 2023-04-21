@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
@@ -94,11 +95,15 @@ func (m *Model) Load(dir string) error {
 	return nil
 }
 
-func (m Model) Print() {
+func (m *Model) Print() {
 	fmt.Println("Model:", m.name)
 	fmt.Println("Train Count:", m.trainCount)
 	fmt.Println("Param Count:", m.ParamCount())
 	loss.Print(m.loss)
 	m.optimizer.Print()
 	m.net.Print()
+}
+
+func (m *Model) Layers() []layer.Layer {
+	return m.net.Layers()
 }

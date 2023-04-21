@@ -2,6 +2,7 @@ package layer
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
@@ -56,7 +57,23 @@ func LoadConv2D(name string, params map[string]*pb.Dense, args map[string]*pb.De
 }
 
 func (layer *Conv2D) OutputShape() Shape {
-	return layer.imageShape
+	dy := float64(layer.imageShape.M - layer.kernel.M)
+	dx := float64(layer.imageShape.N - layer.kernel.N)
+	y := math.Ceil(dy/float64(layer.stride.Y)) + 1
+	x := math.Ceil(dx/float64(layer.stride.X)) + 1
+	return Shape{int(y), int(x)}
+}
+
+func (layer *Conv2D) KernelShape() Shape {
+	return Shape{layer.kernel.M, layer.kernel.N}
+}
+
+func (layer *Conv2D) InputChan() int {
+	return layer.kernel.InChan
+}
+
+func (layer *Conv2D) OutputChan() int {
+	return layer.kernel.OutChan
 }
 
 // input:  [batch, w*h*inChan]
@@ -137,8 +154,12 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 }
 
 func (layer *Conv2D) pad(input mat.Matrix) *vector.Vector3D {
+	padY := layer.stride.Y - (layer.imageShape.M % layer.stride.Y)
+	padX := layer.stride.X - (layer.imageShape.N % layer.stride.X)
 	reshape := vector.ReshapeMatrix(input, layer.imageShape.M, layer.imageShape.N)
-	reshape.Pad(layer.kernel.M-1, layer.kernel.N-1)
+	if padY != layer.stride.Y || padX != layer.stride.X {
+		reshape.Pad(padY, padX)
+	}
 	return reshape
 }
 

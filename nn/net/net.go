@@ -136,3 +136,7 @@ func (n *Net) Print() {
 		n.layers[i].Print()
 	}
 }
+
+func (n *Net) Layers() []layer.Layer {
+	return n.layers
+}
