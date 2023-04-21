@@ -27,15 +27,16 @@ func ReshapeVector(vec mat.Vector, rows, cols int) *Vector3D {
 	var ret Vector3D
 	ret.rows = rows
 	ret.cols = cols
+	size := rows * cols
 	var i int
 	for {
 		if i >= vec.Len() {
 			break
 		}
-		tmp := make([]float64, rows*cols)
-		copy(tmp, vec.(utils.RawVector).RawVector().Data)
+		tmp := make([]float64, size)
+		copy(tmp, vec.(utils.RawVector).RawVector().Data[i:i+size])
 		ret.data = append(ret.data, mat.NewDense(rows, cols, tmp))
-		i += rows * cols
+		i += size
 	}
 	return &ret
 }
