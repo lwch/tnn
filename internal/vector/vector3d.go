@@ -69,16 +69,13 @@ func (v *Vector3D) BatchSize() int {
 }
 
 func (v *Vector3D) ToMatrix() mat.Matrix {
-	size := v.BatchSize() * v.rows * v.cols
-	raw := make([]float64, size)
+	raw := make([]float64, v.BatchSize()*v.rows*v.cols)
+	size := v.rows * v.cols
 	for i := 0; i < v.BatchSize(); i++ {
-		for j := 0; j < v.rows; j++ {
-			for k := 0; k < v.cols; k++ {
-				raw[i*v.rows*v.cols+j*v.cols+k] = v.data[i].At(j, k)
-			}
-		}
+		start := i * size
+		copy(raw[start:start+size], v.data[i].(*mat.Dense).RawMatrix().Data)
 	}
-	return mat.NewDense(v.BatchSize(), v.rows*v.cols, raw)
+	return mat.NewDense(v.BatchSize(), size, raw)
 }
 
 // Pad padding matrix on right and bottom
