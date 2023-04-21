@@ -257,12 +257,20 @@ func getLabel(cols mat.Vector) int {
 }
 
 func avgLoss(m *model.Model, data *dataSet) float64 {
+	var sum float64
+	var cnt float64
 	begin := time.Now()
-	input, output := data.All()
-	cost := time.Since(begin)
-	loss := m.Loss(input, output)
-	fmt.Printf("loss cost: %s, loss: %.05f\r", cost.String(), loss)
-	return loss
+	for i := 0; i < data.Size(); i += batchSize {
+		if i+batchSize > data.Size() {
+			break
+		}
+		input, output := data.Batch(i, batchSize)
+		sum += m.Loss(input, output)
+		cnt++
+		fmt.Printf("loss: %d/%d, cost: %s, loss: %.05f\r", i, data.Size(),
+			time.Since(begin).String(), sum/cnt)
+	}
+	return sum / cnt
 }
 
 func accuracy(m *model.Model, data *dataSet) float64 {
