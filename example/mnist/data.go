@@ -153,11 +153,11 @@ func (ds *dataSet) Shuffle() {
 	})
 }
 
-func (ds dataSet) Size() int {
+func (ds *dataSet) Size() int {
 	return len(ds.images)
 }
 
-func (ds dataSet) Batch(n, cnt int) (*mat.Dense, *mat.Dense) {
+func (ds *dataSet) Batch(n, cnt int) (*mat.Dense, *mat.Dense) {
 	input := make([]float64, 0, cnt*ds.rows*ds.cols)
 	output := make([]float64, 0, cnt*10)
 	for i := 0; i < cnt; i++ {
@@ -166,6 +166,17 @@ func (ds dataSet) Batch(n, cnt int) (*mat.Dense, *mat.Dense) {
 	}
 	return mat.NewDense(cnt, ds.rows*ds.cols, input),
 		mat.NewDense(cnt, 10, output)
+}
+
+func (ds *dataSet) All() (*mat.Dense, *mat.Dense) {
+	input := make([]float64, 0, ds.Size()*ds.rows*ds.cols)
+	output := make([]float64, 0, ds.Size()*10)
+	for i := 0; i < ds.Size(); i++ {
+		input = append(input, ds.images[i]...)
+		output = append(output, ds.labels[i]...)
+	}
+	return mat.NewDense(ds.Size(), ds.rows*ds.cols, input),
+		mat.NewDense(ds.Size(), 10, output)
 }
 
 func imageData(img image.Image) []float64 {

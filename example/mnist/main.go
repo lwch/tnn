@@ -257,44 +257,30 @@ func getLabel(cols mat.Vector) int {
 }
 
 func avgLoss(m *model.Model, data *dataSet) float64 {
-	var sum float64
-	var cnt float64
 	begin := time.Now()
-	for i := 0; i < data.Size(); i += batchSize {
-		if i+batchSize > data.Size() {
-			break
-		}
-		input, output := data.Batch(i, batchSize)
-		sum += m.Loss(input, output)
-		cnt++
-		fmt.Printf("loss: %d/%d, cost: %s, loss: %.05f\r", i, data.Size(),
-			time.Since(begin).String(), sum/cnt)
-	}
-	return sum / cnt
+	input, output := data.All()
+	cost := time.Since(begin)
+	loss := m.Loss(input, output)
+	fmt.Printf("loss cost: %s, loss: %.05f\r", cost.String(), loss)
+	return loss
 }
 
 func accuracy(m *model.Model, data *dataSet) float64 {
 	var correct int
-	var total int
+	input, output := data.All()
 	begin := time.Now()
-	for i := 0; i < data.Size(); i += batchSize {
-		if i+batchSize > data.Size() {
-			break
+	pred := m.Predict(input)
+	cost := time.Since(begin)
+	for j := 0; j < data.Size(); j++ {
+		a := getLabel(pred.(utils.DenseRowView).RowView(j))
+		b := getLabel(output.RowView(j))
+		if a == b {
+			correct++
 		}
-		input, output := data.Batch(i, batchSize)
-		pred := m.Predict(input)
-		for j := 0; j < batchSize; j++ {
-			a := getLabel(pred.(utils.DenseRowView).RowView(j))
-			b := getLabel(output.RowView(j))
-			if a == b {
-				correct++
-			}
-		}
-		total += batchSize
-		fmt.Printf("predict: %d/%d, cost: %s, accuracy: %.02f%%\r", i, data.Size(),
-			time.Since(begin).String(), float64(correct)*100/float64(total))
 	}
-	return float64(correct) * 100 / float64(total)
+	fmt.Printf("predict cost: %s, accuracy: %.02f%%\r",
+		cost.String(), float64(correct)*100/float64(data.Size()))
+	return float64(correct) * 100 / float64(data.Size())
 }
 
 func getLatestModel() string {
@@ -319,7 +305,7 @@ func predictImage(dir, modelFile string) {
 	img, _, err := image.Decode(f)
 	runtime.Assert(err)
 	max := img.Bounds().Max
-	input := mat.NewDense(batchSize, max.X*max.Y, nil)
+	input := mat.NewDense(1, max.X*max.Y, nil)
 	input.SetRow(0, imageData(img))
 	output := m.Predict(input)
 	fmt.Println("==================================")
