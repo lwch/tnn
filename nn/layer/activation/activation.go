@@ -86,7 +86,8 @@ func (*base) Context() params.Params {
 }
 
 func (layer *base) Print() {
-	fmt.Println("  - Name:", layer.Name())
+	fmt.Println("  - Class:", layer.Class())
+	fmt.Println("    Name:", layer.Name())
 }
 
 func (*base) Args() map[string]mat.Matrix {
