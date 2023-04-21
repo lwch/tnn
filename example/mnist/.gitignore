@@ -1,6 +1,5 @@
 /data
-/mnist.model
-/mnist.png
+/model
+/model.*
 /cpu.pprof
 /*.svg
-/model

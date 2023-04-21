@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"image/png"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -33,16 +35,21 @@ const dataDir = "./data"
 const modelDir = "./model"
 
 func main() {
+	// go prof.CpuProfile("./cpu.pprof", 3*time.Minute)
 	pred := flag.String("predict", "", "predict image")
 	modelFile := flag.String("model", "./model/latest.model", "model file")
+	exportConv := flag.Bool("export-conv", false, "export conv layers image")
 	flag.Parse()
 
 	if len(*pred) > 0 {
 		predictImage(*pred, *modelFile)
 		return
 	}
+	if *exportConv {
+		exportConvImages(*modelFile)
+		return
+	}
 
-	// go prof.CpuProfile("./cpu.pprof", 3*time.Minute)
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		download()
 	}
@@ -56,7 +63,7 @@ func main() {
 		train(&trainData, &testData, testData.rows, testData.cols)
 		return
 	}
-	model := nextTrain(&trainData)
+	model := nextTrain(&trainData, &testData)
 	predict(model, &testData)
 }
 
@@ -111,17 +118,17 @@ func train(train, test *dataSet, rows, cols int) {
 
 	var net net.Net
 	net.Set(
-		conv1,
-		sigmoids[0],
-		pool1,
-		conv2,
-		sigmoids[1],
-		pool2,
-		dense1,
-		sigmoids[2],
-		dense2,
-		sigmoids[3],
-		output,
+		conv1,       // output: (batch, 28*28*6) => (batch, 4704)
+		sigmoids[0], // output: (batch, 4704)
+		pool1,       // output: (batch, 14*14*6) => (batch, 1176)
+		conv2,       // output: (batch, 14*14*16) => (batch, 3136)
+		sigmoids[1], // output: (batch, 3136)
+		pool2,       // output: (batch, 7*7*16) => (batch, 784)
+		dense1,      // output: (batch, 120)
+		sigmoids[2], // output: (batch, 120)
+		dense2,      // output: (batch, 84)
+		sigmoids[3], // output: (batch, 84)
+		output,      // output: (batch, 10)
 	)
 	// net.Set(
 	// 	layer.NewDense(200, initializer),
@@ -206,17 +213,17 @@ func trainEpoch(m *model.Model, data *dataSet) {
 	}
 }
 
-func nextTrain(data *dataSet) *model.Model {
+func nextTrain(trainData, testData *dataSet) *model.Model {
 	var m model.Model
 	runtime.Assert(m.Load(filepath.Join(modelDir, "latest.model")))
 	for i := 0; i < 100; i++ {
-		input, output := data.Batch(rand.Intn(data.Size()), batchSize)
+		input, output := trainData.Batch(rand.Intn(trainData.Size()), batchSize)
 		begin := time.Now()
 		m.Train(input, output)
 		cost := time.Since(begin)
 		if i%10 == 0 {
 			fmt.Printf("Epoch: %d, Cost: %s, Loss: %.05f, Accuracy: %.02f%%\n", i,
-				cost.String(), m.Loss(input, output), accuracy(&m, data))
+				cost.String(), m.Loss(input, output), accuracy(&m, testData))
 		}
 	}
 	return &m
@@ -329,4 +336,56 @@ func predictImage(dir, modelFile string) {
 		fmt.Printf("%d: %.05f\n", i, v.AtVec(i))
 	}
 	fmt.Printf("Result: %d\n", getLabel(output.(utils.DenseRowView).RowView(0)))
+}
+
+func exportConvImages(modelFile string) {
+	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
+		fmt.Println("model file not found")
+		return
+	}
+	var m model.Model
+	runtime.Assert(m.Load(modelFile))
+	os.RemoveAll("./conv")
+	runtime.Assert(os.MkdirAll("./conv", 0755))
+
+	nor := func(data []float64) []uint8 {
+		min := math.MaxFloat64
+		for i := 0; i < len(data); i++ {
+			if data[i] < min {
+				min = data[i]
+			}
+		}
+		ret := make([]uint8, len(data))
+		for i := 0; i < len(data); i++ {
+			ret[i] = uint8((data[i] - min) * 255)
+		}
+		return ret
+	}
+	save := func(img image.Image, name string) {
+		f, err := os.Create(filepath.Join("./conv", fmt.Sprintf("%s.png", name)))
+		runtime.Assert(err)
+		defer f.Close()
+		runtime.Assert(png.Encode(f, img))
+	}
+
+	for _, l := range m.Layers() {
+		if l.Class() != "conv2d" {
+			continue
+		}
+		layer := l.(*layer.Conv2D)
+		ps := layer.Params()
+		var tmp mat.Dense
+		tmp.CloneFrom(ps.Get("w"))
+		pb := ps.Get("b")
+		db := pb.(utils.DenseRowView).RowView(0)
+		rows, _ := tmp.Dims()
+		for i := 0; i < rows; i++ {
+			row := tmp.RowView(i)
+			row.(utils.AddVec).AddVec(row, db)
+		}
+		rows, cols := tmp.Dims()
+		img := image.NewGray(image.Rect(0, 0, cols, rows))
+		copy(img.Pix, nor(tmp.RawMatrix().Data))
+		save(img, layer.Name())
+	}
 }
