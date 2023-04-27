@@ -2,6 +2,7 @@ package optimizer
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
@@ -50,19 +51,30 @@ func Load(opt *pb.Optimizer) Optimizer {
 
 func (opt *base) Update(grads, params []*params.Params) {
 	grads = opt.compute(grads)
+	var wg sync.WaitGroup
 	for i := 0; i < len(grads); i++ {
 		for _, grad := range *grads[i] {
-			var tmp mat.Dense
-			tmp.Scale(opt.lr*opt.weightDecay, grad)
-			grad.(utils.DenseSub).Sub(grad, &tmp)
+			wg.Add(1)
+			go func(grad mat.Matrix) {
+				defer wg.Done()
+				var tmp mat.Dense
+				tmp.Scale(opt.lr*opt.weightDecay, grad)
+				grad.(utils.DenseSub).Sub(grad, &tmp)
+			}(grad)
 		}
 	}
+	wg.Wait()
 	for i := 0; i < len(params); i++ {
 		if params[i] == nil {
 			continue
 		}
-		params[i].Add(grads[i])
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			params[i].Add(grads[i])
+		}(i)
 	}
+	wg.Wait()
 }
 
 func (opt *base) Save() *pb.Optimizer {
