@@ -44,6 +44,10 @@ func Load(opt *pb.Optimizer) Optimizer {
 		beta2 := ps["beta2"]
 		epsilon := ps["epsilon"]
 		return NewAdam(opt.GetLr(), opt.GetWeightDecay(), beta1, beta2, epsilon)
+	case "adagrad":
+		ps := opt.GetParams()
+		epsilon := ps["epsilon"]
+		return NewAdagrad(opt.GetLr(), opt.GetWeightDecay(), epsilon)
 	default:
 		panic("unsupported " + opt.GetName() + " optimizer")
 	}

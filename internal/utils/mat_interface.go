@@ -18,6 +18,10 @@ type DenseMul interface {
 	Mul(a, b mat.Matrix)
 }
 
+type DenseMulElem interface {
+	MulElem(a, b mat.Matrix)
+}
+
 type DenseDivElem interface {
 	DivElem(a, b mat.Matrix)
 }
