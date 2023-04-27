@@ -2,6 +2,7 @@ package layer
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
@@ -41,10 +42,16 @@ func (layer *Dense) forward(input mat.Matrix) mat.Matrix {
 	ret.Mul(input, layer.params["w"])
 	b := layer.params["b"].(utils.DenseRowView).RowView(0)
 	rows, _ := ret.Dims()
+	var wg sync.WaitGroup
+	wg.Add(rows)
 	for i := 0; i < rows; i++ {
-		row := ret.RowView(i)
-		row.(utils.AddVec).AddVec(row, b)
+		go func(i int) {
+			defer wg.Done()
+			row := ret.RowView(i)
+			row.(utils.AddVec).AddVec(row, b)
+		}(i)
 	}
+	wg.Wait()
 	return &ret
 }
 
@@ -55,9 +62,15 @@ func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
 	dw.(utils.DenseMul).Mul(layer.input.T(), grad)
 	db0 := db.(utils.DenseRowView).RowView(0)
 	rows, _ := grad.Dims()
+	var wg sync.WaitGroup
+	wg.Add(rows)
 	for i := 0; i < rows; i++ {
-		db0.(utils.AddVec).AddVec(db0, grad.(utils.DenseRowView).RowView(i))
+		go func(i int) {
+			defer wg.Done()
+			db0.(utils.AddVec).AddVec(db0, grad.(utils.DenseRowView).RowView(i))
+		}(i)
 	}
+	wg.Wait()
 	db0.(utils.ScaleVec).ScaleVec(1/float64(rows), db0)
 
 	var ret mat.Dense
