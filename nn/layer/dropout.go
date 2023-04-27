@@ -41,13 +41,16 @@ func (layer *Dropout) forward(input mat.Matrix) mat.Matrix {
 		layer.shapes["m"] = Shape{rows, cols}
 		layer.initParams()
 	}
-	m := layer.context["m"]
-	m.(utils.DenseApply).Apply(func(i, j int, v float64) float64 {
-		return layer.init.Rand() / layer.keepProb
-	}, m)
-	var ret mat.Dense
-	ret.MulElem(input, m)
-	return &ret
+	if layer.isTraining {
+		m := layer.context["m"]
+		m.(utils.DenseApply).Apply(func(i, j int, v float64) float64 {
+			return layer.init.Rand() / layer.keepProb
+		}, m)
+		var ret mat.Dense
+		ret.MulElem(input, m)
+		return &ret
+	}
+	return input
 }
 
 func (layer *Dropout) backward(grad mat.Matrix) mat.Matrix {

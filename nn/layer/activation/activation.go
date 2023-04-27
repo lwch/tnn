@@ -93,3 +93,6 @@ func (layer *base) Print() {
 func (*base) Args() map[string]mat.Matrix {
 	return nil
 }
+
+func (*base) SetTraining(bool) {
+}

@@ -36,11 +36,11 @@ func (m *Model) SetName(name string) {
 }
 
 func (m *Model) Predict(input mat.Matrix) mat.Matrix {
-	return m.net.Forward(input)
+	return m.net.Forward(input, false)
 }
 
 func (m *Model) Train(input mat.Matrix, targets mat.Matrix) {
-	pred := m.Predict(input)
+	pred := m.net.Forward(input, true)
 	grad := m.loss.Grad(pred, targets)
 	grads := m.net.Backward(grad)
 	m.apply(grads)

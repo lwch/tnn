@@ -41,9 +41,11 @@ func (n *Net) Add(layer layer.Layer) {
 	n.layers = append(n.layers, layer)
 }
 
-func (n *Net) Forward(input mat.Matrix) mat.Matrix {
+func (n *Net) Forward(input mat.Matrix, isTraining bool) mat.Matrix {
 	for i := 0; i < len(n.layers); i++ {
+		n.layers[i].SetTraining(isTraining)
 		input = n.layers[i].Forward(input)
+		n.layers[i].SetTraining(false)
 		// fmt.Println(n.layers[i].Name())
 		// fmt.Println(input.Dims())
 	}

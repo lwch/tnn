@@ -19,6 +19,7 @@ type Layer interface {
 	Context() params.Params
 	Args() map[string]mat.Matrix
 	Print()
+	SetTraining(bool)
 }
 
 type Shape struct {
@@ -40,16 +41,17 @@ type forwardFunc func(mat.Matrix) mat.Matrix
 type backwardFunc func(mat.Matrix) mat.Matrix
 
 type base struct {
-	class    string
-	name     string
-	shapes   map[string]Shape
-	params   params.Params
-	input    mat.Dense
-	context  params.Params
-	init     initializer.Initializer
-	hasInit  bool
-	forward  forwardFunc
-	backward backwardFunc
+	class      string
+	name       string
+	shapes     map[string]Shape
+	params     params.Params
+	input      mat.Dense
+	context    params.Params
+	init       initializer.Initializer
+	hasInit    bool
+	forward    forwardFunc
+	backward   backwardFunc
+	isTraining bool
 }
 
 func new(class string, shapes map[string]Shape, init initializer.Initializer,
@@ -126,4 +128,8 @@ func (layer *base) Print() {
 
 func (layer *base) Args() map[string]mat.Matrix {
 	return nil
+}
+
+func (layer *base) SetTraining(b bool) {
+	layer.isTraining = b
 }
