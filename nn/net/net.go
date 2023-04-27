@@ -2,7 +2,6 @@ package net
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
@@ -54,20 +53,14 @@ func (n *Net) Forward(input mat.Matrix, isTraining bool) mat.Matrix {
 
 func (n *Net) Backward(grad mat.Matrix) []*params.Params {
 	ret := make([]*params.Params, len(n.layers))
-	var wg sync.WaitGroup
-	wg.Add(len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
 		grad = n.layers[i].Backward(grad)
 		// fmt.Println(n.layers[i].Name())
 		// fmt.Println(grad.Dims())
-		go func(i int) {
-			defer wg.Done()
-			var p params.Params
-			p.Copy(n.layers[i].Context())
-			ret[i] = &p
-		}(i)
+		var p params.Params
+		p.Copy(n.layers[i].Context())
+		ret[i] = &p
 	}
-	wg.Wait()
 	return ret
 }
 
