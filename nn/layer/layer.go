@@ -89,6 +89,11 @@ func (layer *base) Params() *params.Params {
 
 func (layer *base) loadParams(ps map[string]*pb.Dense) {
 	layer.params.Load(ps)
+	layer.shapes = make(map[string]Shape)
+	layer.params.Range(func(name string, dense mat.Matrix) {
+		rows, cols := dense.Dims()
+		layer.shapes[name] = Shape{M: rows, N: cols}
+	})
 	layer.hasInit = true
 }
 
