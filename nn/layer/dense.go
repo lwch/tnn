@@ -51,14 +51,12 @@ func (layer *Dense) Forward(input mat.Matrix, _ bool) (context, output mat.Matri
 
 func (layer *Dense) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	paramsGrad = params.New()
-	rows, cols := layer.params.Get("w").Dims()
-	dw := paramsGrad.Init("w", rows, cols)
-	rows, cols = layer.params.Get("b").Dims()
-	db := paramsGrad.Init("b", rows, cols)
+	dw := paramsGrad.Init("w", layer.shapes["w"].M, layer.shapes["w"].N)
+	db := paramsGrad.Init("b", layer.shapes["b"].M, layer.shapes["b"].N)
 
 	dw.(utils.DenseMul).Mul(context.T(), grad)
 	db0 := db.(utils.DenseRowView).RowView(0)
-	rows, _ = grad.Dims()
+	rows, _ := grad.Dims()
 	for i := 0; i < rows; i++ {
 		db0.(utils.AddVec).AddVec(db0, grad.(utils.DenseRowView).RowView(i))
 	}
