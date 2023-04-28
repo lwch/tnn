@@ -6,6 +6,7 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/nn/initializer"
+	"github.com/lwch/tnn/nn/params"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -18,19 +19,19 @@ func NewDense(output int, init initializer.Initializer) *Dense {
 	layer.base = new("dense", map[string]Shape{
 		"w": {NoneShape, output}, // rows reshape from input
 		"b": {1, output},         // rows reshape from input
-	}, init, layer.forward, layer.backward)
+	}, init)
 	return &layer
 }
 
 func LoadDense(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) Layer {
 	var layer Dense
-	layer.base = new("dense", nil, nil, layer.forward, layer.backward)
+	layer.base = new("dense", nil, nil)
 	layer.name = name
 	layer.base.loadParams(params)
 	return &layer
 }
 
-func (layer *Dense) forward(input mat.Matrix) mat.Matrix {
+func (layer *Dense) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
 	if !layer.hasInit {
 		shapeW := layer.shapes["w"]
 		_, shapeW.M = input.Dims()
@@ -45,16 +46,19 @@ func (layer *Dense) forward(input mat.Matrix) mat.Matrix {
 		row := ret.RowView(i)
 		row.(utils.AddVec).AddVec(row, b)
 	}
-	return &ret
+	return input, &ret
 }
 
-func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
-	dw := layer.context.Get("w")
-	db := layer.context.Get("b")
+func (layer *Dense) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+	paramsGrad = params.New()
+	rows, cols := layer.params.Get("w").Dims()
+	dw := paramsGrad.Init("w", rows, cols)
+	rows, cols = layer.params.Get("b").Dims()
+	db := paramsGrad.Init("b", rows, cols)
 
-	dw.(utils.DenseMul).Mul(layer.input.T(), grad)
+	dw.(utils.DenseMul).Mul(context.T(), grad)
 	db0 := db.(utils.DenseRowView).RowView(0)
-	rows, _ := grad.Dims()
+	rows, _ = grad.Dims()
 	for i := 0; i < rows; i++ {
 		db0.(utils.AddVec).AddVec(db0, grad.(utils.DenseRowView).RowView(i))
 	}
@@ -63,7 +67,7 @@ func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
 	var ret mat.Dense
 	w := layer.params.Get("w")
 	ret.Mul(grad, w.T())
-	return &ret
+	return &ret, paramsGrad
 }
 
 func (layer *Dense) Print() {

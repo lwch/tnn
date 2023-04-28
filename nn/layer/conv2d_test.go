@@ -30,9 +30,9 @@ func TestConv2D(t *testing.T) {
 		0, 0, 1,
 	})
 	layer := NewConv2D(Shape{3, 3}, Kernel{2, 2, 2, 2}, Stride{1, 1}, initializer)
-	pred := layer.Forward(input)
+	ctx, pred := layer.Forward(input, true)
 	var grad mat.Dense
 	grad.Sub(output, pred)
-	g := layer.Backward(&grad)
+	g, _ := layer.Backward(ctx, &grad)
 	fmt.Println(mat.Formatted(g))
 }

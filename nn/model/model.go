@@ -36,15 +36,16 @@ func (m *Model) SetName(name string) {
 }
 
 func (m *Model) Predict(input mat.Matrix) mat.Matrix {
-	return m.net.Forward(input, false)
+	result, _ := m.net.Forward(input, false)
+	return result
 }
 
-func (m *Model) Train(input mat.Matrix, targets mat.Matrix) {
-	pred := m.net.Forward(input, true)
+func (m *Model) Train(input mat.Matrix, targets mat.Matrix) []*params.Params {
+	pred, ctx := m.net.Forward(input, true)
 	grad := m.loss.Grad(pred, targets)
-	grads := m.net.Backward(grad)
-	m.apply(grads)
+	grads := m.net.Backward(grad, ctx)
 	m.trainCount++
+	return grads
 }
 
 func (m *Model) Loss(input, targets mat.Matrix) float64 {
@@ -52,7 +53,7 @@ func (m *Model) Loss(input, targets mat.Matrix) float64 {
 	return m.loss.Loss(pred, targets)
 }
 
-func (m *Model) apply(grads []*params.Params) {
+func (m *Model) Apply(grads []*params.Params) {
 	params := m.net.Params()
 	m.optimizer.Update(grads, params)
 }

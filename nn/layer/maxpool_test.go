@@ -18,8 +18,8 @@ func TestMaxPool(t *testing.T) {
 		16, 17, 18,
 	})
 	layer := NewMaxPool(Shape{3, 3}, Kernel{2, 2, 2, 2}, Stride{2, 2})
-	pred := layer.Forward(input)
+	ctx, pred := layer.Forward(input, true)
 	fmt.Println(mat.Formatted(pred))
-	g := layer.Backward(pred)
+	g, _ := layer.Backward(ctx, pred)
 	fmt.Println(mat.Formatted(g))
 }

@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"github.com/lwch/runtime"
@@ -202,15 +203,37 @@ func train(train, test *dataSet, rows, cols int) {
 func trainEpoch(m *model.Model, data *dataSet) {
 	data.Shuffle()
 	begin := time.Now()
-	for i := 0; i < data.Size(); i += batchSize {
+	if data.Size() < batchSize {
+		return
+	}
+	input, output := data.Batch(0, batchSize)
+	grads := m.Train(input, output)
+	var processed atomic.Uint64
+	var batches atomic.Uint64
+	// var wg sync.WaitGroup
+	for i := batchSize; i < data.Size(); i += batchSize {
 		if i+batchSize > data.Size() {
 			break
 		}
+		// wg.Add(1)
+		// go func(i int) {
+		// 	defer wg.Done()
 		input, output := data.Batch(i, batchSize)
-		m.Train(input, output)
-		fmt.Printf("train: %d/%d, cost: %s\r", i, data.Size(),
+		dg := m.Train(input, output)
+		for i := 0; i < len(grads); i++ {
+			grads[i].Add(dg[i])
+		}
+		processed.Add(uint64(batchSize))
+		fmt.Printf("train: %d/%d, cost: %s\r", processed.Load(), data.Size(),
 			time.Since(begin).String())
+		batches.Add(1)
+		// }(i)
 	}
+	// wg.Wait()
+	for i := 0; i < len(grads); i++ {
+		grads[i].Scale(1 / float64(batches.Load()))
+	}
+	m.Apply(grads)
 }
 
 func nextTrain(trainData, testData *dataSet) *model.Model {

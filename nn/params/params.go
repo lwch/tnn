@@ -34,6 +34,9 @@ func (params *Params) Copy(ps *Params) {
 }
 
 func (params *Params) Add(ps *Params) {
+	if ps == nil {
+		return
+	}
 	params.m.Lock()
 	defer params.m.Unlock()
 	ps.m.RLock()
@@ -44,6 +47,17 @@ func (params *Params) Add(ps *Params) {
 			continue
 		}
 		p.(utils.DenseAdd).Add(p, grad)
+	}
+}
+
+func (params *Params) Scale(n float64) {
+	if params == nil {
+		return
+	}
+	params.m.Lock()
+	defer params.m.Unlock()
+	for _, dense := range params.data {
+		dense.(utils.DenseScale).Scale(n, dense)
 	}
 }
 
@@ -62,10 +76,12 @@ func (params *Params) Range(fn func(name string, dense mat.Matrix)) {
 	}
 }
 
-func (params *Params) Init(name string, rows, cols int) {
+func (params *Params) Init(name string, rows, cols int) mat.Matrix {
+	ret := mat.NewDense(rows, cols, nil)
 	params.m.Lock()
 	defer params.m.Unlock()
-	params.data[name] = mat.NewDense(rows, cols, nil)
+	params.data[name] = ret
+	return ret
 }
 
 func (params *Params) InitWithData(name string, rows, cols int, data []float64) {

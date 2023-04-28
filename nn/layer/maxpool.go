@@ -8,6 +8,7 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/internal/vector"
+	"github.com/lwch/tnn/nn/params"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -22,7 +23,7 @@ type MaxPool struct {
 
 func NewMaxPool(imgShape Shape, kernel Kernel, stride Stride) *MaxPool {
 	var layer MaxPool
-	layer.base = new("maxpool", nil, nil, layer.forward, layer.backward)
+	layer.base = new("maxpool", nil, nil)
 	layer.imageShape = imgShape
 	layer.kernel = kernel
 	layer.stride = stride
@@ -47,7 +48,7 @@ func LoadMaxPool(name string, params map[string]*pb.Dense, args map[string]*pb.D
 	layer.imageShape = getShape("img.shape")
 	layer.kernel = getKernel("kernel")
 	layer.stride = getStride("stride")
-	layer.base = new("maxpool", nil, nil, layer.forward, layer.backward)
+	layer.base = new("maxpool", nil, nil)
 	layer.name = name
 	layer.base.loadParams(params)
 	batch := int(args["batch"].GetData()[0])
@@ -70,7 +71,7 @@ func (layer *MaxPool) OutputShape() Shape {
 	return Shape{int(y), int(x)}
 }
 
-func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
+func (layer *MaxPool) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
 	batch, _ := input.Dims()
 	outputShape := layer.OutputShape()
 	if !layer.hasInit {
@@ -121,10 +122,10 @@ func (layer *MaxPool) forward(input mat.Matrix) mat.Matrix {
 		}
 		channelID++
 	}
-	return utils.ReshapeRows(ret, batch)
+	return input, utils.ReshapeRows(ret, batch)
 }
 
-func (layer *MaxPool) backward(grad mat.Matrix) mat.Matrix {
+func (layer *MaxPool) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	batch, _ := grad.Dims()
 	ret := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	outputShape := layer.OutputShape()
@@ -151,7 +152,7 @@ func (layer *MaxPool) backward(grad mat.Matrix) mat.Matrix {
 		}
 	}
 	tmp := ret.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
-	return utils.ReshapeRows(tmp, batch)
+	return utils.ReshapeRows(tmp, batch), nil
 }
 
 func (layer *MaxPool) pad(input mat.Matrix) *vector.Vector3D {
