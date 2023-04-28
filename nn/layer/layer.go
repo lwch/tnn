@@ -40,9 +40,9 @@ type base struct {
 	class   string
 	name    string
 	shapes  map[string]Shape
+	mInit   sync.Mutex
 	params  *params.Params
 	init    initializer.Initializer
-	mInit   sync.Mutex
 	hasInit bool
 }
 
