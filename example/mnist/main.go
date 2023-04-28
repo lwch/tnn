@@ -9,6 +9,8 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	rt "runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -200,40 +202,55 @@ func train(train, test *dataSet, rows, cols int) {
 	p.Save(8*vg.Inch, 8*vg.Inch, "mnist.png")
 }
 
+type context struct {
+	m       *model.Model
+	data    *dataSet
+	begin   time.Time
+	arrived atomic.Uint64
+	total   uint64
+	input   chan int
+}
+
+func worker(ctx *context) {
+	for {
+		i, ok := <-ctx.input
+		if !ok {
+			return
+		}
+		input, output := ctx.data.Batch(i, batchSize)
+		ctx.m.Train(input, output)
+		ctx.arrived.Add(uint64(batchSize))
+		fmt.Printf("train: %d/%d, cost: %s\r", ctx.arrived.Load(), ctx.total,
+			time.Since(ctx.begin).String())
+	}
+}
+
 func trainEpoch(m *model.Model, data *dataSet) {
 	data.Shuffle()
-	begin := time.Now()
-	if data.Size() < batchSize {
-		return
+	var ctx context
+	ctx.m = m
+	ctx.data = data
+	ctx.begin = time.Now()
+	ctx.total = uint64(data.Size())
+	ctx.input = make(chan int, data.Size()/batchSize+1)
+
+	var wg sync.WaitGroup
+	wg.Add(rt.NumCPU())
+	for i := 0; i < rt.NumCPU(); i++ {
+		go func() {
+			defer wg.Done()
+			worker(&ctx)
+		}()
 	}
-	input, output := data.Batch(0, batchSize)
-	grads := m.Train(input, output)
-	var processed atomic.Uint64
-	var batches atomic.Uint64
-	// var wg sync.WaitGroup
-	for i := batchSize; i < data.Size(); i += batchSize {
+
+	for i := 0; i < data.Size(); i += batchSize {
 		if i+batchSize > data.Size() {
 			break
 		}
-		// wg.Add(1)
-		// go func(i int) {
-		// 	defer wg.Done()
-		input, output := data.Batch(i, batchSize)
-		dg := m.Train(input, output)
-		for i := 0; i < len(grads); i++ {
-			grads[i].Add(dg[i])
-		}
-		processed.Add(uint64(batchSize))
-		fmt.Printf("train: %d/%d, cost: %s\r", processed.Load(), data.Size(),
-			time.Since(begin).String())
-		batches.Add(1)
-		// }(i)
+		ctx.input <- i
 	}
-	// wg.Wait()
-	for i := 0; i < len(grads); i++ {
-		grads[i].Scale(1 / float64(batches.Load()))
-	}
-	m.Apply(grads)
+	close(ctx.input)
+	wg.Wait()
 }
 
 func nextTrain(trainData, testData *dataSet) *model.Model {

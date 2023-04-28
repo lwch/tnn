@@ -87,8 +87,7 @@ func train() {
 	var points plotter.XYs
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
-		grads := m.Train(input, output)
-		m.Apply(grads)
+		m.Train(input, output)
 		if i%100 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)

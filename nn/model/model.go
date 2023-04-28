@@ -40,12 +40,12 @@ func (m *Model) Predict(input mat.Matrix) mat.Matrix {
 	return result
 }
 
-func (m *Model) Train(input mat.Matrix, targets mat.Matrix) []*params.Params {
+func (m *Model) Train(input mat.Matrix, targets mat.Matrix) {
 	pred, ctx := m.net.Forward(input, true)
 	grad := m.loss.Grad(pred, targets)
 	grads := m.net.Backward(grad, ctx)
+	m.apply(grads)
 	m.trainCount++
-	return grads
 }
 
 func (m *Model) Loss(input, targets mat.Matrix) float64 {
@@ -53,7 +53,7 @@ func (m *Model) Loss(input, targets mat.Matrix) float64 {
 	return m.loss.Loss(pred, targets)
 }
 
-func (m *Model) Apply(grads []*params.Params) {
+func (m *Model) apply(grads []*params.Params) {
 	params := m.net.Params()
 	m.optimizer.Update(grads, params)
 }
