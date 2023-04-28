@@ -38,8 +38,8 @@ func (layer *Dense) forward(input mat.Matrix) mat.Matrix {
 		layer.initParams()
 	}
 	var ret mat.Dense
-	ret.Mul(input, layer.params["w"])
-	b := layer.params["b"].(utils.DenseRowView).RowView(0)
+	ret.Mul(input, layer.params.Get("w"))
+	b := layer.params.Get("b").(utils.DenseRowView).RowView(0)
 	rows, _ := ret.Dims()
 	for i := 0; i < rows; i++ {
 		row := ret.RowView(i)
@@ -49,8 +49,8 @@ func (layer *Dense) forward(input mat.Matrix) mat.Matrix {
 }
 
 func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
-	dw := layer.context["w"]
-	db := layer.context["b"]
+	dw := layer.context.Get("w")
+	db := layer.context.Get("b")
 
 	dw.(utils.DenseMul).Mul(layer.input.T(), grad)
 	db0 := db.(utils.DenseRowView).RowView(0)
@@ -61,18 +61,18 @@ func (layer *Dense) backward(grad mat.Matrix) mat.Matrix {
 	db0.(utils.ScaleVec).ScaleVec(1/float64(rows), db0)
 
 	var ret mat.Dense
-	w := layer.params["w"]
+	w := layer.params.Get("w")
 	ret.Mul(grad, w.T())
 	return &ret
 }
 
 func (layer *Dense) Print() {
 	layer.base.Print()
-	_, cnt := layer.params["w"].Dims()
+	_, cnt := layer.params.Get("w").Dims()
 	fmt.Println("    Output Count:", cnt)
 	fmt.Println("    Params:")
-	for name, dense := range layer.params {
+	layer.params.Range(func(name string, dense mat.Matrix) {
 		rows, cols := dense.Dims()
 		fmt.Println("      - "+name+":", fmt.Sprintf("%dx%d", rows, cols))
-	}
+	})
 }

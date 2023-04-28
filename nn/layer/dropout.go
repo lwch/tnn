@@ -42,7 +42,7 @@ func (layer *Dropout) forward(input mat.Matrix) mat.Matrix {
 		layer.initParams()
 	}
 	if layer.isTraining {
-		m := layer.context["m"]
+		m := layer.context.Get("m")
 		m.(utils.DenseApply).Apply(func(i, j int, v float64) float64 {
 			return layer.init.Rand() / layer.keepProb
 		}, m)
@@ -54,7 +54,7 @@ func (layer *Dropout) forward(input mat.Matrix) mat.Matrix {
 }
 
 func (layer *Dropout) backward(grad mat.Matrix) mat.Matrix {
-	dm := layer.context["m"]
+	dm := layer.context.Get("m")
 
 	var ret mat.Dense
 	ret.MulElem(grad, dm)

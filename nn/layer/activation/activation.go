@@ -81,7 +81,7 @@ func (*base) Params() *params.Params {
 	return nil
 }
 
-func (*base) Context() params.Params {
+func (*base) Context() *params.Params {
 	return nil
 }
 

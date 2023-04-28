@@ -115,8 +115,8 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 		layer.kernel.InChan)
 	layer.input.CloneFrom(col)
 	var ret mat.Dense
-	ret.Mul(col, layer.params["w"])
-	b := layer.params["b"].(utils.DenseRowView).RowView(0)
+	ret.Mul(col, layer.params.Get("w"))
+	b := layer.params.Get("b").(utils.DenseRowView).RowView(0)
 	rows, _ := ret.Dims()
 	for i := 0; i < rows; i++ {
 		row := ret.RowView(i)
@@ -126,8 +126,8 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 }
 
 func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
-	dw := layer.context["w"]
-	db := layer.context["b"]
+	dw := layer.context.Get("w")
+	db := layer.context.Get("b")
 
 	// same as dense layer
 	batch, _ := grad.Dims()
@@ -141,7 +141,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	db0.(utils.ScaleVec).ScaleVec(1/float64(rows), db0)
 
 	var ret mat.Dense
-	w := layer.params["w"]
+	w := layer.params.Get("w")
 	ret.Mul(flatGrad, utils.ReshapeCols(w, layer.kernel.OutChan).T())
 	ret3D := vector.ReshapeMatrix(&ret, layer.kernel.M, layer.kernel.N)
 

@@ -4,6 +4,7 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/nn/params"
+	"gonum.org/v1/gonum/mat"
 )
 
 type SGD struct {
@@ -18,10 +19,9 @@ func NewSGD(lr, weightDecay float64) *SGD {
 
 func (sgd *SGD) compute(grads []*params.Params) []*params.Params {
 	for i := 0; i < len(grads); i++ {
-		params := grads[i]
-		for _, grad := range *params {
-			grad.(utils.DenseScale).Scale(-sgd.lr, grad)
-		}
+		grads[i].Range(func(name string, dense mat.Matrix) {
+			dense.(utils.DenseScale).Scale(-sgd.lr, dense)
+		})
 	}
 	return grads
 }

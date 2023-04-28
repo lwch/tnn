@@ -16,7 +16,7 @@ type Layer interface {
 	Forward(input mat.Matrix) mat.Matrix
 	Backward(grad mat.Matrix) mat.Matrix
 	Params() *params.Params
-	Context() params.Params
+	Context() *params.Params
 	Args() map[string]mat.Matrix
 	Print()
 	SetTraining(bool)
@@ -44,9 +44,9 @@ type base struct {
 	class      string
 	name       string
 	shapes     map[string]Shape
-	params     params.Params
+	params     *params.Params
 	input      mat.Dense
-	context    params.Params
+	context    *params.Params
 	init       initializer.Initializer
 	hasInit    bool
 	forward    forwardFunc
@@ -59,8 +59,8 @@ func new(class string, shapes map[string]Shape, init initializer.Initializer,
 	return &base{
 		class:    class,
 		shapes:   shapes,
-		params:   make(params.Params),
-		context:  make(params.Params),
+		params:   params.New(),
+		context:  params.New(),
 		init:     init,
 		forward:  forward,
 		backward: backward,
@@ -73,8 +73,8 @@ func (layer *base) initParams() {
 	}
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
-		layer.params[name] = mat.NewDense(shape.M, shape.N, layer.init.RandShape(shape.M, shape.N))
-		layer.context[name] = mat.NewDense(shape.M, shape.N, nil)
+		layer.params.InitWithData(name, shape.M, shape.N, layer.init.RandShape(shape.M, shape.N))
+		layer.context.Init(name, shape.M, shape.N)
 	}
 	layer.hasInit = true
 }
@@ -104,19 +104,18 @@ func (layer *base) Backward(grad mat.Matrix) mat.Matrix {
 }
 
 func (layer *base) Params() *params.Params {
-	return &layer.params
+	return layer.params
 }
 
-func (layer *base) Context() params.Params {
+func (layer *base) Context() *params.Params {
 	return layer.context
 }
 
 func (layer *base) loadParams(ps map[string]*pb.Dense) {
 	layer.params.Load(ps)
-	layer.context = make(params.Params)
 	layer.params.Range(func(name string, param mat.Matrix) {
 		rows, cols := param.Dims()
-		layer.context[name] = mat.NewDense(rows, cols, nil)
+		layer.context.Init(name, rows, cols)
 	})
 	layer.hasInit = true
 }

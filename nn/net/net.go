@@ -57,6 +57,9 @@ func (n *Net) Backward(grad mat.Matrix) []*params.Params {
 		grad = n.layers[i].Backward(grad)
 		// fmt.Println(n.layers[i].Name())
 		// fmt.Println(grad.Dims())
+		if n.layers[i].Context() == nil {
+			continue
+		}
 		var p params.Params
 		p.Copy(n.layers[i].Context())
 		ret[i] = &p

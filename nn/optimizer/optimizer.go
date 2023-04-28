@@ -55,11 +55,11 @@ func Load(opt *pb.Optimizer) Optimizer {
 func (opt *base) Update(grads, params []*params.Params) {
 	grads = opt.computeFunc(grads)
 	for i := 0; i < len(grads); i++ {
-		for _, grad := range *grads[i] {
+		grads[i].Range(func(name string, dense mat.Matrix) {
 			var tmp mat.Dense
-			tmp.Scale(opt.lr*opt.weightDecay, grad)
-			grad.(utils.DenseSub).Sub(grad, &tmp)
-		}
+			tmp.Scale(opt.lr*opt.weightDecay, dense)
+			dense.(utils.DenseSub).Sub(dense, &tmp)
+		})
 	}
 	for i := 0; i < len(params); i++ {
 		if params[i] == nil {
