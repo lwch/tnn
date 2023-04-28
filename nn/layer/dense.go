@@ -33,9 +33,11 @@ func LoadDense(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense)
 
 func (layer *Dense) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
 	if !layer.hasInit {
+		layer.mInit.Lock()
 		shapeW := layer.shapes["w"]
 		_, shapeW.M = input.Dims()
 		layer.shapes["w"] = shapeW
+		layer.mInit.Unlock()
 		layer.initParams()
 	}
 	var ret mat.Dense
