@@ -24,6 +24,8 @@ func Load(loss *pb.Loss) Loss {
 		return NewHuber(loss.GetParams()["delta"])
 	case "softmax":
 		return NewSoftmax(loss.GetParams()["t"])
+	case "sigmoid":
+		return NewSigmoid()
 	default:
 		panic("unsupported " + loss.Name + " loss function")
 	}
