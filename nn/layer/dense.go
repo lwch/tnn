@@ -53,8 +53,12 @@ func (layer *Dense) Forward(input mat.Matrix, _ bool) (context, output mat.Matri
 
 func (layer *Dense) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	paramsGrad = params.New()
-	dw := paramsGrad.Init("w", layer.shapes["w"].M, layer.shapes["w"].N)
-	db := paramsGrad.Init("b", layer.shapes["b"].M, layer.shapes["b"].N)
+	layer.mInit.Lock()
+	sw := layer.shapes["w"]
+	sb := layer.shapes["b"]
+	layer.mInit.Unlock()
+	dw := paramsGrad.Init("w", sw.M, sw.N)
+	db := paramsGrad.Init("b", sb.M, sb.N)
 
 	dw.(utils.DenseMul).Mul(context.T(), grad)
 	db0 := db.(utils.DenseRowView).RowView(0)
