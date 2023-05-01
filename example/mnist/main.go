@@ -9,6 +9,9 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	rt "runtime"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lwch/runtime"
@@ -199,18 +202,55 @@ func train(train, test *dataSet, rows, cols int) {
 	p.Save(8*vg.Inch, 8*vg.Inch, "mnist.png")
 }
 
+type context struct {
+	m       *model.Model
+	data    *dataSet
+	begin   time.Time
+	arrived atomic.Uint64
+	total   uint64
+	input   chan int
+}
+
+func worker(ctx *context) {
+	for {
+		i, ok := <-ctx.input
+		if !ok {
+			return
+		}
+		input, output := ctx.data.Batch(i, batchSize)
+		ctx.m.Train(input, output)
+		ctx.arrived.Add(uint64(batchSize))
+		fmt.Printf("train: %d/%d, cost: %s\r", ctx.arrived.Load(), ctx.total,
+			time.Since(ctx.begin).String())
+	}
+}
+
 func trainEpoch(m *model.Model, data *dataSet) {
 	data.Shuffle()
-	begin := time.Now()
+	var ctx context
+	ctx.m = m
+	ctx.data = data
+	ctx.begin = time.Now()
+	ctx.total = uint64(data.Size())
+	ctx.input = make(chan int, data.Size()/batchSize+1)
+
+	var wg sync.WaitGroup
+	wg.Add(rt.NumCPU())
+	for i := 0; i < rt.NumCPU(); i++ {
+		go func() {
+			defer wg.Done()
+			worker(&ctx)
+		}()
+	}
+
 	for i := 0; i < data.Size(); i += batchSize {
 		if i+batchSize > data.Size() {
 			break
 		}
-		input, output := data.Batch(i, batchSize)
-		m.Train(input, output)
-		fmt.Printf("train: %d/%d, cost: %s\r", i, data.Size(),
-			time.Since(begin).String())
+		ctx.input <- i
 	}
+	close(ctx.input)
+	wg.Wait()
 }
 
 func nextTrain(trainData, testData *dataSet) *model.Model {

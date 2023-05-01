@@ -3,6 +3,7 @@ package optimizer
 import (
 	"fmt"
 	"math"
+	"sync"
 
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
@@ -14,6 +15,7 @@ type Adagrad struct {
 	*base
 	epsilon float64
 
+	mu   sync.Mutex
 	init bool
 	g    []*params.Params
 }
@@ -26,6 +28,8 @@ func NewAdagrad(lr, weightDecay, epsilon float64) *Adagrad {
 }
 
 func (adagrad *Adagrad) initParams(grads []*params.Params) {
+	adagrad.mu.Lock()
+	defer adagrad.mu.Unlock()
 	if adagrad.init {
 		return
 	}

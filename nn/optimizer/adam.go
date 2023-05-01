@@ -3,6 +3,8 @@ package optimizer
 import (
 	"fmt"
 	"math"
+	"sync"
+	"sync/atomic"
 
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/internal/utils"
@@ -15,8 +17,9 @@ type Adam struct {
 	beta1, beta2 float64
 	epsilon      float64
 
+	mu   sync.Mutex
 	init bool
-	t    int
+	t    atomic.Uint64
 	m, v []*params.Params
 }
 
@@ -30,6 +33,8 @@ func NewAdam(lr, weightDecay, beta1, beta2, epsilon float64) *Adam {
 }
 
 func (adam *Adam) initParams(grads []*params.Params) {
+	adam.mu.Lock()
+	defer adam.mu.Unlock()
 	if adam.init {
 		return
 	}
@@ -52,7 +57,7 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 	if !adam.init {
 		adam.initParams(grads)
 	}
-	adam.t++
+	adam.t.Add(1)
 	for i := 0; i < len(grads); i++ {
 		ps := grads[i]
 		ps.Range(func(name string, dense mat.Matrix) {
@@ -69,11 +74,11 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 			paramV.(utils.DenseAdd).Add(paramV, &deltaV)
 
 			deltaM.Apply(func(i, j int, v float64) float64 {
-				return v / (1 - math.Pow(adam.beta1, float64(adam.t)))
+				return v / (1 - math.Pow(adam.beta1, float64(adam.t.Load())))
 			}, paramM)
 			var tmp mat.Dense
 			tmp.Apply(func(i, j int, v float64) float64 {
-				v = v / (1 - math.Pow(adam.beta2, float64(adam.t)))
+				v = v / (1 - math.Pow(adam.beta2, float64(adam.t.Load())))
 				return math.Pow(v, 0.5) + adam.epsilon
 			}, paramV)
 			dense.(utils.DenseScale).Scale(-adam.lr, &deltaM)

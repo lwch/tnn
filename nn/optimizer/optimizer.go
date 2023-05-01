@@ -13,6 +13,7 @@ type Optimizer interface {
 	Update(grads, params []*params.Params)
 	Save() *pb.Optimizer
 	Print()
+	SetLr(lr float64)
 }
 
 type computeFunc func(grads []*params.Params) []*params.Params
@@ -55,11 +56,11 @@ func Load(opt *pb.Optimizer) Optimizer {
 func (opt *base) Update(grads, params []*params.Params) {
 	grads = opt.computeFunc(grads)
 	for i := 0; i < len(grads); i++ {
-		for _, grad := range *grads[i] {
+		grads[i].Range(func(name string, dense mat.Matrix) {
 			var tmp mat.Dense
-			tmp.Scale(opt.lr*opt.weightDecay, grad)
-			grad.(utils.DenseSub).Sub(grad, &tmp)
-		}
+			tmp.Scale(opt.lr*opt.weightDecay, dense)
+			dense.(utils.DenseSub).Sub(dense, &tmp)
+		})
 	}
 	for i := 0; i < len(params); i++ {
 		if params[i] == nil {
@@ -80,4 +81,8 @@ func (opt *base) Print() {
 	fmt.Println("Optimizer:", opt.name)
 	fmt.Println("  - Learning Rate:", opt.lr)
 	fmt.Println("  - Weight Decay:", opt.weightDecay)
+}
+
+func (opt *base) SetLr(lr float64) {
+	opt.lr = lr
 }

@@ -66,22 +66,22 @@ func (layer *base) Name() string {
 	return layer.name
 }
 
-func (layer *base) Forward(input mat.Matrix) mat.Matrix {
+func (layer *base) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
 	layer.input.CloneFrom(input)
-	return layer.activation(input)
+	return input, layer.activation(input)
 }
 
-func (layer *base) Backward(grad mat.Matrix) mat.Matrix {
+func (layer *base) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	var ret mat.Dense
 	ret.MulElem(layer.derivative(), grad)
-	return &ret
+	return &ret, nil
 }
 
 func (*base) Params() *params.Params {
 	return nil
 }
 
-func (*base) Context() params.Params {
+func (*base) Context() *params.Params {
 	return nil
 }
 

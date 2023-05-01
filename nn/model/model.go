@@ -36,13 +36,14 @@ func (m *Model) SetName(name string) {
 }
 
 func (m *Model) Predict(input mat.Matrix) mat.Matrix {
-	return m.net.Forward(input, false)
+	result, _ := m.net.Forward(input, false)
+	return result
 }
 
 func (m *Model) Train(input mat.Matrix, targets mat.Matrix) {
-	pred := m.net.Forward(input, true)
+	pred, ctx := m.net.Forward(input, true)
 	grad := m.loss.Grad(pred, targets)
-	grads := m.net.Backward(grad)
+	grads := m.net.Backward(grad, ctx)
 	m.apply(grads)
 	m.trainCount++
 }
@@ -106,4 +107,8 @@ func (m *Model) Print() {
 
 func (m *Model) Layers() []layer.Layer {
 	return m.net.Layers()
+}
+
+func (m *Model) SetLr(lr float64) {
+	m.optimizer.SetLr(lr)
 }

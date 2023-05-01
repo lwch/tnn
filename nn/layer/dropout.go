@@ -2,8 +2,8 @@ package layer
 
 import (
 	"github.com/lwch/tnn/internal/pb"
-	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/nn/initializer"
+	"github.com/lwch/tnn/nn/params"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -15,17 +15,14 @@ type Dropout struct {
 func NewDropout(keepProb float64) *Dropout {
 	var layer Dropout
 	layer.keepProb = keepProb
-	layer.base = new("dropout", map[string]Shape{
-		"m": {NoneShape, NoneShape},
-	}, initializer.NewBinomial(1, keepProb), layer.forward, layer.backward)
+	layer.base = new("dropout", nil, initializer.NewBinomial(1, keepProb))
 	return &layer
 }
 
 func LoadDropout(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) Layer {
 	var layer Dropout
 	layer.keepProb = args["kp"].GetData()[0]
-	layer.base = new("dropout", nil, initializer.NewBinomial(1, layer.keepProb),
-		layer.forward, layer.backward)
+	layer.base = new("dropout", nil, initializer.NewBinomial(1, layer.keepProb))
 	layer.name = name
 	layer.base.loadParams(params)
 	return &layer
@@ -35,30 +32,27 @@ func (layer *Dropout) Name() string {
 	return "dropout"
 }
 
-func (layer *Dropout) forward(input mat.Matrix) mat.Matrix {
+func (layer *Dropout) Forward(input mat.Matrix, isTraining bool) (context, output mat.Matrix) {
 	if !layer.hasInit {
-		rows, cols := input.Dims()
-		layer.shapes["m"] = Shape{rows, cols}
 		layer.initParams()
 	}
-	if layer.isTraining {
-		m := layer.context["m"]
-		m.(utils.DenseApply).Apply(func(i, j int, v float64) float64 {
+	rows, cols := input.Dims()
+	ctx := mat.NewDense(rows, cols, nil)
+	if isTraining {
+		ctx.Apply(func(i, j int, v float64) float64 {
 			return layer.init.Rand() / layer.keepProb
-		}, m)
+		}, input)
 		var ret mat.Dense
-		ret.MulElem(input, m)
-		return &ret
+		ret.MulElem(input, ctx)
+		return ctx, &ret
 	}
-	return input
+	return ctx, input
 }
 
-func (layer *Dropout) backward(grad mat.Matrix) mat.Matrix {
-	dm := layer.context["m"]
-
+func (layer *Dropout) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	var ret mat.Dense
-	ret.MulElem(grad, dm)
-	return &ret
+	ret.MulElem(grad, context)
+	return &ret, nil
 }
 
 func (layer *Dropout) Args() map[string]mat.Matrix {

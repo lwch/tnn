@@ -40,26 +40,26 @@ func (n *Net) Add(layer layer.Layer) {
 	n.layers = append(n.layers, layer)
 }
 
-func (n *Net) Forward(input mat.Matrix, isTraining bool) mat.Matrix {
+func (n *Net) Forward(input mat.Matrix, isTraining bool) (ret mat.Matrix, context []mat.Matrix) {
+	var ctx mat.Matrix
+	list := make([]mat.Matrix, len(n.layers))
 	for i := 0; i < len(n.layers); i++ {
-		n.layers[i].SetTraining(isTraining)
-		input = n.layers[i].Forward(input)
-		n.layers[i].SetTraining(false)
+		ctx, input = n.layers[i].Forward(input, isTraining)
+		list[i] = ctx
 		// fmt.Println(n.layers[i].Name())
 		// fmt.Println(input.Dims())
 	}
-	return input
+	return input, list
 }
 
-func (n *Net) Backward(grad mat.Matrix) []*params.Params {
+func (n *Net) Backward(grad mat.Matrix, ctx []mat.Matrix) []*params.Params {
 	ret := make([]*params.Params, len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
-		grad = n.layers[i].Backward(grad)
+		var paramsGrad *params.Params
+		grad, paramsGrad = n.layers[i].Backward(ctx[i], grad)
 		// fmt.Println(n.layers[i].Name())
 		// fmt.Println(grad.Dims())
-		var p params.Params
-		p.Copy(n.layers[i].Context())
-		ret[i] = &p
+		ret[i] = paramsGrad
 	}
 	return ret
 }

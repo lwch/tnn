@@ -8,6 +8,7 @@ import (
 	"github.com/lwch/tnn/internal/utils"
 	"github.com/lwch/tnn/internal/vector"
 	"github.com/lwch/tnn/nn/initializer"
+	"github.com/lwch/tnn/nn/params"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -25,7 +26,7 @@ func NewConv2D(imgShape Shape, kernel Kernel, stride Stride,
 	layer.base = new("conv2d", map[string]Shape{
 		"w": {kernel.M * kernel.N * kernel.InChan, kernel.OutChan},
 		"b": {1, kernel.OutChan},
-	}, init, layer.forward, layer.backward)
+	}, init)
 	layer.imageShape = imgShape
 	layer.kernel = kernel
 	layer.stride = stride
@@ -50,7 +51,7 @@ func LoadConv2D(name string, params map[string]*pb.Dense, args map[string]*pb.De
 	layer.imageShape = getShape("img.shape")
 	layer.kernel = getKernel("kernel")
 	layer.stride = getStride("stride")
-	layer.base = new("conv2d", nil, nil, layer.forward, layer.backward)
+	layer.base = new("conv2d", nil, nil)
 	layer.name = name
 	layer.base.loadParams(params)
 	return &layer
@@ -78,7 +79,7 @@ func (layer *Conv2D) OutputChan() int {
 
 // input:  [batch, w*h*inChan]
 // output: [batch, w*h*outChan]
-func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
+func (layer *Conv2D) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
 	batch, _ := input.Dims()
 	if !layer.hasInit {
 		layer.initParams()
@@ -113,26 +114,28 @@ func (layer *Conv2D) forward(input mat.Matrix) mat.Matrix {
 	col := pad.Im2Col(layer.kernel.M, layer.kernel.N,
 		layer.stride.Y, layer.stride.X,
 		layer.kernel.InChan)
-	layer.input.CloneFrom(col)
+	var ctx mat.Dense
+	ctx.CloneFrom(col)
 	var ret mat.Dense
-	ret.Mul(col, layer.params["w"])
-	b := layer.params["b"].(utils.DenseRowView).RowView(0)
+	ret.Mul(col, layer.params.Get("w"))
+	b := layer.params.Get("b").(utils.DenseRowView).RowView(0)
 	rows, _ := ret.Dims()
 	for i := 0; i < rows; i++ {
 		row := ret.RowView(i)
 		row.(utils.AddVec).AddVec(row, b)
 	}
-	return utils.ReshapeRows(&ret, batch)
+	return &ctx, utils.ReshapeRows(&ret, batch)
 }
 
-func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
-	dw := layer.context["w"]
-	db := layer.context["b"]
+func (layer *Conv2D) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+	paramsGrad = params.New()
+	dw := paramsGrad.Init("w", layer.shapes["w"].M, layer.shapes["w"].N)
+	db := paramsGrad.Init("b", layer.shapes["b"].M, layer.shapes["b"].N)
 
 	// same as dense layer
 	batch, _ := grad.Dims()
 	flatGrad := utils.ReshapeCols(grad, layer.kernel.OutChan)
-	dw.(utils.DenseMul).Mul(layer.input.T(), flatGrad)
+	dw.(utils.DenseMul).Mul(context.T(), flatGrad)
 	db0 := db.(utils.DenseRowView).RowView(0)
 	rows, _ := flatGrad.Dims()
 	for i := 0; i < rows; i++ {
@@ -141,7 +144,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	db0.(utils.ScaleVec).ScaleVec(1/float64(rows), db0)
 
 	var ret mat.Dense
-	w := layer.params["w"]
+	w := layer.params.Get("w")
 	ret.Mul(flatGrad, utils.ReshapeCols(w, layer.kernel.OutChan).T())
 	ret3D := vector.ReshapeMatrix(&ret, layer.kernel.M, layer.kernel.N)
 
@@ -150,7 +153,7 @@ func (layer *Conv2D) backward(grad mat.Matrix) mat.Matrix {
 	tmp.ConvAdd(ret3D, layer.stride.Y, layer.stride.X)
 	// cut the padding
 	cuted := tmp.Cut(layer.imageShape.M, layer.imageShape.N).ToMatrix()
-	return utils.ReshapeRows(cuted, batch)
+	return utils.ReshapeRows(cuted, batch), paramsGrad
 }
 
 func (layer *Conv2D) pad(input mat.Matrix) *vector.Vector3D {
