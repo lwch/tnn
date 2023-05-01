@@ -108,3 +108,7 @@ func (m *Model) Print() {
 func (m *Model) Layers() []layer.Layer {
 	return m.net.Layers()
 }
+
+func (m *Model) SetLr(lr float64) {
+	m.optimizer.SetLr(lr)
+}
