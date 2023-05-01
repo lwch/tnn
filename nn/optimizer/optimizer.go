@@ -13,6 +13,7 @@ type Optimizer interface {
 	Update(grads, params []*params.Params)
 	Save() *pb.Optimizer
 	Print()
+	SetLr(lr float64)
 }
 
 type computeFunc func(grads []*params.Params) []*params.Params
@@ -80,4 +81,8 @@ func (opt *base) Print() {
 	fmt.Println("Optimizer:", opt.name)
 	fmt.Println("  - Learning Rate:", opt.lr)
 	fmt.Println("  - Weight Decay:", opt.weightDecay)
+}
+
+func (opt *base) SetLr(lr float64) {
+	opt.lr = lr
 }
