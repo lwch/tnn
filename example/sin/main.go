@@ -7,6 +7,7 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
+	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/net"
@@ -20,7 +21,7 @@ import (
 
 const lr = 1e-3
 const epoch = 1000
-const batchSize = 100
+const batchSize = 10
 const times = 8
 
 func main() {
@@ -29,10 +30,10 @@ func main() {
 	var net net.Net
 	net.Set(
 		layer.NewRnn(times, 32, initializer),
-		layer.NewDense(times, initializer),
+		activation.NewReLU(),
 		layer.NewDense(1, initializer),
 	)
-	loss := loss.NewMAE()
+	loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
 
@@ -53,9 +54,6 @@ func main() {
 		join(&predict, i, pred)
 		if i%100 == 0 {
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
-		}
-		if acc > 90 {
-			break
 		}
 	}
 
@@ -83,10 +81,13 @@ func getBatch(i int) (*mat.Dense, *mat.Dense) {
 	max := float64(epoch * batchSize * times)
 	for batch := 0; batch < batchSize; batch++ {
 		var n float64
-		for tk := 0; tk < times; tk++ {
-			n = float64(i) / max * 100
-			inputs.Set(batch, tk, n)
+		for t := 0; t < times-1; t++ {
+			n = float64(i-1) / max * 100
+			inputs.Set(batch, t, math.Sin(n))
+			i++
 		}
+		n = float64(i) / max * 100
+		inputs.Set(batch, times-1, n)
 		outputs.Set(batch, 0, math.Sin(n))
 	}
 	return inputs, outputs
@@ -96,9 +97,7 @@ func accuracy(m *model.Model, input, output *mat.Dense) float64 {
 	predict := m.Predict(input)
 	var correct float64
 	for i := 0; i < batchSize; i++ {
-		if math.Abs(output.At(i, 0)-predict.At(i, 0)) < 1e-4 {
-			correct++
-		}
+		correct += 1 - math.Abs(output.At(i, 0)-predict.At(i, 0))
 	}
 	return correct * 100 / batchSize
 }
