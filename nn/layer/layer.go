@@ -14,8 +14,8 @@ type Layer interface {
 	SetName(string)
 	Name() string
 	Class() string
-	Forward(input mat.Matrix, isTraining bool) (context, output mat.Matrix)
-	Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params)
+	Forward(input mat.Matrix, isTraining bool) (context []mat.Matrix, output mat.Matrix)
+	Backward(context []mat.Matrix, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params)
 	Params() *params.Params
 	Args() map[string]mat.Matrix
 	Print()

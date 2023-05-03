@@ -5,6 +5,11 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// common
+type Zero interface {
+	Zero()
+}
+
 // dense
 type DenseAdd interface {
 	Add(a, b mat.Matrix)

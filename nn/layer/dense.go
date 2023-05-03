@@ -31,7 +31,7 @@ func LoadDense(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense)
 	return &layer
 }
 
-func (layer *Dense) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
+func (layer *Dense) Forward(input mat.Matrix, _ bool) (context []mat.Matrix, output mat.Matrix) {
 	if !layer.hasInit {
 		layer.mInit.Lock()
 		shapeW := layer.shapes["w"]
@@ -48,10 +48,10 @@ func (layer *Dense) Forward(input mat.Matrix, _ bool) (context, output mat.Matri
 		row := ret.RowView(i)
 		row.(utils.AddVec).AddVec(row, b)
 	}
-	return input, &ret
+	return []mat.Matrix{input}, &ret
 }
 
-func (layer *Dense) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+func (layer *Dense) Backward(context []mat.Matrix, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	paramsGrad = params.New()
 	layer.mInit.Lock()
 	sw := layer.shapes["w"]
@@ -60,7 +60,7 @@ func (layer *Dense) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, pa
 	dw := paramsGrad.Init("w", sw.M, sw.N)
 	db := paramsGrad.Init("b", sb.M, sb.N)
 
-	dw.(utils.DenseMul).Mul(context.T(), grad)
+	dw.(utils.DenseMul).Mul(context[0].T(), grad)
 	db0 := db.(utils.DenseRowView).RowView(0)
 	rows, _ := grad.Dims()
 	for i := 0; i < rows; i++ {

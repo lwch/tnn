@@ -32,7 +32,7 @@ func (layer *Dropout) Name() string {
 	return "dropout"
 }
 
-func (layer *Dropout) Forward(input mat.Matrix, isTraining bool) (context, output mat.Matrix) {
+func (layer *Dropout) Forward(input mat.Matrix, isTraining bool) (context []mat.Matrix, output mat.Matrix) {
 	if !layer.hasInit {
 		layer.initParams()
 	}
@@ -44,14 +44,14 @@ func (layer *Dropout) Forward(input mat.Matrix, isTraining bool) (context, outpu
 		}, input)
 		var ret mat.Dense
 		ret.MulElem(input, ctx)
-		return ctx, &ret
+		return []mat.Matrix{ctx}, &ret
 	}
-	return ctx, input
+	return []mat.Matrix{ctx}, input
 }
 
-func (layer *Dropout) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+func (layer *Dropout) Backward(context []mat.Matrix, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	var ret mat.Dense
-	ret.MulElem(grad, context)
+	ret.MulElem(grad, context[0])
 	return &ret, nil
 }
 

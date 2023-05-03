@@ -18,7 +18,8 @@ type MaxPool struct {
 	imageShape Shape
 	kernel     Kernel
 	stride     Stride
-	idx        [][][]image.Point // batch => channel => index
+	// TODO: parallel
+	idx [][][]image.Point // batch => channel => index
 }
 
 func NewMaxPool(imgShape Shape, kernel Kernel, stride Stride) *MaxPool {
@@ -71,7 +72,7 @@ func (layer *MaxPool) OutputShape() Shape {
 	return Shape{int(y), int(x)}
 }
 
-func (layer *MaxPool) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
+func (layer *MaxPool) Forward(input mat.Matrix, _ bool) (context []mat.Matrix, output mat.Matrix) {
 	batch, _ := input.Dims()
 	outputShape := layer.OutputShape()
 	if !layer.hasInit {
@@ -122,10 +123,10 @@ func (layer *MaxPool) Forward(input mat.Matrix, _ bool) (context, output mat.Mat
 		}
 		channelID++
 	}
-	return input, utils.ReshapeRows(ret, batch)
+	return []mat.Matrix{input}, utils.ReshapeRows(ret, batch)
 }
 
-func (layer *MaxPool) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+func (layer *MaxPool) Backward(_ []mat.Matrix, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	batch, _ := grad.Dims()
 	ret := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	outputShape := layer.OutputShape()

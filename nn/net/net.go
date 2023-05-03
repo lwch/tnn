@@ -40,9 +40,9 @@ func (n *Net) Add(layer layer.Layer) {
 	n.layers = append(n.layers, layer)
 }
 
-func (n *Net) Forward(input mat.Matrix, isTraining bool) (ret mat.Matrix, context []mat.Matrix) {
-	var ctx mat.Matrix
-	list := make([]mat.Matrix, len(n.layers))
+func (n *Net) Forward(input mat.Matrix, isTraining bool) (ret mat.Matrix, context [][]mat.Matrix) {
+	var ctx []mat.Matrix
+	list := make([][]mat.Matrix, len(n.layers))
 	for i := 0; i < len(n.layers); i++ {
 		ctx, input = n.layers[i].Forward(input, isTraining)
 		list[i] = ctx
@@ -52,7 +52,7 @@ func (n *Net) Forward(input mat.Matrix, isTraining bool) (ret mat.Matrix, contex
 	return input, list
 }
 
-func (n *Net) Backward(grad mat.Matrix, ctx []mat.Matrix) []*params.Params {
+func (n *Net) Backward(grad mat.Matrix, ctx [][]mat.Matrix) []*params.Params {
 	ret := make([]*params.Params, len(n.layers))
 	for i := len(n.layers) - 1; i >= 0; i-- {
 		var paramsGrad *params.Params

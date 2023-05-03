@@ -79,7 +79,7 @@ func (layer *Conv2D) OutputChan() int {
 
 // input:  [batch, w*h*inChan]
 // output: [batch, w*h*outChan]
-func (layer *Conv2D) Forward(input mat.Matrix, _ bool) (context, output mat.Matrix) {
+func (layer *Conv2D) Forward(input mat.Matrix, _ bool) (context []mat.Matrix, output mat.Matrix) {
 	batch, _ := input.Dims()
 	if !layer.hasInit {
 		layer.initParams()
@@ -124,10 +124,10 @@ func (layer *Conv2D) Forward(input mat.Matrix, _ bool) (context, output mat.Matr
 		row := ret.RowView(i)
 		row.(utils.AddVec).AddVec(row, b)
 	}
-	return &ctx, utils.ReshapeRows(&ret, batch)
+	return []mat.Matrix{&ctx}, utils.ReshapeRows(&ret, batch)
 }
 
-func (layer *Conv2D) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+func (layer *Conv2D) Backward(context []mat.Matrix, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
 	paramsGrad = params.New()
 	dw := paramsGrad.Init("w", layer.shapes["w"].M, layer.shapes["w"].N)
 	db := paramsGrad.Init("b", layer.shapes["b"].M, layer.shapes["b"].N)
@@ -135,7 +135,7 @@ func (layer *Conv2D) Backward(context, grad mat.Matrix) (valueGrad mat.Matrix, p
 	// same as dense layer
 	batch, _ := grad.Dims()
 	flatGrad := utils.ReshapeCols(grad, layer.kernel.OutChan)
-	dw.(utils.DenseMul).Mul(context.T(), flatGrad)
+	dw.(utils.DenseMul).Mul(context[0].T(), flatGrad)
 	db0 := db.(utils.DenseRowView).RowView(0)
 	rows, _ := flatGrad.Dims()
 	for i := 0; i < rows; i++ {
