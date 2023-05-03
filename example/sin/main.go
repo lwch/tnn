@@ -7,7 +7,6 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
-	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/net"
@@ -19,8 +18,8 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-const lr = 1e-3
-const epoch = 1000
+const lr = 1e-4
+const epoch = 2000
 const batchSize = 10
 const times = 8
 
@@ -30,7 +29,6 @@ func main() {
 	var net net.Net
 	net.Set(
 		layer.NewRnn(times, 32, initializer),
-		activation.NewReLU(),
 		layer.NewDense(1, initializer),
 	)
 	loss := loss.NewMSE()
@@ -47,12 +45,12 @@ func main() {
 		input, output := getBatch(i * batchSize * times)
 		// fmt.Println(mat.Formatted(output))
 		m.Train(input, output)
-		acc := accuracy(m, input, output)
-		loss := m.Loss(input, output)
 		pred := m.Predict(input)
 		join(&real, i, output)
 		join(&predict, i, pred)
 		if i%100 == 0 {
+			acc := accuracy(m, input, output)
+			loss := m.Loss(input, output)
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
 		}
 	}
@@ -72,7 +70,7 @@ func main() {
 	p.Legend.Add("predict", lPred)
 	p.Legend.Top = true
 	p.Legend.XOffs = -20
-	p.Save(8*vg.Inch, 4*vg.Inch, "sin.png")
+	p.Save(16*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
 func getBatch(i int) (*mat.Dense, *mat.Dense) {
@@ -81,13 +79,12 @@ func getBatch(i int) (*mat.Dense, *mat.Dense) {
 	max := float64(epoch * batchSize * times)
 	for batch := 0; batch < batchSize; batch++ {
 		var n float64
-		for t := 0; t < times-1; t++ {
+		for t := 0; t < times; t++ {
 			n = float64(i-1) / max * 100
 			inputs.Set(batch, t, math.Sin(n))
 			i++
 		}
 		n = float64(i) / max * 100
-		inputs.Set(batch, times-1, n)
 		outputs.Set(batch, 0, math.Sin(n))
 	}
 	return inputs, outputs
@@ -97,7 +94,10 @@ func accuracy(m *model.Model, input, output *mat.Dense) float64 {
 	predict := m.Predict(input)
 	var correct float64
 	for i := 0; i < batchSize; i++ {
-		correct += 1 - math.Abs(output.At(i, 0)-predict.At(i, 0))
+		diff := 1 - math.Abs(output.At(i, 0)-predict.At(i, 0))
+		if diff > 0 {
+			correct += diff
+		}
 	}
 	return correct * 100 / batchSize
 }
