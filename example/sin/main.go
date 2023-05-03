@@ -69,6 +69,11 @@ func main() {
 	lPred.LineStyle.Dashes = []vg.Length{vg.Points(10), vg.Points(5)}
 
 	p.Add(lReal, lPred)
+	p.Y.Max = 1.5
+	p.Legend.Add("real", lReal)
+	p.Legend.Add("predict", lPred)
+	p.Legend.Top = true
+	p.Legend.XOffs = -20
 	p.Save(8*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
