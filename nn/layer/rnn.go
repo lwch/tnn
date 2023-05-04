@@ -135,6 +135,7 @@ func (layer *Rnn) Backward(context []mat.Matrix, grad mat.Matrix) (valueGrad mat
 		for i := 0; i < rows; i++ {
 			db0.(utils.AddVec).AddVec(db0, da.RowView(i))
 		}
+		db0.(utils.ScaleVec).ScaleVec(1/float64(rows), db0)
 
 		w = layer.params.Get("w").(utils.DenseSlice).Slice(0, layer.output, 0, layer.output)
 		dH.(utils.DenseMul).Mul(&da, w)
