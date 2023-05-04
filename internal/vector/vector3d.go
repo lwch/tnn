@@ -40,8 +40,13 @@ func ReshapeVector(vec mat.Vector, rows, cols int) *Vector3D {
 
 func ReshapeMatrix(d mat.Matrix, rows, cols int) *Vector3D {
 	srcRows, srcCols := d.Dims()
-	return ReshapeVector(mat.NewVecDense(
-		srcRows*srcCols, d.(utils.RawMatrix).RawMatrix().Data), rows, cols)
+	data := make([]float64, srcRows*srcCols)
+	for row := 0; row < srcRows; row++ {
+		for col := 0; col < srcCols; col++ {
+			data[row*srcCols+col] = d.At(row, col)
+		}
+	}
+	return ReshapeVector(mat.NewVecDense(srcRows*srcCols, data), rows, cols)
 }
 
 func (v *Vector3D) Get(batch int) mat.Matrix {
