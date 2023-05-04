@@ -144,7 +144,7 @@ func train(train, test *dataSet, rows, cols int) {
 	// 	activation.NewReLU(),
 	// 	output,
 	// )
-	loss := loss.NewSoftmax(1)
+	loss := loss.NewMSE()
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)

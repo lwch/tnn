@@ -18,8 +18,6 @@ type MaxPool struct {
 	imageShape Shape
 	kernel     Kernel
 	stride     Stride
-	// TODO: parallel
-	idx [][][]image.Point // batch => channel => index
 }
 
 func NewMaxPool(imgShape Shape, kernel Kernel, stride Stride) *MaxPool {
@@ -52,15 +50,6 @@ func LoadMaxPool(name string, params map[string]*pb.Dense, args map[string]*pb.D
 	layer.base = new("maxpool", nil, nil)
 	layer.name = name
 	layer.base.loadParams(params)
-	batch := int(args["batch"].GetData()[0])
-	layer.idx = make([][][]image.Point, batch)
-	outputShape := layer.OutputShape()
-	for i := 0; i < batch; i++ {
-		layer.idx[i] = make([][]image.Point, layer.kernel.InChan)
-		for j := 0; j < layer.kernel.InChan; j++ {
-			layer.idx[i][j] = make([]image.Point, outputShape.M*outputShape.N)
-		}
-	}
 	return &layer
 }
 
@@ -77,14 +66,8 @@ func (layer *MaxPool) Forward(input mat.Matrix, _ bool) (context []mat.Matrix, o
 	outputShape := layer.OutputShape()
 	if !layer.hasInit {
 		layer.initParams()
-		layer.idx = make([][][]image.Point, batch)
-		for i := 0; i < batch; i++ {
-			layer.idx[i] = make([][]image.Point, layer.kernel.InChan)
-			for j := 0; j < layer.kernel.InChan; j++ {
-				layer.idx[i][j] = make([]image.Point, outputShape.M*outputShape.N)
-			}
-		}
 	}
+	idxLog := mat.NewDense(batch*layer.kernel.InChan, outputShape.M*outputShape.N, nil)
 	pad := layer.pad(input)
 	layer.padedShape.M, layer.padedShape.N = pad.Dims()
 	maxFunc := func(m mat.Matrix) (float64, image.Point) {
@@ -104,8 +87,6 @@ func (layer *MaxPool) Forward(input mat.Matrix, _ bool) (context []mat.Matrix, o
 	}
 	ret := mat.NewDense(batch*layer.kernel.InChan, outputShape.M*outputShape.N, nil)
 	for i := 0; i < pad.BatchSize(); i++ {
-		batchID := int(math.Floor(float64(i) / float64(layer.kernel.InChan)))
-		channelID := i % layer.kernel.InChan
 		img := pad.Get(i)
 		var idx int
 		for j := 0; j < outputShape.M; j++ {
@@ -115,18 +96,18 @@ func (layer *MaxPool) Forward(input mat.Matrix, _ bool) (context []mat.Matrix, o
 				topLeftX := k * layer.stride.X
 				bottomRightX := topLeftX + layer.kernel.N
 				rect := img.(utils.DenseSlice).Slice(topLeftY, bottomRightY, topLeftX, bottomRightX)
-				var value float64
-				value, layer.idx[batchID][channelID][idx] = maxFunc(rect)
+				value, n := maxFunc(rect)
+				idxLog.Set(i, idx, float64(n.Y*outputShape.N+n.X))
 				ret.Set(i, idx, value)
 				idx++
 			}
 		}
-		channelID++
 	}
-	return []mat.Matrix{input}, utils.ReshapeRows(ret, batch)
+	return []mat.Matrix{idxLog}, utils.ReshapeRows(ret, batch)
 }
 
-func (layer *MaxPool) Backward(_ []mat.Matrix, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+func (layer *MaxPool) Backward(ctx []mat.Matrix, grad mat.Matrix) (valueGrad mat.Matrix, paramsGrad *params.Params) {
+	idxLog := ctx[0]
 	batch, _ := grad.Dims()
 	ret := vector.NewVector3D(batch*layer.kernel.InChan, layer.padedShape.M, layer.padedShape.N)
 	outputShape := layer.OutputShape()
@@ -141,9 +122,12 @@ func (layer *MaxPool) Backward(_ []mat.Matrix, grad mat.Matrix) (valueGrad mat.M
 				for k := 0; k < outputShape.N; k++ {
 					startX := k * layer.stride.X
 					g := rv.AtVec(gradIdx)
-					pt := layer.idx[batchID][channelID][idx]
-					dy := startY + pt.Y
-					dx := startX + pt.X
+					row := batchID*layer.kernel.InChan + channelID
+					n := idxLog.At(row, idx)
+					py := int(math.Floor(n / float64(outputShape.N)))
+					px := int(n) % outputShape.N
+					dy := startY + py
+					dx := startX + px
 					g += img.At(dy, dx)
 					img.(utils.DenseSet).Set(dy, dx, g)
 					idx++
@@ -182,7 +166,6 @@ func (layer *MaxPool) Args() map[string]mat.Matrix {
 		"img.shape": buildShape(layer.imageShape),
 		"kernel":    buildKernel(layer.kernel),
 		"stride":    buildStride(layer.stride),
-		"batch":     mat.NewVecDense(1, []float64{float64(len(layer.idx))}),
 	}
 }
 
