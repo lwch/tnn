@@ -28,8 +28,13 @@ func NewRnn(times, output int, init initializer.Initializer) *Rnn {
 	return &layer
 }
 
-func LoadRnn(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) Layer {
+func LoadRnn(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) Layer {
+	get := func(name string) int {
+		return int(args[name].GetData()[0])
+	}
 	var layer Rnn
+	layer.output = get("output")
+	layer.times = get("times")
 	layer.base = new("rnn", nil, nil)
 	layer.name = name
 	layer.base.loadParams(params)
@@ -144,6 +149,16 @@ func (layer *Rnn) Backward(context []mat.Matrix, grad mat.Matrix) (valueGrad mat
 	return dIn, paramsGrad
 }
 
+func (layer *Rnn) Args() map[string]mat.Matrix {
+	build := func(n int) mat.Matrix {
+		return mat.NewVecDense(1, []float64{float64(n)})
+	}
+	return map[string]mat.Matrix{
+		"output": build(layer.output),
+		"times":  build(layer.times),
+	}
+}
+
 func (layer *Rnn) Print() {
 	layer.base.Print()
 	_, cnt := layer.params.Get("w").Dims()
@@ -154,10 +169,3 @@ func (layer *Rnn) Print() {
 		fmt.Println("      - "+name+":", fmt.Sprintf("%dx%d", rows, cols))
 	})
 }
-
-// func (layer *Rnn) pad(dense *mat.Dense) *mat.Dense {
-// 	rows, cols := dense.Dims()
-// 	ret := mat.NewDense(rows, cols+layer.output, nil)
-// 	ret.Slice(0, rows, 0, cols).(utils.DenseCopy).Copy(dense)
-// 	return ret
-// }
