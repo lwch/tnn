@@ -14,18 +14,28 @@ type sampleHeader struct {
 }
 
 // Write write samples to w
-func Write(w io.Writer, inputs, outputs [][]float64) {
+func Write(w io.Writer, inputs, outputs [][]float64) error {
 	var hdr sampleHeader
 	hdr.BatchSize = uint32(len(inputs))
 	hdr.FeatureSize = uint32(len(inputs[0]))
 	hdr.LabelSize = uint32(len(outputs[0]))
-	runtime.Assert(binary.Write(w, binary.BigEndian, &hdr))
+	err := binary.Write(w, binary.BigEndian, &hdr)
+	if err != nil {
+		return err
+	}
 	for _, v := range inputs {
-		runtime.Assert(binary.Write(w, binary.BigEndian, v))
+		err = binary.Write(w, binary.BigEndian, v)
+		if err != nil {
+			return err
+		}
 	}
 	for _, v := range outputs {
-		runtime.Assert(binary.Write(w, binary.BigEndian, v))
+		err = binary.Write(w, binary.BigEndian, v)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Read read samples from reader
