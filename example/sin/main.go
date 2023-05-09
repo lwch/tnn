@@ -80,7 +80,7 @@ func getBatch(i int) (*mat.Dense, *mat.Dense) {
 	for batch := 0; batch < batchSize; batch++ {
 		var n float64
 		for t := 0; t < times; t++ {
-			n = float64(i-1) / max * 100
+			n = float64(i) / max * 100
 			inputs.Set(batch, t, math.Sin(n))
 			i++
 		}
