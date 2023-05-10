@@ -67,3 +67,14 @@ func (r *Reader) ReadLabel(idx uint32, data []float64) error {
 	}
 	return binary.Read(r.r, binary.BigEndian, data)
 }
+
+// WriteTo write to
+func (r *Reader) WriteTo(w io.Writer) (int64, error) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	_, err := r.r.Seek(0, io.SeekStart)
+	if err != nil {
+		return 0, err
+	}
+	return io.Copy(w, r.r)
+}
