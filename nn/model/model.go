@@ -1,7 +1,9 @@
 package model
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/lwch/tnn/internal/pb"
@@ -63,6 +65,15 @@ func (m *Model) ParamCount() uint64 {
 }
 
 func (m *Model) Save(dir string) error {
+	f, err := os.Create(dir)
+	if err != nil {
+		return err
+	}
+	_, err = m.WriteTo(f)
+	return err
+}
+
+func (m *Model) WriteTo(w io.Writer) (int64, error) {
 	var model pb.Model
 	model.Name = m.name
 	model.TrainCount = m.trainCount
@@ -72,9 +83,9 @@ func (m *Model) Save(dir string) error {
 	model.Optimizer = m.optimizer.Save()
 	data, err := proto.Marshal(&model)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return os.WriteFile(dir, data, 0644)
+	return io.Copy(w, bytes.NewReader(data))
 }
 
 func (m *Model) Load(dir string) error {
