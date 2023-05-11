@@ -90,7 +90,6 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 
 func (adam *Adam) Save() *pb.Optimizer {
 	ret := adam.base.Save()
-	ret.Name = "adam"
 	ret.Params = make(map[string]float64)
 	ret.Params["beta1"] = adam.beta1
 	ret.Params["beta2"] = adam.beta2

@@ -72,6 +72,7 @@ func (opt *base) Update(grads, params []*params.Params) {
 
 func (opt *base) Save() *pb.Optimizer {
 	return &pb.Optimizer{
+		Name:        opt.name,
 		Lr:          opt.lr,
 		WeightDecay: opt.weightDecay,
 	}

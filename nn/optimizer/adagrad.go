@@ -70,7 +70,6 @@ func (adagrad *Adagrad) compute(grads []*params.Params) []*params.Params {
 
 func (adagrad *Adagrad) Save() *pb.Optimizer {
 	ret := adagrad.base.Save()
-	ret.Name = "adagrad"
 	ret.Params = make(map[string]float64)
 	ret.Params["epsilon"] = adagrad.epsilon
 	return ret
