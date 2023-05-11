@@ -89,14 +89,24 @@ func (m *Model) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (m *Model) Load(dir string) error {
-	data, err := os.ReadFile(dir)
+	f, err := os.Open(dir)
 	if err != nil {
 		return err
+	}
+	defer f.Close()
+	_, err = m.ReadFrom(f)
+	return err
+}
+
+func (m *Model) ReadFrom(r io.Reader) (int64, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return 0, err
 	}
 	var model pb.Model
 	err = proto.Unmarshal(data, &model)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	m.name = model.GetName()
 	m.trainCount = model.GetTrainCount()
@@ -104,7 +114,7 @@ func (m *Model) Load(dir string) error {
 	m.net.LoadLayers(model.GetLayers())
 	m.loss = loss.Load(model.GetLoss())
 	m.optimizer = optimizer.Load(model.GetOptimizer())
-	return nil
+	return int64(len(data)), nil
 }
 
 func (m *Model) Print() {
