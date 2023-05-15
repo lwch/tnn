@@ -41,7 +41,10 @@ func Load(s *pb.Scheduler, opt optimizer.Optimizer) Scheduler {
 	default:
 		panic("unsupported " + s.GetName() + " scheduler")
 	}
-	ret.(*base).initLr = s.GetInit()
+	type setInit interface {
+		setInit(float64)
+	}
+	ret.(setInit).setInit(s.GetInit())
 	return ret
 }
 
@@ -55,4 +58,8 @@ func (opt *base) Save() *pb.Scheduler {
 
 func (opt *base) Step(lr float64) float64 {
 	panic("not implemented")
+}
+
+func (opt *base) setInit(lr float64) {
+	opt.initLr = lr
 }

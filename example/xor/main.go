@@ -11,6 +11,7 @@ import (
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
+	lrs "github.com/lwch/tnn/nn/lr"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
@@ -78,21 +79,24 @@ func train() {
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
+	m.SetLrScheduler(lrs.NewStep(optimizer, 100, 0.999))
 
 	p := plot.New()
 	p.Title.Text = "xor train model"
 	p.X.Label.Text = "epoch"
 	p.Y.Label.Text = "loss"
 
-	var points plotter.XYs
+	var lossPoints, lrPoints plotter.XYs
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		m.Train(input, output)
 		if i%100 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)
-			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
-			points = append(points, plotter.XY{X: float64(i), Y: loss})
+			fmt.Printf("Epoch: %d, Lr: %.05f, Loss: %.05f, Accuracy: %.02f%%\n",
+				i, optimizer.GetLr(), loss, acc)
+			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
+			lrPoints = append(lrPoints, plotter.XY{X: float64(i), Y: optimizer.GetLr() * 1e4})
 			if acc >= 100 {
 				break
 			}
@@ -108,10 +112,20 @@ func train() {
 			pred.At(i, 0))
 	}
 
-	l, err := plotter.NewLine(points)
+	lossLine, err := plotter.NewLine(lossPoints)
 	runtime.Assert(err)
-	l.LineStyle.Color = plotutil.DarkColors[0]
-	p.Add(l)
+	lossLine.LineStyle.Color = plotutil.DarkColors[0]
+
+	lrLine, err := plotter.NewLine(lrPoints)
+	runtime.Assert(err)
+	lrLine.LineStyle.Color = plotutil.DarkColors[1]
+
+	p.Legend.Add("loss", lossLine)
+	p.Legend.Add("lr", lrLine)
+	p.Legend.XOffs = -20
+	p.Legend.YOffs = 5 * vg.Inch
+
+	p.Add(lossLine, lrLine)
 	p.Save(8*vg.Inch, 8*vg.Inch, "xor.png")
 
 	runtime.Assert(m.Save(modelFile))

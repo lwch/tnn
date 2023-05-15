@@ -92,6 +92,9 @@ func (m *Model) WriteTo(w io.Writer) (int64, error) {
 	model.Layers = m.net.SaveLayers()
 	model.Loss = m.loss.Save()
 	model.Optimizer = m.optimizer.Save()
+	if m.lr != nil {
+		model.Scheduler = m.lr.Save()
+	}
 	data, err := proto.Marshal(&model)
 	if err != nil {
 		return 0, err
@@ -125,6 +128,9 @@ func (m *Model) ReadFrom(r io.Reader) (int64, error) {
 	m.net.LoadLayers(model.GetLayers())
 	m.loss = loss.Load(model.GetLoss())
 	m.optimizer = optimizer.Load(model.GetOptimizer())
+	if model.GetScheduler() != nil {
+		m.lr = lr.Load(model.GetScheduler(), m.optimizer)
+	}
 	return int64(len(data)), nil
 }
 
