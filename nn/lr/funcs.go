@@ -1,6 +1,9 @@
 package lr
 
-import "github.com/lwch/tnn/nn/optimizer"
+import (
+	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/nn/optimizer"
+)
 
 type Funcs struct {
 	*base
@@ -22,4 +25,8 @@ func (s *Funcs) Step(lr float64) float64 {
 	}
 	s.currentLr = lr
 	return lr
+}
+
+func (s *Funcs) Save() *pb.Scheduler {
+	return nil
 }
