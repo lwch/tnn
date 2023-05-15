@@ -28,6 +28,13 @@ message optimizer {
     map<string, double> params = 4;
 }
 
+message scheduler {
+    string    name = 1;
+    double    init = 2;
+    double current = 3;
+    map<string, double> params = 4;
+}
+
 message model {
     string           name = 1;
     uint64    train_count = 2;
@@ -35,4 +42,5 @@ message model {
     repeated layer layers = 4;
     loss             loss = 5;
     optimizer   optimizer = 6;
+    scheduler   scheduler = 7;
 }

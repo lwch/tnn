@@ -10,10 +10,11 @@ import (
 )
 
 type Optimizer interface {
-	Update(grads, params []*params.Params)
+	Update(lr float64, grads, params []*params.Params)
 	Save() *pb.Optimizer
 	Print()
 	SetLr(lr float64)
+	GetLr() float64
 }
 
 type computeFunc func(grads []*params.Params) []*params.Params
@@ -53,7 +54,10 @@ func Load(opt *pb.Optimizer) Optimizer {
 	}
 }
 
-func (opt *base) Update(grads, params []*params.Params) {
+func (opt *base) Update(lr float64, grads, params []*params.Params) {
+	if lr != 0 {
+		opt.lr = lr
+	}
 	grads = opt.computeFunc(grads)
 	for i := 0; i < len(grads); i++ {
 		grads[i].Range(func(name string, dense mat.Matrix) {
@@ -86,4 +90,8 @@ func (opt *base) Print() {
 
 func (opt *base) SetLr(lr float64) {
 	opt.lr = lr
+}
+
+func (opt *base) GetLr() float64 {
+	return opt.lr
 }

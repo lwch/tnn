@@ -9,6 +9,7 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/loss"
+	"github.com/lwch/tnn/nn/lr"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
@@ -22,6 +23,7 @@ type Model struct {
 	net        *net.Net
 	loss       loss.Loss
 	optimizer  optimizer.Optimizer
+	lr         lr.Scheduler
 }
 
 func New(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *Model {
@@ -35,6 +37,10 @@ func New(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *Model {
 
 func (m *Model) SetName(name string) {
 	m.name = name
+}
+
+func (m *Model) SetLrScheduler(lr lr.Scheduler) {
+	m.lr = lr
 }
 
 func (m *Model) Predict(input mat.Matrix) mat.Matrix {
@@ -57,7 +63,12 @@ func (m *Model) Loss(input, targets mat.Matrix) float64 {
 
 func (m *Model) apply(grads []*params.Params) {
 	params := m.net.Params()
-	m.optimizer.Update(grads, params)
+	if m.lr != nil {
+		lr := m.lr.Step(m.optimizer.GetLr())
+		m.optimizer.Update(lr, grads, params)
+		return
+	}
+	m.optimizer.Update(0, grads, params)
 }
 
 func (m *Model) ParamCount() uint64 {
