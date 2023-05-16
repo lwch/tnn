@@ -27,6 +27,8 @@ func Load(s *pb.Scheduler, opt optimizer.Optimizer) Scheduler {
 	opt.SetLr(s.GetCurrent())
 	var ret Scheduler
 	switch s.Name {
+	case "funcs":
+		return nil
 	case "step":
 		ps := s.GetParams()
 		stepSize := ps["stepSize"]
