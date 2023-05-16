@@ -90,6 +90,7 @@ func train() {
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		m.Train(input, output)
+		m.ScheduleLr()
 		if i%100 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)

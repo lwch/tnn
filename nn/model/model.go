@@ -63,12 +63,14 @@ func (m *Model) Loss(input, targets mat.Matrix) float64 {
 
 func (m *Model) apply(grads []*params.Params) {
 	params := m.net.Params()
+	m.optimizer.Update(grads, params)
+}
+
+func (m *Model) ScheduleLr() {
 	if m.lr != nil {
 		lr := m.lr.Step(m.optimizer.GetLr())
-		m.optimizer.Update(lr, grads, params)
-		return
+		m.optimizer.SetLr(lr)
 	}
-	m.optimizer.Update(0, grads, params)
 }
 
 func (m *Model) ParamCount() uint64 {
