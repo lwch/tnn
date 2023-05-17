@@ -152,3 +152,7 @@ func (m *Model) Layers() []layer.Layer {
 func (m *Model) SetLr(lr float64) {
 	m.optimizer.SetLr(lr)
 }
+
+func (m *Model) GetOptimizer() optimizer.Optimizer {
+	return m.optimizer
+}
