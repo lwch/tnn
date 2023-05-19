@@ -3,83 +3,54 @@ package tensor
 import "gonum.org/v1/gonum/mat"
 
 type Tensor struct {
-	shapes []int
-	data   *mat.VecDense
+	data *mat.Dense
+	op   Operator
 }
 
-func New(data []float64, shapes ...int) *Tensor {
-	if len(shapes) == 0 {
-		panic("invalid shapes")
-	}
-	size := shapes[0]
-	for i := 1; i < len(shapes); i++ {
-		size *= shapes[i]
-	}
-	return &Tensor{
-		shapes: shapes,
-		data:   mat.NewVecDense(size, data),
-	}
+func New(data []float64, rows, cols int) *Tensor {
+	return &Tensor{data: mat.NewDense(rows, cols, data)}
 }
 
-func FromVec(v *mat.VecDense, shapes ...int) *Tensor {
-	if len(shapes) == 0 {
-		panic("invalid shapes")
-	}
-	size := shapes[0]
-	for i := 1; i < len(shapes); i++ {
-		size *= shapes[i]
-	}
-	if v.Len() != size {
-		panic("invalid size")
-	}
-	return &Tensor{
-		shapes: shapes,
-		data:   v,
-	}
+func FromDense(dense *mat.Dense) *Tensor {
+	return &Tensor{data: dense}
 }
 
-func (t *Tensor) Dims() int {
-	return len(t.shapes)
-}
-
-func (t *Tensor) IsSameShape(t2 *Tensor) bool {
-	if t.Dims() != t2.Dims() {
-		return false
-	}
-	for i := 0; i < t.Dims(); i++ {
-		if t.Shape(i) != t2.Shape(i) {
-			return false
-		}
-	}
-	return true
-}
-
-func (t *Tensor) Shapes() []int {
-	return t.shapes
-}
-
-func (t *Tensor) Shape(i int) int {
-	return t.shapes[i]
-}
-
-func (t *Tensor) Value() *mat.VecDense {
+func (t *Tensor) Value() *mat.Dense {
 	return t.data
 }
 
 func (t *Tensor) Clone() *Tensor {
-	var data mat.VecDense
-	data.CloneFromVec(t.data)
-	return FromVec(&data, t.shapes...)
+	var data mat.Dense
+	data.CloneFrom(t.data)
+	return &Tensor{data: &data}
 }
 
-func Ones(shapes ...int) *Tensor {
-	size := shapes[0]
-	for i := 1; i < len(shapes); i++ {
-		size *= shapes[i]
+func (t *Tensor) Negate() *Tensor {
+	t.data.Scale(-1, t.data)
+	return t
+}
+
+func (t *Tensor) Forward() *Tensor {
+	if t.op == nil {
+		return nil
 	}
-	data := make([]float64, size)
-	for i := range data {
-		data[i] = 1
+	return t.op.Forward()
+}
+
+func (t *Tensor) Backward(grad *Tensor) []*Tensor {
+	if t.op == nil {
+		return nil
 	}
-	return New(data, shapes...)
+	return t.op.Backward(grad)
+}
+
+func (t *Tensor) Dims() (int, int) {
+	if t.op != nil {
+		return t.op.Dims()
+	}
+	return t.data.Dims()
+}
+
+func (t *Tensor) isLeaf() bool {
+	return t.op == nil
 }
