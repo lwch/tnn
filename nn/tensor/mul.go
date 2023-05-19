@@ -17,10 +17,10 @@ func (op *mul) Forward() *Tensor {
 
 func (op *mul) Backward(grad *Tensor) []*Tensor {
 	var da, db mat.Dense
-	da.Mul(op.b.Value(), grad.Value())
+	da.Mul(grad.Value(), op.b.Value().T())
 	db.Mul(op.a.Value().T(), grad.Value())
 	return []*Tensor{
-		FromDense(mat.DenseCopyOf(da.T())),
+		FromDense(&da),
 		FromDense(&db),
 	}
 }
