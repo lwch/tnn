@@ -15,7 +15,7 @@ func (op *sub) Forward() *Tensor {
 func (op *sub) Backward(grad *Tensor) []*Tensor {
 	return []*Tensor{
 		grad.Clone(),
-		grad.Clone().Negate(),
+		grad.Clone().Scale(-1),
 	}
 }
 

@@ -28,11 +28,6 @@ func (t *Tensor) Clone() *Tensor {
 	return &Tensor{data: &data}
 }
 
-func (t *Tensor) Negate() *Tensor {
-	t.data.Scale(-1, t.data)
-	return t
-}
-
 func (t *Tensor) Forward() *Tensor {
 	if t.op == nil {
 		return nil
