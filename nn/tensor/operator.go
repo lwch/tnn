@@ -29,3 +29,11 @@ func (t *Tensor) Scale(n float64) *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Mul(t2 *Tensor) *Tensor {
+	op := &mul{
+		a: t,
+		b: t2,
+	}
+	return &Tensor{op: op}
+}
