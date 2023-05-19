@@ -44,3 +44,10 @@ func (t *Tensor) Exp() *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Log() *Tensor {
+	op := &log{
+		a: t,
+	}
+	return &Tensor{op: op}
+}
