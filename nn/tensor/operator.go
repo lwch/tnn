@@ -37,3 +37,10 @@ func (t *Tensor) Mul(t2 *Tensor) *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Exp() *Tensor {
+	op := &exp{
+		a: t,
+	}
+	return &Tensor{op: op}
+}

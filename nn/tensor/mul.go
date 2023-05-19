@@ -16,11 +16,6 @@ func (op *mul) Forward() *Tensor {
 }
 
 func (op *mul) Backward(grad *Tensor) []*Tensor {
-	// var xx mat.Dense
-	// fmt.Println(mat.Formatted(op.b.Value()))
-	// fmt.Println(mat.Formatted(grad.Value()))
-	// xx.Mul(op.b.Value(), grad.Value())
-	// fmt.Println(mat.Formatted(&xx))
 	var da, db mat.Dense
 	da.Mul(op.b.Value(), grad.Value())
 	db.Mul(op.a.Value().T(), grad.Value())
