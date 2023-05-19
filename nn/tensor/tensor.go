@@ -15,6 +15,12 @@ func FromDense(dense *mat.Dense) *Tensor {
 	return &Tensor{data: dense}
 }
 
+func FromVector(vector *mat.VecDense) *Tensor {
+	var data []float64
+	data = append(data, vector.RawVector().Data...)
+	return &Tensor{data: mat.NewDense(1, vector.Len(), data)}
+}
+
 func (t *Tensor) Value() *mat.Dense {
 	if t.op != nil {
 		return t.op.Forward().Value()
