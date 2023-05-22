@@ -28,8 +28,8 @@ func (layer *Dense) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tenso
 		layer.initParams()
 	}
 	w1 := input.Mul(layer.params.Get("w"))
-	w1.SetName(layer.Name() + ".w1")
+	w1.SetName(layer.Name() + ".wx")
 	w2 := w1.AddVector(layer.params.Get("b"))
-	w2.SetName(layer.Name() + ".w2")
+	w2.SetName(layer.Name() + ".wx+b")
 	return w2
 }
