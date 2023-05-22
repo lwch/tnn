@@ -57,6 +57,14 @@ func (t *Tensor) MulElem(t2 *Tensor) *Tensor {
 	return &Tensor{op: op}
 }
 
+func (t *Tensor) DivElem(t2 *Tensor) *Tensor {
+	op := &divElem{
+		a: t,
+		b: t2,
+	}
+	return &Tensor{op: op}
+}
+
 func (t *Tensor) Exp() *Tensor {
 	op := &exp{
 		a: t,
@@ -66,6 +74,13 @@ func (t *Tensor) Exp() *Tensor {
 
 func (t *Tensor) Log() *Tensor {
 	op := &log{
+		a: t,
+	}
+	return &Tensor{op: op}
+}
+
+func (t *Tensor) Inv() *Tensor {
+	op := &inv{
 		a: t,
 	}
 	return &Tensor{op: op}
