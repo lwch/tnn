@@ -15,12 +15,10 @@ func (op *divElem) Forward() *Tensor {
 func (op *divElem) Backward(grad *Tensor) {
 	var da mat.Dense
 	da.DivElem(grad.Value(), op.b.Value())
-	var pow mat.Dense
-	pow.Pow(op.b.Value(), 2)
 	var db mat.Dense
 	db.Scale(-1, grad.Value())
 	db.MulElem(&db, op.a.Value())
-	db.DivElem(&db, &pow)
+	db.DivElem(&db, pow(op.b.Value(), 2))
 	op.a.grad = FromDense(&da)
 	op.b.grad = FromDense(&db)
 	op.a.Backward(op.a.grad)

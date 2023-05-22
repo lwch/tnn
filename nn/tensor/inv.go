@@ -1,6 +1,8 @@
 package tensor
 
 import (
+	"math"
+
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -16,11 +18,17 @@ func (op *inv) Forward() *Tensor {
 	return FromDense(&value)
 }
 
+func pow(x *mat.Dense, n float64) *mat.Dense {
+	var value mat.Dense
+	value.Apply(func(i, j int, v float64) float64 {
+		return math.Pow(v, n)
+	}, x)
+	return &value
+}
+
 func (op *inv) Backward(grad *Tensor) {
-	var pow mat.Dense
-	pow.Pow(op.a.Value(), 2)
 	var delta mat.Dense
-	delta.DivElem(grad.Value(), &pow)
+	delta.DivElem(grad.Value(), pow(op.a.Value(), 2))
 	op.a.grad = FromDense(&delta)
 	op.a.Backward(op.a.grad)
 }
