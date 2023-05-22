@@ -14,7 +14,7 @@ func TestRelu(t *testing.T) {
 		1, -1, 0,
 		0, 1, -1,
 	}, 2, 3)
-	output := relu.Forward(input, false)
+	output := relu.Forward(input, nil, false)
 	fmt.Println(mat.Formatted(output.Value()))
 	output.Backward(tensor.Ones(output.Dims()))
 }

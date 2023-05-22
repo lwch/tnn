@@ -2,6 +2,7 @@ package layer
 
 import (
 	"github.com/lwch/tnn/nn/initializer"
+	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
 )
 
@@ -18,7 +19,7 @@ func NewDense(output int, init initializer.Initializer) Layer {
 	return &layer
 }
 
-func (layer *Dense) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
+func (layer *Dense) Forward(input *tensor.Tensor, watchList *params.List, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
 		layer.mInit.Lock()
 		shapeW := layer.shapes["w"]
@@ -31,5 +32,9 @@ func (layer *Dense) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tenso
 	w1.SetName(layer.Name() + ".wx")
 	w2 := w1.AddVector(layer.params.Get("b"))
 	w2.SetName(layer.Name() + ".wx+b")
+	if watchList != nil {
+		watchList.Add(layer.params.Get("w"))
+		watchList.Add(layer.params.Get("b"))
+	}
 	return w2
 }

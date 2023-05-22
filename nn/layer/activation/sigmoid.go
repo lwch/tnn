@@ -2,6 +2,7 @@ package activation
 
 import (
 	"github.com/lwch/tnn/internal/math"
+	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
 )
 
@@ -15,6 +16,6 @@ func NewSigmoid() Activation {
 	return &layer
 }
 
-func (layer *Sigmoid) Forward(input *tensor.Tensor, _ bool) *tensor.Tensor {
+func (layer *Sigmoid) Forward(input *tensor.Tensor, _ *params.List, _ bool) *tensor.Tensor {
 	return math.Sigmoid(input)
 }

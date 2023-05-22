@@ -78,3 +78,7 @@ func (t *Tensor) repeat(n int) *Tensor {
 	}
 	return FromDense(value)
 }
+
+func (t *Tensor) AddValue(v *mat.Dense) {
+	t.data.Add(t.data, v)
+}

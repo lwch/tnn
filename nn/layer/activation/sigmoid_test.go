@@ -14,7 +14,7 @@ func TestSigmoid(t *testing.T) {
 		1, -1, 0,
 		0, 1, -1,
 	}, 2, 3)
-	output := sigmoid.Forward(input, false)
+	output := sigmoid.Forward(input, nil, false)
 	fmt.Println(mat.Formatted(output.Value()))
 	output.Backward(tensor.Ones(output.Dims()))
 }
