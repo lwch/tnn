@@ -16,9 +16,8 @@ func (op *scale) Forward() *Tensor {
 }
 
 func (op *scale) Backward(grad *Tensor) {
-	var da, db mat.Dense
-	da.Scale(op.a, grad.Value())
-	db.MulElem(op.b.Value(), grad.Value())
+	var db mat.Dense
+	db.Scale(op.a, grad.Value())
 	op.b.grad = FromDense(&db)
 	op.b.Backward(op.b.grad)
 }

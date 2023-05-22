@@ -29,6 +29,7 @@ func powDense(x *mat.Dense, n float64) *mat.Dense {
 func (op *inv) Backward(grad *Tensor) {
 	var delta mat.Dense
 	delta.DivElem(grad.Value(), powDense(op.a.Value(), 2))
+	delta.Scale(-1, &delta)
 	op.a.grad = FromDense(&delta)
 	op.a.Backward(op.a.grad)
 }
