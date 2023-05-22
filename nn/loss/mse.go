@@ -15,21 +15,12 @@ func (*MSE) Name() string {
 }
 
 func (*MSE) Loss(predict, targets *tensor.Tensor) float64 {
-	sub := predict.Sub(targets)
-	sub.SetName("mse.loss.diff")
-	pow := sub.Pow(2)
-	pow.SetName("mse.loss.pow")
-	sum := pow.Sum()
-	sum.SetName("mse.loss.sum")
+	sum := predict.Sub(targets).Pow(2).Sum()
 	rows, _ := predict.Dims()
 	return 0.5 * sum.Value().At(0, 0) / float64(rows)
 }
 
 func (*MSE) Grad(predict, targets *tensor.Tensor) *tensor.Tensor {
-	sub := predict.Sub(targets)
-	sub.SetName("mse.grad.diff")
 	rows, _ := predict.Dims()
-	scale := sub.Scale(1 / float64(rows))
-	scale.SetName("mse.grad.scale")
-	return scale
+	return predict.Sub(targets).Scale(1 / float64(rows))
 }
