@@ -33,6 +33,11 @@ func (m *Model) Train(input, targets *tensor.Tensor) {
 	watchList := params.NewList()
 	pred := m.net.Forward(input, watchList, true)
 	grad := m.loss.Grad(pred, targets)
+	// fmt.Println(mat.Formatted(pred.Value()))
+	// fmt.Println(mat.Formatted(targets.Value()))
+	// fmt.Println(mat.Formatted(grad.Value()))
+	// fmt.Println("=================")
+	pred.ZeroGrad()
 	pred.Backward(grad)
 	m.optimizer.Update(watchList)
 	m.trainCount++

@@ -65,13 +65,13 @@ func train() {
 	var net net.Net
 	net.Set(
 		hidden1,
-		activation.NewReLU(),
+		activation.NewSigmoid(),
 		hidden2,
-		activation.NewReLU(),
+		activation.NewSigmoid(),
 		hidden3,
-		activation.NewReLU(),
+		activation.NewSigmoid(),
 		hidden4,
-		activation.NewReLU(),
+		activation.NewSigmoid(),
 		outputLayer,
 	)
 	loss := loss.NewMSE()
@@ -140,12 +140,16 @@ func getBatch() (*tensor.Tensor, *tensor.Tensor) {
 	})
 	inputs := make([]float64, len(input)*2)
 	outputs := make([]float64, len(output))
-	for i := 0; i < 4; i++ {
+	for i := 0; i < len(input); i++ {
 		inputs[i*2] = input[idx[i]][0]
 		inputs[i*2+1] = input[idx[i]][1]
 		outputs[i] = output[idx[i]]
 	}
-	return tensor.New(inputs, len(input), 2), tensor.New(outputs, len(output), 1)
+	input := tensor.New(inputs, len(input), 2)
+	input.SetName("input")
+	output := tensor.New(outputs, len(output), 1)
+	output.SetName("output")
+	return input, output
 }
 
 func nextTrain() *model.Model {

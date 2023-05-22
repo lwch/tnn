@@ -26,10 +26,19 @@ func Numbers(rows, cols int, n float64) *Tensor {
 }
 
 func vec2Dense(vector *mat.VecDense) *mat.Dense {
-	rows, _ := vector.Dims()
-	data := make([]float64, rows)
+	cols, _ := vector.Dims()
+	data := make([]float64, cols)
 	for i := range data {
 		data[i] = vector.AtVec(i)
 	}
-	return mat.NewDense(1, rows, data)
+	return mat.NewDense(1, cols, data)
+}
+
+func vecRepeat(vector *mat.VecDense, rows int) *mat.Dense {
+	cols, _ := vector.Dims()
+	data := make([]float64, rows*cols)
+	for i := range data {
+		data[i] = vector.AtVec(i % cols)
+	}
+	return mat.NewDense(rows, cols, data)
 }

@@ -30,10 +30,17 @@ func (op *inv) Backward(grad *Tensor) {
 	var delta mat.Dense
 	delta.DivElem(grad.Value(), powDense(op.a.Value(), 2))
 	delta.Scale(-1, &delta)
-	op.a.grad = FromDense(&delta)
-	op.a.Backward(op.a.grad)
+	if op.a.grad == nil {
+		op.a.grad = Zeros(delta.Dims())
+	}
+	op.a.grad.AddValue(&delta)
+	op.a.Backward(FromDense(&delta))
 }
 
 func (op *inv) Dims() (int, int) {
 	return op.a.Dims()
+}
+
+func (op *inv) ZeroGrad() {
+	op.a.ZeroGrad()
 }

@@ -29,6 +29,10 @@ func (t *Tensor) SetName(name string) {
 	t.name = name
 }
 
+func (t *Tensor) Name() string {
+	return t.name
+}
+
 func (t *Tensor) Value() *mat.Dense {
 	if t.op != nil {
 		return t.op.Forward().Value()
@@ -59,6 +63,15 @@ func (t *Tensor) Backward(grad *Tensor) {
 	t.op.Backward(grad)
 }
 
+func (t *Tensor) ZeroGrad() {
+	if t.grad != nil {
+		t.grad.Zero()
+	}
+	if t.op != nil {
+		t.op.ZeroGrad()
+	}
+}
+
 func (t *Tensor) Grad() *Tensor {
 	return t.grad
 }
@@ -70,18 +83,10 @@ func (t *Tensor) Dims() (int, int) {
 	return t.data.Dims()
 }
 
-func (t *Tensor) repeat(n int) *Tensor {
-	rows, cols := t.Dims()
-	if rows != 1 {
-		panic("repeat only support vector")
-	}
-	value := mat.NewDense(n, cols, nil)
-	for i := 0; i < n; i++ {
-		value.RowView(i).(*mat.VecDense).CopyVec(t.data.RowView(0))
-	}
-	return FromDense(value)
-}
-
 func (t *Tensor) AddValue(v *mat.Dense) {
 	t.data.Add(t.data, v)
+}
+
+func (t *Tensor) Zero() {
+	t.data.Zero()
 }

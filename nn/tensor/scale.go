@@ -16,12 +16,19 @@ func (op *scale) Forward() *Tensor {
 }
 
 func (op *scale) Backward(grad *Tensor) {
-	var db mat.Dense
-	db.Scale(op.a, grad.Value())
-	op.b.grad = FromDense(&db)
-	op.b.Backward(op.b.grad)
+	var delta mat.Dense
+	delta.Scale(op.a, grad.Value())
+	if op.b.grad == nil {
+		op.b.grad = Zeros(delta.Dims())
+	}
+	op.b.grad.AddValue(&delta)
+	op.b.Backward(FromDense(&delta))
 }
 
 func (op *scale) Dims() (int, int) {
 	return op.b.Dims()
+}
+
+func (op *scale) ZeroGrad() {
+	op.b.ZeroGrad()
 }

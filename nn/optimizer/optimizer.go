@@ -28,16 +28,16 @@ func new(name string, lr, weightDecay float64, compute computeFunc) *base {
 	}
 }
 
-func (opt *base) Update(grads *params.List) {
-	next := opt.computeFunc(grads)
+func (opt *base) Update(params *params.List) {
+	next := opt.computeFunc(params)
 	if opt.weightDecay != 0 {
-		next.Range(func(i int, grad *tensor.Tensor) {
-			scale := grad.Scale(opt.lr * opt.weightDecay)
-			next.Set(i, grad.Sub(scale))
+		next.Range(func(i int, t *tensor.Tensor) {
+			scale := t.Scale(opt.lr * opt.weightDecay)
+			next.Set(i, t.Sub(scale))
 		})
 	}
-	grads.Range(func(i int, grad *tensor.Tensor) {
-		grad.AddValue(next.Get(i).Value())
+	next.Range(func(i int, t *tensor.Tensor) {
+		params.Get(i).AddValue(t.Value())
 	})
 }
 

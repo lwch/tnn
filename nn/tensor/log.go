@@ -28,10 +28,17 @@ func (op *log) Backward(grad *Tensor) {
 		return 1 / v
 	}, op.a.Value())
 	delta.MulElem(grad.Value(), &delta)
-	op.a.grad = FromDense(&delta)
-	op.a.Backward(op.a.grad)
+	if op.a.grad == nil {
+		op.a.grad = Zeros(delta.Dims())
+	}
+	op.a.grad.AddValue(&delta)
+	op.a.Backward(FromDense(&delta))
 }
 
 func (op *log) Dims() (int, int) {
 	return op.a.Dims()
+}
+
+func (op *log) ZeroGrad() {
+	op.a.ZeroGrad()
 }

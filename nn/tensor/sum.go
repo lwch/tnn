@@ -13,10 +13,18 @@ func (op *sum) Forward() *Tensor {
 
 func (op *sum) Backward(grad *Tensor) {
 	rows, cols := op.a.Value().Dims()
-	op.a.grad = Numbers(rows, cols, grad.Value().At(0, 0))
-	op.a.Backward(op.a.grad)
+	delta := Numbers(rows, cols, grad.Value().At(0, 0))
+	if op.a.grad == nil {
+		op.a.grad = Zeros(rows, cols)
+	}
+	op.a.grad.AddValue(delta.Value())
+	op.a.Backward(delta)
 }
 
 func (op *sum) Dims() (int, int) {
 	return op.a.Dims()
+}
+
+func (op *sum) ZeroGrad() {
+	op.a.ZeroGrad()
 }

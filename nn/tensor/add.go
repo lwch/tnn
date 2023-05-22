@@ -23,12 +23,17 @@ func (op *add) Backward(grad *Tensor) {
 	}
 	op.a.grad.AddValue(grad.Value())
 	op.b.grad.AddValue(grad.Value())
-	op.a.Backward(op.a.grad)
-	op.b.Backward(op.b.grad)
+	op.a.Backward(grad.Clone())
+	op.b.Backward(grad.Clone())
 }
 
 func (op *add) Dims() (int, int) {
 	return op.a.Dims()
+}
+
+func (op *add) ZeroGrad() {
+	op.a.ZeroGrad()
+	op.b.ZeroGrad()
 }
 
 type addVector struct {
@@ -53,19 +58,24 @@ func (op *addVector) Backward(grad *Tensor) {
 		delta.AddVec(delta, gv.RowView(i))
 	}
 	delta.ScaleVec(1/float64(rows), delta)
-	cols, _ = delta.Dims()
 	if op.a.grad == nil {
-		op.a.grad = Zeros(1, cols)
+		op.a.grad = Zeros(rows, cols)
 	}
 	if op.b.grad == nil {
 		op.b.grad = Zeros(1, cols)
 	}
-	op.a.grad.AddValue(vec2Dense(delta))
+	v := vecRepeat(delta, rows)
+	op.a.grad.AddValue(v)
 	op.b.grad.AddValue(vec2Dense(delta))
-	op.a.Backward(op.a.grad.repeat(rows))
-	op.b.Backward(op.b.grad.repeat(rows))
+	op.a.Backward(FromDense(v))
+	op.b.Backward(FromDense(v))
 }
 
 func (op *addVector) Dims() (int, int) {
 	return op.a.Dims()
+}
+
+func (op *addVector) ZeroGrad() {
+	op.a.ZeroGrad()
+	op.b.ZeroGrad()
 }

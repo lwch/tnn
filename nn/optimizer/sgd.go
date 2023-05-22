@@ -18,7 +18,7 @@ func NewSGD(lr, weightDecay float64) *SGD {
 func (sgd *SGD) compute(grads *params.List) *params.List {
 	ret := params.NewList()
 	grads.Range(func(i int, t *tensor.Tensor) {
-		ret.Add(t.Scale(-sgd.lr))
+		ret.Add(t.Grad().Scale(-sgd.lr))
 	})
 	return ret
 }

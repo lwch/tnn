@@ -28,10 +28,14 @@ func (op *exp) Backward(grad *Tensor) {
 	if op.a.grad == nil {
 		op.a.grad = Zeros(delta.Dims())
 	}
-	op.a.grad = FromDense(delta)
-	op.a.Backward(op.a.grad)
+	op.a.grad.AddValue(delta)
+	op.a.Backward(FromDense(delta))
 }
 
 func (op *exp) Dims() (int, int) {
 	return op.a.Dims()
+}
+
+func (op *exp) ZeroGrad() {
+	op.a.ZeroGrad()
 }

@@ -27,10 +27,15 @@ func (op *divElem) Backward(grad *Tensor) {
 	}
 	op.a.grad.AddValue(&da)
 	op.b.grad.AddValue(&db)
-	op.a.Backward(op.a.grad)
-	op.b.Backward(op.b.grad)
+	op.a.Backward(FromDense(&da))
+	op.b.Backward(FromDense(&db))
 }
 
 func (op *divElem) Dims() (int, int) {
 	return op.a.Value().Dims()
+}
+
+func (op *divElem) ZeroGrad() {
+	op.a.ZeroGrad()
+	op.b.ZeroGrad()
 }

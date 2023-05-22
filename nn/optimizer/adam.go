@@ -51,12 +51,12 @@ func (adam *Adam) compute(grads *params.List) *params.List {
 	}
 	t := float64(adam.t.Add(1))
 	ret := params.NewList()
-	grads.Range(func(i int, grad *tensor.Tensor) {
+	grads.Range(func(i int, ts *tensor.Tensor) {
 		m := adam.m.Get(i)
 		v := adam.v.Get(i)
 
-		dm := grad.Sub(m).Scale(1 - adam.beta1)
-		dv := grad.Pow(2).Sub(v).Scale(1 - adam.beta2)
+		dm := ts.Grad().Sub(m).Scale(1 - adam.beta1)
+		dv := ts.Grad().Pow(2).Sub(v).Scale(1 - adam.beta2)
 		m.AddValue(dm.Value())
 		v.AddValue(dv.Value())
 

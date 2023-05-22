@@ -4,6 +4,7 @@ type Operator interface {
 	Forward() *Tensor
 	Backward(grad *Tensor)
 	Dims() (int, int)
+	ZeroGrad()
 }
 
 func (t *Tensor) Add(t2 *Tensor) *Tensor {
