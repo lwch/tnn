@@ -85,3 +85,10 @@ func (t *Tensor) Inv() *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Sum() *Tensor {
+	op := &sum{
+		a: t,
+	}
+	return &Tensor{op: op}
+}
