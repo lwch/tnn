@@ -37,6 +37,9 @@ func (t *Tensor) Value() *mat.Dense {
 }
 
 func (t *Tensor) Clone() *Tensor {
+	if t.op != nil {
+		panic("clone only support value tensor")
+	}
 	var data mat.Dense
 	data.CloneFrom(t.data)
 	return &Tensor{data: &data}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 
 	"github.com/lwch/runtime"
@@ -24,19 +25,19 @@ const lr = 1e-4
 const epoch = 40000
 const modelFile = "xor.model"
 
-var input = tensor.New([]float64{
-	0, 0,
-	0, 1,
-	1, 0,
-	1, 1,
-}, 4, 2)
+var input = [][]float64{
+	{0, 0},
+	{0, 1},
+	{1, 0},
+	{1, 1},
+}
 
-var output = tensor.New([]float64{
+var output = []float64{
 	0,
 	1,
 	1,
 	0,
-}, 4, 1)
+}
 
 func main() {
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
@@ -64,17 +65,18 @@ func train() {
 	var net net.Net
 	net.Set(
 		hidden1,
-		activation.NewSigmoid(),
+		activation.NewReLU(),
 		hidden2,
-		activation.NewSigmoid(),
+		activation.NewReLU(),
 		hidden3,
-		activation.NewSigmoid(),
+		activation.NewReLU(),
 		hidden4,
-		activation.NewSigmoid(),
+		activation.NewReLU(),
 		outputLayer,
 	)
 	loss := loss.NewMSE()
-	optimizer := optimizer.NewSGD(lr, 0)
+	// optimizer := optimizer.NewSGD(lr, 0)
+	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	m := model.New(&net, loss, optimizer)
 
 	p := plot.New()
@@ -85,10 +87,12 @@ func train() {
 	var lossPoints, lrPoints plotter.XYs
 	// begin := time.Now()
 	for i := 0; i < epoch; i++ {
-		m.Train(input, output)
+		inputs, outputs := getBatch()
+		m.Train(inputs, outputs)
+		// fmt.Println("======================")
 		if i%100 == 0 {
-			acc := accuracy(m, input, output)
-			loss := m.Loss(input, output)
+			acc := accuracy(m, inputs, outputs)
+			loss := m.Loss(inputs, outputs)
 			fmt.Printf("Epoch: %d, Lr: %.05f, Loss: %.05f, Accuracy: %.02f%%\n",
 				i, optimizer.GetLr(), loss, acc)
 			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
@@ -101,10 +105,11 @@ func train() {
 	// fmt.Printf("train cost: %s, param count: %d\n",
 	// 	time.Since(begin).String(), m.ParamCount())
 	fmt.Println("predict:")
-	pred := m.Predict(input)
+	inputs, _ := getBatch()
+	pred := m.Predict(inputs)
 	for i := 0; i < 4; i++ {
 		fmt.Printf("%d xor %d: %.2f\n",
-			int(input.Value().At(i, 0)), int(input.Value().At(i, 1)),
+			int(inputs.Value().At(i, 0)), int(inputs.Value().At(i, 1)),
 			pred.Value().At(i, 0))
 	}
 
@@ -125,6 +130,24 @@ func train() {
 	p.Save(8*vg.Inch, 8*vg.Inch, "xor.png")
 }
 
+func getBatch() (*tensor.Tensor, *tensor.Tensor) {
+	idx := make([]int, len(input))
+	for i := range idx {
+		idx[i] = i
+	}
+	rand.Shuffle(len(idx), func(i, j int) {
+		idx[i], idx[j] = idx[j], idx[i]
+	})
+	inputs := make([]float64, len(input)*2)
+	outputs := make([]float64, len(output))
+	for i := 0; i < 4; i++ {
+		inputs[i*2] = input[idx[i]][0]
+		inputs[i*2+1] = input[idx[i]][1]
+		outputs[i] = output[idx[i]]
+	}
+	return tensor.New(inputs, len(input), 2), tensor.New(outputs, len(output), 1)
+}
+
 func nextTrain() *model.Model {
 	// var m model.Model
 	// runtime.Assert(m.Load(modelFile))
@@ -140,10 +163,11 @@ func nextTrain() *model.Model {
 }
 
 func predict(model *model.Model) {
-	pred := model.Predict(input)
+	inputs, _ := getBatch()
+	pred := model.Predict(inputs)
 	for i := 0; i < 4; i++ {
 		fmt.Printf("%d xor %d: %.2f\n",
-			int(input.Value().At(i, 0)), int(input.Value().At(i, 1)),
+			int(inputs.Value().At(i, 0)), int(inputs.Value().At(i, 1)),
 			pred.Value().At(i, 0))
 	}
 }

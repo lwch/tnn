@@ -17,7 +17,7 @@ func (*MSE) Name() string {
 func (*MSE) Loss(predict, targets *tensor.Tensor) float64 {
 	sub := predict.Sub(targets)
 	sub.SetName("mse.loss.diff")
-	pow := sub.MulElem(sub)
+	pow := sub.Pow(2)
 	pow.SetName("mse.loss.pow")
 	sum := pow.Sum()
 	sum.SetName("mse.loss.sum")

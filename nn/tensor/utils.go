@@ -1,5 +1,9 @@
 package tensor
 
+import (
+	"gonum.org/v1/gonum/mat"
+)
+
 func Ones(rows, cols int) *Tensor {
 	data := make([]float64, rows*cols)
 	for i := range data {
@@ -19,4 +23,13 @@ func Numbers(rows, cols int, n float64) *Tensor {
 		data[i] = n
 	}
 	return New(data, rows, cols)
+}
+
+func vec2Dense(vector *mat.VecDense) *mat.Dense {
+	rows, _ := vector.Dims()
+	data := make([]float64, rows)
+	for i := range data {
+		data[i] = vector.AtVec(i)
+	}
+	return mat.NewDense(1, rows, data)
 }
