@@ -28,13 +28,15 @@ func (layer *Dense) Forward(input *tensor.Tensor, watchList *params.List, isTrai
 		layer.mInit.Unlock()
 		layer.initParams()
 	}
-	w1 := input.Mul(layer.params.Get("w"))
-	w1.SetName(layer.Name() + ".wx")
-	w2 := w1.AddVector(layer.params.Get("b"))
-	w2.SetName(layer.Name() + ".wx+b")
+	w := layer.params.Get("w")
+	b := layer.params.Get("b")
 	if watchList != nil {
-		watchList.Add(layer.params.Get("w"))
-		watchList.Add(layer.params.Get("b"))
+		watchList.Add(w)
+		watchList.Add(b)
 	}
+	w1 := input.Mul(w)
+	w1.SetName(layer.Name() + ".wx")
+	w2 := w1.AddVector(b)
+	w2.SetName(layer.Name() + ".wx+b")
 	return w2
 }
