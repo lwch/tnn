@@ -15,7 +15,7 @@ func NewReLU() Activation {
 	return &layer
 }
 
-func (layer *ReLU) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
+func (layer *ReLU) Forward(input *tensor.Tensor, _ bool) *tensor.Tensor {
 	var dense mat.Dense
 	dense.Apply(func(i, j int, v float64) float64 {
 		if v < 0 {
