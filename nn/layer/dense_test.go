@@ -15,4 +15,8 @@ func TestDense(t *testing.T) {
 	output := layer.Forward(input, false)
 	fmt.Println(mat.Formatted(output.Value()))
 	output.Backward(tensor.Ones(output.Dims()))
+	layer.Params().Range(func(name string, value *tensor.Tensor) {
+		fmt.Printf("===== param [%s] grads =====\n", name)
+		fmt.Println(mat.Formatted(value.Grad().Value()))
+	})
 }

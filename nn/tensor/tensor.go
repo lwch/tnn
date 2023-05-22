@@ -1,10 +1,14 @@
 package tensor
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"gonum.org/v1/gonum/mat"
+)
 
 type Tensor struct {
+	name string
 	data *mat.Dense
 	op   Operator
+	grad *Tensor
 }
 
 func New(data []float64, rows, cols int) *Tensor {
@@ -19,6 +23,10 @@ func FromVector(vector *mat.VecDense) *Tensor {
 	var data []float64
 	data = append(data, vector.RawVector().Data...)
 	return &Tensor{data: mat.NewDense(1, vector.Len(), data)}
+}
+
+func (t *Tensor) SetName(name string) {
+	t.name = name
 }
 
 func (t *Tensor) Value() *mat.Dense {
@@ -41,11 +49,15 @@ func (t *Tensor) Forward() *Tensor {
 	return t.op.Forward()
 }
 
-func (t *Tensor) Backward(grad *Tensor) []*Tensor {
+func (t *Tensor) Backward(grad *Tensor) {
 	if t.op == nil {
-		return nil
+		return
 	}
-	return t.op.Backward(grad)
+	t.op.Backward(grad)
+}
+
+func (t *Tensor) Grad() *Tensor {
+	return t.grad
 }
 
 func (t *Tensor) Dims() (int, int) {
@@ -55,6 +67,14 @@ func (t *Tensor) Dims() (int, int) {
 	return t.data.Dims()
 }
 
-func (t *Tensor) isLeaf() bool {
-	return t.op == nil
+func (t *Tensor) repeat(n int) *Tensor {
+	rows, cols := t.Dims()
+	if rows != 1 {
+		panic("repeat only support vector")
+	}
+	value := mat.NewDense(n, cols, nil)
+	for i := 0; i < n; i++ {
+		value.RowView(i).(*mat.VecDense).CopyVec(t.data.RowView(0))
+	}
+	return FromDense(value)
 }

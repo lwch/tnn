@@ -15,14 +15,12 @@ func (op *scale) Forward() *Tensor {
 	return FromDense(&value)
 }
 
-func (op *scale) Backward(grad *Tensor) []*Tensor {
+func (op *scale) Backward(grad *Tensor) {
 	var da, db mat.Dense
 	da.Scale(op.a, grad.Value())
 	db.MulElem(op.b.Value(), grad.Value())
-	return []*Tensor{
-		FromDense(&da),
-		FromDense(&db),
-	}
+	op.b.grad = FromDense(&db)
+	op.b.Backward(op.b.grad)
 }
 
 func (op *scale) Dims() (int, int) {

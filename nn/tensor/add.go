@@ -14,11 +14,11 @@ func (op *add) Forward() *Tensor {
 	return FromDense(&value)
 }
 
-func (op *add) Backward(grad *Tensor) []*Tensor {
-	return []*Tensor{
-		grad.Clone(),
-		grad.Clone(),
-	}
+func (op *add) Backward(grad *Tensor) {
+	op.a.grad = grad.Clone()
+	op.b.grad = grad.Clone()
+	op.a.Backward(op.a.grad)
+	op.b.Backward(op.b.grad)
 }
 
 func (op *add) Dims() (int, int) {
@@ -39,7 +39,7 @@ func (op *addVector) Forward() *Tensor {
 	return FromDense(value)
 }
 
-func (op *addVector) Backward(grad *Tensor) []*Tensor {
+func (op *addVector) Backward(grad *Tensor) {
 	gv := grad.Value()
 	rows, cols := gv.Dims()
 	delta := mat.NewVecDense(cols, nil)
@@ -47,10 +47,10 @@ func (op *addVector) Backward(grad *Tensor) []*Tensor {
 		delta.AddVec(delta, gv.RowView(i))
 	}
 	delta.ScaleVec(1/float64(rows), delta)
-	return []*Tensor{
-		FromVector(delta),
-		FromVector(delta),
-	}
+	op.a.grad = FromVector(delta)
+	op.b.grad = FromVector(delta)
+	op.a.Backward(op.a.grad.repeat(rows))
+	op.b.Backward(op.b.grad.repeat(rows))
 }
 
 func (op *addVector) Dims() (int, int) {

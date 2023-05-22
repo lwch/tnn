@@ -5,8 +5,7 @@ import (
 )
 
 type mul struct {
-	a *Tensor
-	b *Tensor
+	a, b *Tensor
 }
 
 func (op *mul) Forward() *Tensor {
@@ -15,14 +14,14 @@ func (op *mul) Forward() *Tensor {
 	return FromDense(&value)
 }
 
-func (op *mul) Backward(grad *Tensor) []*Tensor {
+func (op *mul) Backward(grad *Tensor) {
 	var da, db mat.Dense
 	da.Mul(grad.Value(), op.b.Value().T())
 	db.Mul(op.a.Value().T(), grad.Value())
-	return []*Tensor{
-		FromDense(&da),
-		FromDense(&db),
-	}
+	op.a.grad = FromDense(&da)
+	op.b.grad = FromDense(&db)
+	op.a.Backward(op.a.grad)
+	op.b.Backward(op.b.grad)
 }
 
 func (op *mul) Dims() (int, int) {

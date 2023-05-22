@@ -28,3 +28,18 @@ func (p *Params) Get(name string) *tensor.Tensor {
 	defer p.m.RUnlock()
 	return p.data[name]
 }
+
+func (params *Params) Range(fn func(name string, dense *tensor.Tensor)) {
+	if params == nil {
+		return
+	}
+	data := make(map[string]*tensor.Tensor, len(params.data))
+	params.m.RLock()
+	for k, v := range params.data {
+		data[k] = v
+	}
+	params.m.RUnlock()
+	for name, dense := range data {
+		fn(name, dense)
+	}
+}

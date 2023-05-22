@@ -22,12 +22,11 @@ func (op *exp) Forward() *Tensor {
 	return FromDense(op.expValue())
 }
 
-func (op *exp) Backward(grad *Tensor) []*Tensor {
+func (op *exp) Backward(grad *Tensor) {
 	delta := op.expValue()
 	delta.MulElem(grad.Value(), delta)
-	return []*Tensor{
-		FromDense(delta),
-	}
+	op.a.grad = FromDense(delta)
+	op.a.Backward(op.a.grad)
 }
 
 func (op *exp) Dims() (int, int) {

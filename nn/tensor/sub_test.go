@@ -12,7 +12,7 @@ func TestSub(t *testing.T) {
 	x2 := New([]float64{5, 6, 7, 8}, 2, 2)
 	y := x1.Sub(x2)
 	fmt.Println(mat.Formatted(y.Forward().Value()))
-	for _, grad := range y.Backward(Ones(y.Dims())) {
-		fmt.Println(mat.Formatted(grad.Value()))
-	}
+	y.Backward(Ones(y.Dims()))
+	fmt.Println(mat.Formatted(x1.Grad().Value()))
+	fmt.Println(mat.Formatted(x2.Grad().Value()))
 }

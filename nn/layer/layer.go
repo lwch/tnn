@@ -9,6 +9,7 @@ import (
 )
 
 type Layer interface {
+	Params() *params.Params
 	Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor
 }
 
@@ -54,7 +55,9 @@ func (layer *base) initParams() {
 	}
 	for name := range layer.shapes {
 		shape := layer.shapes[name]
-		layer.params.Set(name, tensor.New(layer.init.RandShape(shape.M, shape.N), shape.M, shape.N))
+		t := tensor.New(layer.init.RandShape(shape.M, shape.N), shape.M, shape.N)
+		t.SetName(layer.Name() + "." + name)
+		layer.params.Set(name, t)
 	}
 	layer.hasInit = true
 }
@@ -72,4 +75,8 @@ func (layer *base) Name() string {
 		return layer.class
 	}
 	return layer.name
+}
+
+func (layer *base) Params() *params.Params {
+	return layer.params
 }

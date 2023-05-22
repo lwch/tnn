@@ -2,7 +2,7 @@ package tensor
 
 type Operator interface {
 	Forward() *Tensor
-	Backward(grad *Tensor) []*Tensor
+	Backward(grad *Tensor)
 	Dims() (int, int)
 }
 

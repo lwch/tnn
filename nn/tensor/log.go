@@ -22,15 +22,14 @@ func (op *log) Forward() *Tensor {
 	return FromDense(op.logValue())
 }
 
-func (op *log) Backward(grad *Tensor) []*Tensor {
+func (op *log) Backward(grad *Tensor) {
 	var delta mat.Dense
 	delta.Apply(func(i, j int, v float64) float64 {
 		return 1 / v
 	}, op.a.Value())
 	delta.MulElem(grad.Value(), &delta)
-	return []*Tensor{
-		FromDense(&delta),
-	}
+	op.a.grad = FromDense(&delta)
+	op.a.Backward(op.a.grad)
 }
 
 func (op *log) Dims() (int, int) {

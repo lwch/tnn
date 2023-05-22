@@ -27,6 +27,9 @@ func (layer *Dense) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tenso
 		layer.mInit.Unlock()
 		layer.initParams()
 	}
-	return input.Mul(layer.params.Get("w")).
-		AddVector(layer.params.Get("b"))
+	w1 := input.Mul(layer.params.Get("w"))
+	w1.SetName(layer.Name() + ".w1")
+	w2 := w1.AddVector(layer.params.Get("b"))
+	w2.SetName(layer.Name() + ".w2")
+	return w2
 }

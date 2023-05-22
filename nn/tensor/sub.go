@@ -12,11 +12,11 @@ func (op *sub) Forward() *Tensor {
 	return FromDense(&value)
 }
 
-func (op *sub) Backward(grad *Tensor) []*Tensor {
-	return []*Tensor{
-		grad.Clone(),
-		grad.Clone().Scale(-1),
-	}
+func (op *sub) Backward(grad *Tensor) {
+	op.a.grad = grad.Clone()
+	op.b.grad = grad.Clone().Scale(-1)
+	op.a.Backward(op.a.grad)
+	op.b.Backward(op.b.grad)
 }
 
 func (op *sub) Dims() (int, int) {
