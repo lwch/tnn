@@ -18,7 +18,7 @@ func (op *inv) Forward() *Tensor {
 	return FromDense(&value)
 }
 
-func pow(x *mat.Dense, n float64) *mat.Dense {
+func powDense(x *mat.Dense, n float64) *mat.Dense {
 	var value mat.Dense
 	value.Apply(func(i, j int, v float64) float64 {
 		return math.Pow(v, n)
@@ -28,7 +28,7 @@ func pow(x *mat.Dense, n float64) *mat.Dense {
 
 func (op *inv) Backward(grad *Tensor) {
 	var delta mat.Dense
-	delta.DivElem(grad.Value(), pow(op.a.Value(), 2))
+	delta.DivElem(grad.Value(), powDense(op.a.Value(), 2))
 	op.a.grad = FromDense(&delta)
 	op.a.Backward(op.a.grad)
 }

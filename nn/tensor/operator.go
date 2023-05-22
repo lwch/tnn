@@ -92,3 +92,11 @@ func (t *Tensor) Sum() *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Pow(n float64) *Tensor {
+	op := &pow{
+		a: t,
+		b: n,
+	}
+	return &Tensor{op: op}
+}
