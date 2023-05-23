@@ -32,14 +32,14 @@ func (m *Model) Predict(input *tensor.Tensor) *tensor.Tensor {
 func (m *Model) Train(input, targets *tensor.Tensor) {
 	watchList := params.NewList()
 	pred := m.net.Forward(input, watchList, true)
-	grad := m.loss.Grad(pred, targets)
-	grad.ZeroGrad()
-	grad.Backward(tensor.Ones(grad.Dims()))
+	loss := m.loss.Loss(pred, targets)
+	loss.ZeroGrad()
+	loss.Backward(loss)
 	m.optimizer.Update(watchList)
 	m.trainCount++
 }
 
 func (m *Model) Loss(input, targets *tensor.Tensor) float64 {
 	pred := m.Predict(input)
-	return m.loss.Loss(pred, targets)
+	return m.loss.Loss(pred, targets).Value().At(0, 0)
 }

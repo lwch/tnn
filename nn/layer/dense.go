@@ -34,9 +34,5 @@ func (layer *Dense) Forward(input *tensor.Tensor, watchList *params.List, isTrai
 		watchList.Add(w)
 		watchList.Add(b)
 	}
-	w1 := input.Mul(w)
-	w1.SetName(layer.Name() + ".wx")
-	w2 := w1.AddVector(b)
-	w2.SetName(layer.Name() + ".wx+b")
-	return w2
+	return input.Mul(w).AddVector(b) // wx+b
 }

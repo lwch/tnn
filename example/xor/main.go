@@ -21,7 +21,7 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-const lr = 1e-4
+const lr = 1e-3
 const epoch = 40000
 const modelFile = "xor.model"
 
@@ -53,25 +53,13 @@ func train() {
 
 	hidden1 := layer.NewDense(16, initializer)
 	hidden1.SetName("hidden1")
-	hidden2 := layer.NewDense(8, initializer)
-	hidden2.SetName("hidden2")
-	hidden3 := layer.NewDense(4, initializer)
-	hidden3.SetName("hidden3")
-	hidden4 := layer.NewDense(2, initializer)
-	hidden4.SetName("hidden4")
 	outputLayer := layer.NewDense(1, initializer)
 	outputLayer.SetName("output")
 
 	var net net.Net
 	net.Set(
 		hidden1,
-		activation.NewSigmoid(),
-		hidden2,
-		activation.NewSigmoid(),
-		hidden3,
-		activation.NewSigmoid(),
-		hidden4,
-		activation.NewSigmoid(),
+		activation.NewReLU(),
 		outputLayer,
 	)
 	loss := loss.NewMSE()
@@ -84,19 +72,17 @@ func train() {
 	p.X.Label.Text = "epoch"
 	p.Y.Label.Text = "loss"
 
-	var lossPoints, lrPoints plotter.XYs
+	var lossPoints plotter.XYs
 	// begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		inputs, outputs := getBatch()
 		m.Train(inputs, outputs)
-		// fmt.Println("======================")
 		if i%100 == 0 {
 			acc := accuracy(m, inputs, outputs)
 			loss := m.Loss(inputs, outputs)
-			fmt.Printf("Epoch: %d, Lr: %.05f, Loss: %.05f, Accuracy: %.02f%%\n",
+			fmt.Printf("Epoch: %d, Lr: %.05f, Loss: %e, Accuracy: %.02f%%\n",
 				i, optimizer.GetLr(), loss, acc)
 			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
-			lrPoints = append(lrPoints, plotter.XY{X: float64(i), Y: optimizer.GetLr() * 1e4})
 			if acc >= 100 {
 				break
 			}
@@ -117,16 +103,11 @@ func train() {
 	runtime.Assert(err)
 	lossLine.LineStyle.Color = plotutil.DarkColors[0]
 
-	lrLine, err := plotter.NewLine(lrPoints)
-	runtime.Assert(err)
-	lrLine.LineStyle.Color = plotutil.DarkColors[1]
-
 	p.Legend.Add("loss", lossLine)
-	p.Legend.Add("lr", lrLine)
 	p.Legend.XOffs = -20
 	p.Legend.YOffs = 5 * vg.Inch
 
-	p.Add(lossLine, lrLine)
+	p.Add(lossLine)
 	p.Save(8*vg.Inch, 8*vg.Inch, "xor.png")
 }
 
@@ -178,10 +159,11 @@ func predict(model *model.Model) {
 
 func accuracy(m *model.Model, input, output *tensor.Tensor) float64 {
 	pred := m.Predict(input)
-	var correct int
+	var correct float64
 	for i := 0; i < 4; i++ {
-		if math.Abs(pred.Value().At(i, 0)-output.Value().At(i, 0)) < math.SmallestNonzeroFloat64 {
-			correct++
+		diff := math.Abs(pred.Value().At(i, 0) - output.Value().At(i, 0))
+		if diff < 1 {
+			correct += 1 - diff
 		}
 	}
 	return float64(correct) * 100 / 4
