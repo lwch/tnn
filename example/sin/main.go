@@ -12,6 +12,11 @@ import (
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/tensor"
+	"gonum.org/v1/gonum/blas/blas32"
+	"gonum.org/v1/gonum/blas/blas64"
+	"gonum.org/v1/gonum/blas/cblas128"
+	"gonum.org/v1/gonum/blas/cblas64"
+	"gonum.org/v1/netlib/blas/netlib"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -24,6 +29,10 @@ const batchSize = 10
 const times = 8
 
 func main() {
+	blas32.Use(netlib.Implementation{})
+	blas64.Use(netlib.Implementation{})
+	cblas64.Use(netlib.Implementation{})
+	cblas128.Use(netlib.Implementation{})
 	initializer := initializer.NewXavierUniform(1)
 
 	var net net.Net
