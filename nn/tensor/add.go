@@ -43,9 +43,10 @@ type addVector struct {
 func (op *addVector) Forward() *Tensor {
 	av := op.a.Value()
 	rows, cols := av.Dims()
+	b0 := op.b.Value().RowView(0)
 	value := mat.NewDense(rows, cols, nil)
 	for i := 0; i < rows; i++ {
-		value.RowView(i).(*mat.VecDense).AddVec(av.RowView(i), op.b.Value().RowView(0))
+		value.RowView(i).(*mat.VecDense).AddVec(av.RowView(i), b0)
 	}
 	return FromDense(value)
 }
@@ -64,11 +65,10 @@ func (op *addVector) Backward(grad *Tensor) {
 	if op.b.grad == nil {
 		op.b.grad = Zeros(1, cols)
 	}
-	v := vecRepeat(delta, rows)
-	op.a.grad.AddValue(v)
+	op.a.grad.AddValue(grad.Value())
 	op.b.grad.AddValue(vec2Dense(delta))
-	op.a.Backward(FromDense(v))
-	op.b.Backward(FromDense(v))
+	op.a.Backward(grad.Clone())
+	op.b.Backward(FromVector(delta))
 }
 
 func (op *addVector) Dims() (int, int) {
