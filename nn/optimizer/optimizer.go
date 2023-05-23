@@ -6,11 +6,11 @@ import (
 )
 
 type Optimizer interface {
-	Update(*params.List)
+	Update([]*params.Params)
 	GetLr() float64
 }
 
-type computeFunc func(list *params.List) *params.List
+type computeFunc func(params []*params.Params) []*params.Params
 
 type base struct {
 	name        string
@@ -28,17 +28,21 @@ func new(name string, lr, weightDecay float64, compute computeFunc) *base {
 	}
 }
 
-func (opt *base) Update(params *params.List) {
+func (opt *base) Update(params []*params.Params) {
 	next := opt.computeFunc(params)
 	if opt.weightDecay != 0 {
-		next.Range(func(i int, t *tensor.Tensor) {
-			scale := t.Scale(opt.lr * opt.weightDecay)
-			next.Set(i, t.Sub(scale))
+		for i := 0; i < len(next); i++ {
+			next[i].Range(func(name string, t *tensor.Tensor) {
+				scale := t.Scale(opt.lr * opt.weightDecay)
+				next[i].Set(name, t.Sub(scale))
+			})
+		}
+	}
+	for i := 0; i < len(next); i++ {
+		next[i].Range(func(name string, t *tensor.Tensor) {
+			params[i].Get(name).AddValue(t.Value())
 		})
 	}
-	next.Range(func(i int, t *tensor.Tensor) {
-		params.Get(i).AddValue(t.Value())
-	})
 }
 
 func (opt *base) GetLr() float64 {

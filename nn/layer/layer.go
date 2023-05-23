@@ -11,7 +11,7 @@ import (
 type Layer interface {
 	SetName(string)
 	Params() *params.Params
-	Forward(input *tensor.Tensor, watchList *params.List, isTraining bool) *tensor.Tensor
+	Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor
 }
 
 type Shape struct {

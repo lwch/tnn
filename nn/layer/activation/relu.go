@@ -1,7 +1,6 @@
 package activation
 
 import (
-	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
 	"gonum.org/v1/gonum/mat"
 )
@@ -16,7 +15,7 @@ func NewReLU() Activation {
 	return &layer
 }
 
-func (layer *ReLU) Forward(input *tensor.Tensor, _ *params.List, _ bool) *tensor.Tensor {
+func (layer *ReLU) Forward(input *tensor.Tensor, _ bool) *tensor.Tensor {
 	var dense mat.Dense
 	dense.Apply(func(i, j int, v float64) float64 {
 		if v < 0 {

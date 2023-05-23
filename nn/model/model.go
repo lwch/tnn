@@ -26,16 +26,26 @@ func New(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *Model {
 }
 
 func (m *Model) Predict(input *tensor.Tensor) *tensor.Tensor {
-	return m.net.Forward(input, nil, false)
+	return m.net.Forward(input, false)
+}
+
+func filterEmptyParams(arr []*params.Params) []*params.Params {
+	ret := make([]*params.Params, 0, len(arr))
+	for i := 0; i < len(arr); i++ {
+		if arr[i] == nil {
+			continue
+		}
+		ret = append(ret, arr[i])
+	}
+	return ret
 }
 
 func (m *Model) Train(input, targets *tensor.Tensor) {
-	watchList := params.NewList()
-	pred := m.net.Forward(input, watchList, true)
+	pred := m.net.Forward(input, true)
 	loss := m.loss.Loss(pred, targets)
 	loss.ZeroGrad()
 	loss.Backward(loss)
-	m.optimizer.Update(watchList)
+	m.optimizer.Update(filterEmptyParams(m.net.Params()))
 	m.trainCount++
 }
 
