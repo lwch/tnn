@@ -6,6 +6,7 @@ require (
 	github.com/lwch/runtime v1.0.1
 	gonum.org/v1/gonum v0.13.0
 	gonum.org/v1/plot v0.10.1
+	google.golang.org/protobuf v1.30.0
 )
 
 require (

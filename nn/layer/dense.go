@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
 )
@@ -15,6 +16,14 @@ func NewDense(output int, init initializer.Initializer) Layer {
 		"w": {NoneShape, output},
 		"b": {1, output},
 	}, init)
+	return &layer
+}
+
+func LoadDense(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) Layer {
+	var layer Dense
+	layer.base = new("dense", nil, nil)
+	layer.name = name
+	layer.base.loadParams(params)
 	return &layer
 }
 

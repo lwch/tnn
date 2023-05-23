@@ -110,6 +110,8 @@ func train() {
 
 	p.Add(lossLine)
 	p.Save(8*vg.Inch, 8*vg.Inch, "xor.png")
+
+	runtime.Assert(m.Save(modelFile))
 }
 
 func getBatch() (*tensor.Tensor, *tensor.Tensor) {
@@ -135,17 +137,17 @@ func getBatch() (*tensor.Tensor, *tensor.Tensor) {
 }
 
 func nextTrain() *model.Model {
-	// var m model.Model
-	// runtime.Assert(m.Load(modelFile))
-	// for i := 0; i < 1000; i++ {
-	// 	m.Train(input, output)
-	// 	if i%100 == 0 {
-	// 		fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i,
-	// 			m.Loss(input, output), accuracy(&m, input, output))
-	// 	}
-	// }
-	// return &m
-	return nil
+	var m model.Model
+	runtime.Assert(m.Load(modelFile))
+	for i := 0; i < 1000; i++ {
+		inputs, outputs := getBatch()
+		m.Train(inputs, outputs)
+		if i%100 == 0 {
+			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i,
+				m.Loss(inputs, outputs), accuracy(&m, inputs, outputs))
+		}
+	}
+	return &m
 }
 
 func predict(model *model.Model) {

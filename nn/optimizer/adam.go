@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
 )
@@ -77,5 +78,14 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 			ret[i].Set(name, a.DivElem(b))
 		})
 	}
+	return ret
+}
+
+func (adam *Adam) Save() *pb.Optimizer {
+	ret := adam.base.Save()
+	ret.Params = make(map[string]float64)
+	ret.Params["beta1"] = adam.beta1
+	ret.Params["beta2"] = adam.beta2
+	ret.Params["epsilon"] = adam.epsilon
 	return ret
 }

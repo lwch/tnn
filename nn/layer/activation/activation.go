@@ -1,12 +1,33 @@
 package activation
 
 import (
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/params"
+	"gonum.org/v1/gonum/mat"
 )
 
 type Activation interface {
 	layer.Layer
+}
+
+func Load(class string) func(string, map[string]*pb.Dense, map[string]*pb.Dense) layer.Layer {
+	var fn func() Activation
+	switch class {
+	case "sigmoid":
+		fn = NewSigmoid
+	// case "softplus":
+	// 	fn = NewSoftplus
+	// case "tanh":
+	// 	fn = NewTanh
+	case "relu":
+		fn = NewReLU
+	default:
+		return nil
+	}
+	return func(name string, _ map[string]*pb.Dense, _ map[string]*pb.Dense) layer.Layer {
+		return fn()
+	}
 }
 
 type base struct {
@@ -36,5 +57,9 @@ func (layer *base) Name() string {
 }
 
 func (layer *base) Params() *params.Params {
+	return nil
+}
+
+func (*base) Args() map[string]*mat.VecDense {
 	return nil
 }

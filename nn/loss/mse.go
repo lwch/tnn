@@ -4,14 +4,14 @@ import (
 	"github.com/lwch/tnn/nn/tensor"
 )
 
-type MSE struct{}
-
-func NewMSE() *MSE {
-	return &MSE{}
+type MSE struct {
+	*base
 }
 
-func (*MSE) Name() string {
-	return "mse"
+func NewMSE() *MSE {
+	var loss MSE
+	loss.base = new("mse")
+	return &loss
 }
 
 func (*MSE) Loss(predict, targets *tensor.Tensor) *tensor.Tensor {

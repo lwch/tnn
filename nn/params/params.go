@@ -3,6 +3,7 @@ package params
 import (
 	"sync"
 
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/tensor"
 )
 
@@ -41,5 +42,18 @@ func (params *Params) Range(fn func(name string, dense *tensor.Tensor)) {
 	params.m.RUnlock()
 	for name, dense := range data {
 		fn(name, dense)
+	}
+}
+
+func (params *Params) Size() int {
+	return len(params.data)
+}
+
+func (params *Params) Load(from map[string]*pb.Dense) {
+	params.m.Lock()
+	defer params.m.Unlock()
+	params.data = make(map[string]*tensor.Tensor, len(from))
+	for name, param := range from {
+		params.data[name] = tensor.New(param.GetData(), int(param.GetRows()), int(param.GetCols()))
 	}
 }

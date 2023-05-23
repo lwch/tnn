@@ -3,14 +3,19 @@ package layer
 import (
 	"sync"
 
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
+	"gonum.org/v1/gonum/mat"
 )
 
 type Layer interface {
 	SetName(string)
+	Name() string
+	Class() string
 	Params() *params.Params
+	Args() map[string]*mat.VecDense
 	Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor
 }
 
@@ -63,6 +68,16 @@ func (layer *base) initParams() {
 	layer.hasInit = true
 }
 
+func (layer *base) loadParams(ps map[string]*pb.Dense) {
+	layer.params.Load(ps)
+	layer.shapes = make(map[string]Shape)
+	layer.params.Range(func(name string, t *tensor.Tensor) {
+		rows, cols := t.Dims()
+		layer.shapes[name] = Shape{M: rows, N: cols}
+	})
+	layer.hasInit = true
+}
+
 func (layer *base) Class() string {
 	return layer.class
 }
@@ -80,4 +95,8 @@ func (layer *base) Name() string {
 
 func (layer *base) Params() *params.Params {
 	return layer.params
+}
+
+func (layer *base) Args() map[string]*mat.VecDense {
+	return nil
 }
