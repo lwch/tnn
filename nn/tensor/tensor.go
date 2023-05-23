@@ -90,3 +90,7 @@ func (t *Tensor) AddValue(v *mat.Dense) {
 func (t *Tensor) Zero() {
 	t.data.Zero()
 }
+
+func (t *Tensor) Set(i, j int, v float64) {
+	t.data.Set(i, j, v)
+}
