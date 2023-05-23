@@ -46,8 +46,8 @@ func main() {
 		// fmt.Println(mat.Formatted(output))
 		m.Train(input, output)
 		pred := m.Predict(input)
-		join(&real, i, output)
-		join(&predict, i, pred)
+		real = append(real, plotter.XY{X: float64(i), Y: output.Value().At(0, 0)})
+		predict = append(predict, plotter.XY{X: float64(i), Y: pred.Value().At(0, 0)})
 		if i%100 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)
@@ -100,8 +100,4 @@ func accuracy(m *model.Model, input, output *tensor.Tensor) float64 {
 		}
 	}
 	return correct * 100 / batchSize
-}
-
-func join(xy *plotter.XYs, epoch int, output *tensor.Tensor) {
-	*xy = append(*xy, plotter.XY{X: float64(epoch), Y: output.Value().At(0, 0)})
 }

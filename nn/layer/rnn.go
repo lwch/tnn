@@ -1,8 +1,10 @@
 package layer
 
 import (
+	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
+	"gonum.org/v1/gonum/mat"
 )
 
 type Rnn struct {
@@ -25,6 +27,18 @@ func NewRnn(featureSize, times, hidden int, init initializer.Initializer) Layer 
 	return &layer
 }
 
+func LoadRnn(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) Layer {
+	arr := args["params"].GetData()
+	var layer Rnn
+	layer.featureSize = int(arr[0])
+	layer.times = int(arr[1])
+	layer.hidden = int(arr[2])
+	layer.base = new("rnn", nil, nil)
+	layer.name = name
+	layer.base.loadParams(params)
+	return &layer
+}
+
 // Forward https://pytorch.org/docs/stable/generated/torch.nn.RNN.html
 func (layer *Rnn) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
@@ -44,4 +58,13 @@ func (layer *Rnn) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor 
 		state = l1.Add(l2).Tanh()
 	}
 	return state
+}
+
+func (layer *Rnn) Args() map[string]*mat.VecDense {
+	return map[string]*mat.VecDense{
+		"params": mat.NewVecDense(3, []float64{
+			float64(layer.featureSize),
+			float64(layer.times),
+			float64(layer.hidden)}),
+	}
 }
