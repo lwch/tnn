@@ -101,3 +101,10 @@ func (t *Tensor) Pow(n float64) *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Tanh() *Tensor {
+	op := &tanh{
+		a: t,
+	}
+	return &Tensor{op: op}
+}
