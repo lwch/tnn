@@ -53,3 +53,7 @@ func (m *Model) Loss(input, targets *tensor.Tensor) float64 {
 	pred := m.Predict(input)
 	return m.loss.Loss(pred, targets).Value().At(0, 0)
 }
+
+func (m *Model) ParamCount() uint64 {
+	return m.net.ParamCount()
+}

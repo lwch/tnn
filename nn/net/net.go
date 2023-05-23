@@ -32,3 +32,18 @@ func (n *Net) Params() []*params.Params {
 	}
 	return ret
 }
+
+func (n *Net) ParamCount() uint64 {
+	var count uint64
+	for i := 0; i < len(n.layers); i++ {
+		params := n.layers[i].Params()
+		if params == nil {
+			continue
+		}
+		params.Range(func(_ string, dense *tensor.Tensor) {
+			rows, cols := dense.Dims()
+			count += uint64(rows * cols)
+		})
+	}
+	return count
+}

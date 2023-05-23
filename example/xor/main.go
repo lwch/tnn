@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
@@ -51,7 +52,7 @@ func main() {
 func train() {
 	initializer := initializer.NewXavierUniform(1)
 
-	hidden1 := layer.NewDense(16, initializer)
+	hidden1 := layer.NewDense(10, initializer)
 	hidden1.SetName("hidden1")
 	outputLayer := layer.NewDense(1, initializer)
 	outputLayer.SetName("output")
@@ -73,7 +74,7 @@ func train() {
 	p.Y.Label.Text = "loss"
 
 	var lossPoints plotter.XYs
-	// begin := time.Now()
+	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		inputs, outputs := getBatch()
 		m.Train(inputs, outputs)
@@ -88,8 +89,8 @@ func train() {
 			}
 		}
 	}
-	// fmt.Printf("train cost: %s, param count: %d\n",
-	// 	time.Since(begin).String(), m.ParamCount())
+	fmt.Printf("train cost: %s, param count: %d\n",
+		time.Since(begin).String(), m.ParamCount())
 	fmt.Println("predict:")
 	inputs, _ := getBatch()
 	pred := m.Predict(inputs)
