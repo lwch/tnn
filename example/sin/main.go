@@ -51,7 +51,7 @@ func main() {
 		if i%100 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)
-			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n", i, loss, acc)
+			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, loss, acc)
 		}
 	}
 
