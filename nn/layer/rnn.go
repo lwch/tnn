@@ -9,11 +9,11 @@ import (
 
 type Rnn struct {
 	*base
-	featureSize, times int
+	featureSize, steps int
 	hidden             int
 }
 
-func NewRnn(featureSize, times, hidden int, init initializer.Initializer) Layer {
+func NewRnn(featureSize, steps, hidden int, init initializer.Initializer) Layer {
 	var layer Rnn
 	layer.base = new("rnn", map[string]Shape{
 		"Wih": {featureSize, hidden},
@@ -22,7 +22,7 @@ func NewRnn(featureSize, times, hidden int, init initializer.Initializer) Layer 
 		"Bhh": {1, hidden},
 	}, init)
 	layer.featureSize = featureSize
-	layer.times = times
+	layer.steps = steps
 	layer.hidden = hidden
 	return &layer
 }
@@ -31,7 +31,7 @@ func LoadRnn(name string, params map[string]*pb.Dense, args map[string]*pb.Dense
 	arr := args["params"].GetData()
 	var layer Rnn
 	layer.featureSize = int(arr[0])
-	layer.times = int(arr[1])
+	layer.steps = int(arr[1])
 	layer.hidden = int(arr[2])
 	layer.base = new("rnn", nil, nil)
 	layer.name = name
@@ -50,7 +50,7 @@ func (layer *Rnn) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor 
 	Bhh := layer.params.Get("Bhh")
 	batchSize, _ := input.Dims()
 	h := tensor.New(nil, batchSize, layer.hidden)
-	for t := layer.times - 1; t >= 0; t-- {
+	for t := layer.steps - 1; t >= 0; t-- {
 		start := t * layer.featureSize
 		x := input.Slice(0, batchSize, start, start+layer.featureSize)
 		l1 := x.Mul(Wih).AddVector(Bih)
@@ -64,7 +64,7 @@ func (layer *Rnn) Args() map[string]*mat.VecDense {
 	return map[string]*mat.VecDense{
 		"params": mat.NewVecDense(3, []float64{
 			float64(layer.featureSize),
-			float64(layer.times),
+			float64(layer.steps),
 			float64(layer.hidden)}),
 	}
 }
