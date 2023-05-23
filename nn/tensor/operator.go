@@ -108,3 +108,14 @@ func (t *Tensor) Tanh() *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Slice(topY, bottomY, leftX, rightX int) *Tensor {
+	op := &slice{
+		a:       t,
+		topY:    topY,
+		bottomY: bottomY,
+		leftX:   leftX,
+		rightX:  rightX,
+	}
+	return &Tensor{op: op}
+}
