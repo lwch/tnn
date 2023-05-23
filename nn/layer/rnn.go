@@ -49,15 +49,15 @@ func (layer *Rnn) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor 
 	Whh := layer.params.Get("Whh")
 	Bhh := layer.params.Get("Bhh")
 	batchSize, _ := input.Dims()
-	state := tensor.New(nil, batchSize, layer.hidden)
+	h := tensor.New(nil, batchSize, layer.hidden)
 	for t := layer.times - 1; t >= 0; t-- {
 		start := t * layer.featureSize
-		t := input.Slice(0, batchSize, start, start+layer.featureSize)
-		l1 := t.Mul(Wih).AddVector(Bih)
-		l2 := state.Mul(Whh).AddVector(Bhh)
-		state = l1.Add(l2).Tanh()
+		x := input.Slice(0, batchSize, start, start+layer.featureSize)
+		l1 := x.Mul(Wih).AddVector(Bih)
+		l2 := h.Mul(Whh).AddVector(Bhh)
+		h = l1.Add(l2).Tanh()
 	}
-	return state
+	return h
 }
 
 func (layer *Rnn) Args() map[string]*mat.VecDense {

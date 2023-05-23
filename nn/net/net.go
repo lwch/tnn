@@ -16,7 +16,8 @@ var loadFuncs = map[string]loadFunc{
 	// "dropout": layer.LoadDropout,
 	// "conv2d":  layer.LoadConv2D,
 	// "maxpool": layer.LoadMaxPool,
-	"rnn": layer.LoadRnn,
+	"rnn":  layer.LoadRnn,
+	"lstm": layer.LoadLstm,
 	// activation
 	"sigmoid":  activation.Load("sigmoid"),
 	"softplus": activation.Load("softplus"),
