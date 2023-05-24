@@ -119,3 +119,10 @@ func (t *Tensor) Slice(topY, bottomY, leftX, rightX int) *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) T() *Tensor {
+	op := &transpose{
+		a: t,
+	}
+	return &Tensor{op: op}
+}
