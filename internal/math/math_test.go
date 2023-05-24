@@ -19,3 +19,15 @@ func TestSigmoid(t *testing.T) {
 	fmt.Println(mat.Formatted(y.Value()))
 	fmt.Println(mat.Formatted(x.Grad().Value()))
 }
+
+func TestSoftmax(t *testing.T) {
+	x := tensor.New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
+	x.SetName("x")
+	y := Softmax(x, 1)
+	y.SetName("y")
+	grad := tensor.Ones(2, 3)
+	grad.SetName("grad")
+	y.Backward(grad)
+	fmt.Println(mat.Formatted(y.Value()))
+	fmt.Println(mat.Formatted(x.Grad().Value()))
+}
