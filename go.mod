@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/lwch/runtime v1.0.1
 	gonum.org/v1/gonum v0.13.0
-	gonum.org/v1/netlib v0.0.0-20220323200511-14de99971b2d
 	gonum.org/v1/plot v0.10.1
 	google.golang.org/protobuf v1.30.0
 )
