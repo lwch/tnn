@@ -27,10 +27,7 @@ func (op *tanh) Backward(grad *Tensor) {
 	b := powDense(tanhDense(grad.Value()), 2)
 	var delta mat.Dense
 	delta.Sub(a.Value(), b)
-	if op.a.grad == nil {
-		op.a.grad = Zeros(grad.Dims())
-	}
-	op.a.grad.AddValue(&delta)
+	op.a.AddGrad(&delta)
 	op.a.Backward(FromDense(&delta))
 }
 

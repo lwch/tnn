@@ -25,10 +25,7 @@ func (op *exp) Forward() *Tensor {
 func (op *exp) Backward(grad *Tensor) {
 	delta := op.expValue()
 	delta.MulElem(grad.Value(), delta)
-	if op.a.grad == nil {
-		op.a.grad = Zeros(delta.Dims())
-	}
-	op.a.grad.AddValue(delta)
+	op.a.AddGrad(delta)
 	op.a.Backward(FromDense(delta))
 }
 

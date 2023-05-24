@@ -1,14 +1,17 @@
 package tensor
 
 import (
+	"sync"
+
 	"gonum.org/v1/gonum/mat"
 )
 
 type Tensor struct {
-	name string
-	data *mat.Dense
-	op   Operator
-	grad *Tensor
+	name  string
+	data  *mat.Dense
+	op    Operator
+	gradM sync.Mutex
+	grad  *Tensor
 }
 
 func New(data []float64, rows, cols int) *Tensor {
@@ -64,9 +67,11 @@ func (t *Tensor) Backward(grad *Tensor) {
 }
 
 func (t *Tensor) ZeroGrad() {
+	t.gradM.Lock()
 	if t.grad != nil {
 		t.grad.Zero()
 	}
+	t.gradM.Unlock()
 	if t.op != nil {
 		t.op.ZeroGrad()
 	}
@@ -85,6 +90,15 @@ func (t *Tensor) Dims() (int, int) {
 
 func (t *Tensor) AddValue(v *mat.Dense) {
 	t.data.Add(t.data, v)
+}
+
+func (t *Tensor) AddGrad(v *mat.Dense) {
+	t.gradM.Lock()
+	defer t.gradM.Unlock()
+	if t.grad == nil {
+		t.grad = Zeros(v.Dims())
+	}
+	t.grad.AddValue(v)
 }
 
 func (t *Tensor) Zero() {

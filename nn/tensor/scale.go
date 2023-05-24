@@ -18,10 +18,7 @@ func (op *scale) Forward() *Tensor {
 func (op *scale) Backward(grad *Tensor) {
 	var delta mat.Dense
 	delta.Scale(op.a, grad.Value())
-	if op.b.grad == nil {
-		op.b.grad = Zeros(delta.Dims())
-	}
-	op.b.grad.AddValue(&delta)
+	op.b.AddGrad(&delta)
 	op.b.Backward(FromDense(&delta))
 }
 

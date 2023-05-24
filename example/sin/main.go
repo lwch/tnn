@@ -29,8 +29,8 @@ func main() {
 
 	var net net.Net
 	net.Set(
-		// layer.NewRnn(1, times, 32, initializer),
-		layer.NewLstm(1, times, 32, initializer),
+		layer.NewRnn(1, times, 32, initializer),
+		// layer.NewLstm(1, times, 32, initializer),
 		layer.NewDense(1, initializer),
 	)
 	loss := loss.NewMSE()

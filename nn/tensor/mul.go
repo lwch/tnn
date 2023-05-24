@@ -18,14 +18,8 @@ func (op *mul) Backward(grad *Tensor) {
 	var da, db mat.Dense
 	da.Mul(grad.Value(), op.b.Value().T())
 	db.Mul(op.a.Value().T(), grad.Value())
-	if op.a.grad == nil {
-		op.a.grad = Zeros(da.Dims())
-	}
-	if op.b.grad == nil {
-		op.b.grad = Zeros(db.Dims())
-	}
-	op.a.grad.AddValue(&da)
-	op.b.grad.AddValue(&db)
+	op.a.AddGrad(&da)
+	op.b.AddGrad(&db)
 	op.a.Backward(FromDense(&da))
 	op.b.Backward(FromDense(&db))
 }
@@ -55,14 +49,8 @@ func (op *mulElem) Backward(grad *Tensor) {
 	var da, db mat.Dense
 	da.MulElem(op.b.Value(), grad.Value())
 	db.MulElem(op.a.Value(), grad.Value())
-	if op.a.grad == nil {
-		op.a.grad = Zeros(da.Dims())
-	}
-	if op.b.grad == nil {
-		op.b.grad = Zeros(db.Dims())
-	}
-	op.a.grad.AddValue(&da)
-	op.b.grad.AddValue(&db)
+	op.a.AddGrad(&da)
+	op.b.AddGrad(&db)
 	op.a.Backward(FromDense(&da))
 	op.b.Backward(FromDense(&db))
 }

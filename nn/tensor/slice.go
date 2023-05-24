@@ -21,10 +21,7 @@ func (op *slice) Backward(grad *Tensor) {
 	delta := mat.NewDense(rows, cols, nil)
 	rect := delta.Slice(op.topY, op.bottomY, op.leftX, op.rightX)
 	rect.(*mat.Dense).Copy(grad.Value())
-	if op.a.grad == nil {
-		op.a.grad = Zeros(op.a.Dims())
-	}
-	op.a.grad.AddValue(delta)
+	op.a.AddGrad(delta)
 	op.a.Backward(FromDense(delta))
 }
 

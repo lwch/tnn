@@ -15,14 +15,8 @@ func (op *add) Forward() *Tensor {
 }
 
 func (op *add) Backward(grad *Tensor) {
-	if op.a.grad == nil {
-		op.a.grad = Zeros(grad.Dims())
-	}
-	if op.b.grad == nil {
-		op.b.grad = Zeros(grad.Dims())
-	}
-	op.a.grad.AddValue(grad.Value())
-	op.b.grad.AddValue(grad.Value())
+	op.a.AddGrad(grad.Value())
+	op.b.AddGrad(grad.Value())
 	op.a.Backward(grad.Clone())
 	op.b.Backward(grad.Clone())
 }
@@ -59,14 +53,8 @@ func (op *addVector) Backward(grad *Tensor) {
 		delta.AddVec(delta, gv.RowView(i))
 	}
 	delta.ScaleVec(1/float64(rows), delta)
-	if op.a.grad == nil {
-		op.a.grad = Zeros(rows, cols)
-	}
-	if op.b.grad == nil {
-		op.b.grad = Zeros(1, cols)
-	}
-	op.a.grad.AddValue(grad.Value())
-	op.b.grad.AddValue(vec2Dense(delta))
+	op.a.AddGrad(grad.Value())
+	op.b.AddGrad(vec2Dense(delta))
 	op.a.Backward(grad.Clone())
 	op.b.Backward(FromVector(delta))
 }

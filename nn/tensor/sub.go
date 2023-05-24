@@ -15,14 +15,8 @@ func (op *sub) Forward() *Tensor {
 func (op *sub) Backward(grad *Tensor) {
 	da := grad.Clone()
 	db := grad.Scale(-1)
-	if op.a.grad == nil {
-		op.a.grad = Zeros(grad.Dims())
-	}
-	if op.b.grad == nil {
-		op.b.grad = Zeros(grad.Dims())
-	}
-	op.a.grad.AddValue(da.Value())
-	op.b.grad.AddValue(db.Value())
+	op.a.AddGrad(da.Value())
+	op.b.AddGrad(db.Value())
 	op.a.Backward(da)
 	op.b.Backward(db)
 }

@@ -13,10 +13,7 @@ func (op *pow) Forward() *Tensor {
 func (op *pow) Backward(grad *Tensor) {
 	pow := powDense(op.a.Value(), op.b-1)
 	pow.Scale(op.b, pow)
-	if op.a.grad == nil {
-		op.a.grad = Zeros(pow.Dims())
-	}
-	op.a.grad.AddValue(pow)
+	op.a.AddGrad(pow)
 	op.a.Backward(FromDense(pow))
 }
 

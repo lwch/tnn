@@ -19,14 +19,8 @@ func (op *divElem) Backward(grad *Tensor) {
 	db.Scale(-1, grad.Value())
 	db.MulElem(&db, op.a.Value())
 	db.DivElem(&db, powDense(op.b.Value(), 2))
-	if op.a.grad == nil {
-		op.a.grad = Zeros(da.Dims())
-	}
-	if op.b.grad == nil {
-		op.b.grad = Zeros(db.Dims())
-	}
-	op.a.grad.AddValue(&da)
-	op.b.grad.AddValue(&db)
+	op.a.AddGrad(&da)
+	op.b.AddGrad(&db)
 	op.a.Backward(FromDense(&da))
 	op.b.Backward(FromDense(&db))
 }

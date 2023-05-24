@@ -14,10 +14,7 @@ func (op *sum) Forward() *Tensor {
 func (op *sum) Backward(grad *Tensor) {
 	rows, cols := op.a.Value().Dims()
 	delta := Numbers(rows, cols, grad.Value().At(0, 0))
-	if op.a.grad == nil {
-		op.a.grad = Zeros(rows, cols)
-	}
-	op.a.grad.AddValue(delta.Value())
+	op.a.AddGrad(delta.Value())
 	op.a.Backward(delta)
 }
 
