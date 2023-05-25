@@ -117,3 +117,7 @@ func (n *Net) LoadLayers(layers []*pb.Layer) {
 		n.layers[i] = fn(name, layers[i].GetParams(), layers[i].GetArgs())
 	}
 }
+
+func (n *Net) Layers() []layer.Layer {
+	return n.layers
+}

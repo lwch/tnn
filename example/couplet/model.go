@@ -225,7 +225,7 @@ func forward(x, y *tensor.Tensor) *tensor.Tensor {
 	// haveNan(y, fmt.Sprintf("decoder:%d", 1))
 	y = decoder[2].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
 	// haveNan(y, fmt.Sprintf("decoder:%d", 2))
-	for i := 2; i < len(decoder); i++ {
+	for i := 3; i < len(decoder); i++ {
 		y = decoder[i].Forward(y, true)
 		// haveNan(y, fmt.Sprintf("decoder:%d", i))
 	}

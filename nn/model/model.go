@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/lwch/tnn/internal/pb"
+	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
@@ -121,4 +122,8 @@ func (m *Model) ReadFrom(r io.Reader) (int64, error) {
 	// 	m.lr = lr.Load(model.GetScheduler(), m.optimizer)
 	// }
 	return int64(len(data)), nil
+}
+
+func (m *Model) Layers() []layer.Layer {
+	return m.net.Layers()
 }

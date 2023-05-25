@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
 
 	"github.com/lwch/runtime"
+	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/tensor"
 )
@@ -16,12 +18,32 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic("encoder model not found")
 	}
-	var m model.Model
-	runtime.Assert(m.Load(dir))
+	var encoder model.Model
+	runtime.Assert(encoder.Load(dir))
+	dir = filepath.Join(modelDir, "decoder.model")
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		panic("decoder model not found")
+	}
+	var decoder model.Model
+	runtime.Assert(decoder.Load(dir))
 	var pred string
+	var y *tensor.Tensor
 	for _, ch := range str {
 		x := tensor.New(embedding[vocab2idx[string(ch)]], 1, embeddingDim)
-		y := m.Predict(x)
+		for _, layer := range encoder.Layers() {
+			x = layer.Forward(x, false)
+		}
+		layers := decoder.Layers()
+		if y == nil {
+			mix := embedding[rand.Intn(len(embedding))]
+			y = tensor.New(mix, 1, embeddingDim)
+		}
+		y = layers[0].Forward(y, false)
+		y = layers[1].Forward(y, false)
+		y = layers[2].(*layer.SelfAttention).ForwardQKV(y, x, y, false)
+		for i := 3; i < len(layers); i++ {
+			y = layers[i].Forward(y, false)
+		}
 		pred += tensorStr(y, vocabs, embedding)
 	}
 	fmt.Println(pred)
