@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	rt "runtime"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
@@ -54,19 +57,44 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 
 	ch := make(chan []int)
+	var wg sync.WaitGroup
+	wg.Add(rt.NumCPU())
+	var cnt atomic.Uint64
+	var begin time.Time
 	for i := 0; i < rt.NumCPU(); i++ {
-		go trainWorker(loss, optimizer, trainX, trainY, embedding, ch)
+		go func() {
+			defer wg.Done()
+			trainWorker(loss, optimizer, trainX, trainY, embedding, ch, &cnt)
+		}()
 	}
+	go showProgress(&begin, &cnt, len(trainX))
 
 	for i := 0; i < epoch; i++ {
+		cnt.Store(0)
+		begin = time.Now()
 		trainEpoch(trainX, trainY, embedding, ch)
+	}
+	close(ch)
+	wg.Wait()
+}
+
+func showProgress(begin *time.Time, cnt *atomic.Uint64, total int) {
+	tk := time.NewTicker(time.Second)
+	defer tk.Stop()
+	for {
+		<-tk.C
+		fmt.Printf("train: %d/%d, cost=%s\r", cnt.Load(),
+			total, time.Since(*begin).String())
 	}
 }
 
 func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
-	trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
+	trainX, trainY [][]int, embedding [][]float64, ch chan []int, cnt *atomic.Uint64) {
 	for {
-		idx := <-ch
+		idx, ok := <-ch
+		if !ok {
+			return
+		}
 		xIn := make([][]int, 0, batchSize)
 		xOut := make([][]int, 0, batchSize)
 		for _, i := range idx {
@@ -85,6 +113,7 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		optimizer.Update(getParams())
 		pred = forward(x, y)
 		fmt.Println(loss.Loss(pred, y).Value().At(0, 0))
+		cnt.Add(uint64(len(idx)))
 	}
 }
 
