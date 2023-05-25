@@ -7,6 +7,7 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
+	"gonum.org/v1/gonum/mat"
 )
 
 type SelfAttention struct {
@@ -73,4 +74,10 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, isTraining bool) 
 	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
 	a = m.Softmax(a, 0)
 	return v.Mul(a)
+}
+
+func (layer *SelfAttention) Args() map[string]*mat.VecDense {
+	return map[string]*mat.VecDense{
+		"dims": mat.NewVecDense(1, []float64{float64(layer.dims)}),
+	}
 }
