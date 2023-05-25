@@ -24,7 +24,18 @@ func LoadNor(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) L
 }
 
 func (layer *Nor) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
-	min := math.Min(input)
+	mean := math.Mean(input)
+	std := math.Var(input)
 	rows, cols := input.Dims()
-	return input.Sub(tensor.Numbers(rows, cols, min)).Inv()
+	means := tensor.New(nil, rows, cols)
+	stds := tensor.New(nil, rows, cols)
+	eps := tensor.New(nil, rows, cols)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			means.Set(i, j, mean[i])
+			stds.Set(i, j, std[i])
+			eps.Set(i, j, 1e-6)
+		}
+	}
+	return input.Sub(means).DivElem(stds.Add(eps).Sqrt())
 }

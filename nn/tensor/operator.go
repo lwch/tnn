@@ -126,3 +126,10 @@ func (t *Tensor) T() *Tensor {
 	}
 	return &Tensor{op: op}
 }
+
+func (t *Tensor) Sqrt() *Tensor {
+	op := &sqrt{
+		a: t,
+	}
+	return &Tensor{op: op}
+}

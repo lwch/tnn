@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/lwch/runtime"
-	"github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
@@ -29,7 +28,7 @@ const modelDir = "./model"
 const embeddingDim = 4 // 4个float64表示一个字向量
 const batchSize = 32
 const epoch = 10
-const lr = 0.001
+const lr = 1e-3
 
 var testX, testY *tensor.Tensor
 
@@ -73,7 +72,7 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 			trainWorker(loss, optimizer, trainX, trainY, embedding, ch, &cnt)
 		}()
 	}
-	go showProgress(&begin, &cnt, len(trainX))
+	go showProgress(loss, &begin, &cnt, len(trainX))
 
 	for i := 0; i < epoch; i++ {
 		cnt.Store(0)
@@ -85,18 +84,19 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 	save()
 }
 
-func showProgress(begin *time.Time, cnt *atomic.Uint64, total int) {
+func showProgress(loss loss.Loss, begin *time.Time, cnt *atomic.Uint64, total int) {
 	tk := time.NewTicker(time.Second)
 	defer tk.Stop()
 	i := 0
 	for {
 		<-tk.C
-		x := testX
+		pred := testX
 		y := testY
 		for _, layer := range encoder {
-			x = layer.Forward(x, false)
+			pred = layer.Forward(pred, false)
 		}
-		loss := math.Softmax(x, 1).Sub(y).Value()
+		// loss := math.Softmax(pred, 1).Sub(y).Sum().Value()
+		loss := loss.Loss(pred, y).Value()
 		fmt.Printf("train: %d/%d, cost=%s\n", cnt.Load(),
 			total, time.Since(*begin).String())
 		fmt.Println(mat.Formatted(loss))
@@ -127,8 +127,8 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		x, y := buildTensor(xIn, xOut, embedding)
 		testX, testY = x, y
 		pred := forward(x, y)
-		grad := math.Softmax(pred.Sub(y), 1)
-		// grad := loss.Loss(pred, y)
+		// grad := math.Softmax(pred.Sub(y), 1).Sum()
+		grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
 		params := getParams()

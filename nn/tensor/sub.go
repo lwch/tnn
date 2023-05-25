@@ -13,11 +13,10 @@ func (op *sub) Forward() *Tensor {
 }
 
 func (op *sub) Backward(grad *Tensor) {
-	da := grad.Clone()
 	db := grad.Scale(-1)
-	op.a.AddGrad(da.Value())
+	op.a.AddGrad(grad.Value())
 	op.b.AddGrad(db.Value())
-	op.a.Backward(da)
+	op.a.Backward(grad)
 	op.b.Backward(db)
 }
 
