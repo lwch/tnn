@@ -140,10 +140,10 @@ func buildTensor(x, y [][]int, embedding [][]float64, mask bool) (*tensor.Tensor
 		for i := range x {
 			for j := range x[i] {
 				if x[i][j] == 1 { // </s>
-					add(x[i][:j+1], y[i][:j+1])
+					add(x[i][:j+1], y[i])
 					break
 				}
-				add(x[i][:j+1], y[i][:j+1])
+				add(x[i][:j+1], y[i])
 			}
 		}
 	} else {
