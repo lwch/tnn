@@ -97,6 +97,10 @@ func (t *Tensor) CutGrad(min, max float64) {
 }
 
 func (t *Tensor) Grad() *Tensor {
+	if t.grad == nil {
+		rows, cols := t.data.Dims()
+		return Zeros(rows, cols)
+	}
 	return t.grad
 }
 

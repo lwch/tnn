@@ -95,8 +95,8 @@ func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	exp := x.Sub(tensor.FromDense(dense)).Exp()
 	sum := sum(exp, axis)
 	dense = expand(sum, rows, cols, axis)
-	ret := exp.MulElem(tensor.FromDense(dense).Inv())
-	return ret
+	v := exp.MulElem(tensor.FromDense(dense).Inv()).Value()
+	return tensor.FromDense(v)
 }
 
 // Mean 按列求均值
