@@ -232,13 +232,16 @@ func forward(x, y *tensor.Tensor) *tensor.Tensor {
 	return y
 }
 
-func save() {
+func saveModel(layers []layer.Layer, name string) {
 	var net net.Net
-	for _, layer := range encoder {
-		net.Add(layer)
-	}
-	dir := filepath.Join(modelDir, "encoder.model")
+	net.Set(layers...)
 	err := model.New(&net, loss.NewMSE(),
-		optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)).Save(dir)
+		optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)).
+		Save(filepath.Join(modelDir, name+".model"))
 	runtime.Assert(err)
+}
+
+func save() {
+	saveModel(encoder, "encoder")
+	saveModel(decoder, "decoder")
 }
