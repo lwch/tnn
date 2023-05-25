@@ -88,7 +88,7 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 func showProgress(loss loss.Loss, begin *time.Time, cnt *atomic.Uint64, total int) {
 	tk := time.NewTicker(time.Second)
 	defer tk.Stop()
-	i := 0
+	upd := time.Now()
 	for {
 		<-tk.C
 		pred := testX
@@ -101,9 +101,9 @@ func showProgress(loss loss.Loss, begin *time.Time, cnt *atomic.Uint64, total in
 		fmt.Printf("train: %d/%d, cost=%s\n", cnt.Load(),
 			total, time.Since(*begin).String())
 		fmt.Println(mat.Formatted(loss))
-		i++
-		if i%60 == 0 { // 每隔1分钟保存一次模型
+		if time.Since(upd).Seconds() >= 60 { // 每隔1分钟保存一次模型
 			save()
+			upd = time.Now()
 		}
 	}
 }
