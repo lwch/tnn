@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/lwch/runtime v1.0.1
+	github.com/spf13/cobra v1.7.0
 	gonum.org/v1/gonum v0.13.0
 	gonum.org/v1/plot v0.10.1
 	google.golang.org/protobuf v1.30.0
@@ -17,6 +18,8 @@ require (
 	github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 // indirect
 	github.com/go-pdf/fpdf v0.6.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/image v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect

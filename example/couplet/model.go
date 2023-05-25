@@ -14,8 +14,9 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
-	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
+	"github.com/lwch/tnn/nn/model"
+	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
@@ -24,7 +25,7 @@ import (
 const modelDir = "./model"
 const embeddingDim = 2 // 2个float64表示一个字向量
 const batchSize = 4
-const epoch = 100
+const epoch = 10
 const lr = 0.001
 const unitSize = padSize * embeddingDim
 
@@ -82,10 +83,15 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 func showProgress(begin *time.Time, cnt *atomic.Uint64, total int) {
 	tk := time.NewTicker(time.Second)
 	defer tk.Stop()
+	i := 0
 	for {
 		<-tk.C
 		fmt.Printf("train: %d/%d, cost=%s\r", cnt.Load(),
 			total, time.Since(*begin).String())
+		i++
+		if i%60 == 0 { // 每隔1分钟保存一次模型
+			save()
+		}
 	}
 }
 
@@ -172,15 +178,15 @@ func getParams() []*params.Params {
 func init() {
 	init := initializer.NewXavierUniform(1)
 	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
-	encoder = append(encoder, layer.NewDense(unitSize*4, init))
-	encoder = append(encoder, activation.NewReLU())
-	encoder = append(encoder, layer.NewDense(unitSize, init))
+	// encoder = append(encoder, layer.NewDense(unitSize*4, init))
+	// encoder = append(encoder, activation.NewReLU())
+	// encoder = append(encoder, layer.NewDense(unitSize, init))
 
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
-	decoder = append(decoder, layer.NewDense(unitSize*4, init))
-	decoder = append(decoder, activation.NewReLU())
-	decoder = append(decoder, layer.NewDense(unitSize, init))
+	// decoder = append(decoder, layer.NewDense(unitSize*4, init))
+	// decoder = append(decoder, activation.NewReLU())
+	// decoder = append(decoder, layer.NewDense(unitSize, init))
 }
 
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
@@ -193,4 +199,15 @@ func forward(x, y *tensor.Tensor) *tensor.Tensor {
 		y = decoder[i].Forward(y, true)
 	}
 	return y
+}
+
+func save() {
+	var net net.Net
+	for _, layer := range encoder {
+		net.Add(layer)
+	}
+	dir := filepath.Join(modelDir, "encoder.model")
+	err := model.New(&net, loss.NewMSE(),
+		optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)).Save(dir)
+	runtime.Assert(err)
 }

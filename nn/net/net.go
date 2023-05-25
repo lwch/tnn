@@ -37,6 +37,10 @@ func (n *Net) Set(layer ...layer.Layer) {
 	n.layers = layer
 }
 
+func (n *Net) Add(layer layer.Layer) {
+	n.layers = append(n.layers, layer)
+}
+
 func (n *Net) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
 	for i := 0; i < len(n.layers); i++ {
 		input = n.layers[i].Forward(input, isTraining)
