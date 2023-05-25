@@ -237,9 +237,6 @@ func save() {
 	for _, layer := range encoder {
 		net.Add(layer)
 	}
-	for _, layer := range decoder {
-		net.Add(layer)
-	}
 	dir := filepath.Join(modelDir, "encoder.model")
 	err := model.New(&net, loss.NewMSE(),
 		optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)).Save(dir)

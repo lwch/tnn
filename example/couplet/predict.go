@@ -16,22 +16,19 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic("encoder model not found")
 	}
-	x := make([]float64, 0, len(str)*embeddingDim)
-	var size int
-	for _, ch := range str {
-		x = append(x, embedding[vocab2idx[string(ch)]]...)
-		size++
-	}
-	x = append(x, embedding[1]...) // </s>
-	size++
 	var m model.Model
 	runtime.Assert(m.Load(dir))
-	y := m.Predict(tensor.New(x, size, embeddingDim))
-	fmt.Println(tensorStr(y, vocabs, embedding))
+	var pred string
+	for _, ch := range str {
+		x := tensor.New(embedding[vocab2idx[string(ch)]], 1, embeddingDim)
+		y := m.Predict(x)
+		pred += tensorStr(y, vocabs, embedding)
+	}
+	fmt.Println(pred)
 }
 
 func lookupEmbedding(embedding [][]float64, v []float64) int {
-	fmt.Println(v)
+	// fmt.Println(v)
 	min := math.MaxFloat64
 	ret := 0
 	for i := 0; i < len(embedding); i++ {
