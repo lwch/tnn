@@ -17,8 +17,9 @@ var trainCmd = cobra.Command{
 }
 
 var predictCmd = cobra.Command{
-	Use: "predict",
-	Run: runPredict,
+	Use:  "predict [content]",
+	Args: cobra.MinimumNArgs(1),
+	Run:  runPredict,
 }
 
 func main() {
@@ -44,7 +45,8 @@ func runTrain(*cobra.Command, []string) {
 	train(trainX, trainY, embedding)
 }
 
-func runPredict(*cobra.Command, []string) {
+func runPredict(_ *cobra.Command, args []string) {
 	idx2vocab, vocab2idx := loadVocab()
-	buildEmbedding(len(idx2vocab))
+	embedding := loadEmbedding(len(idx2vocab))
+	predict(args[0], idx2vocab, vocab2idx, embedding)
 }
