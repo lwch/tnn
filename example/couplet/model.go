@@ -31,6 +31,8 @@ const batchSize = 32
 const epoch = 10
 const lr = 0.001
 
+var testX, testY *tensor.Tensor
+
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
 	data := init.RandShape(vocabSize, embeddingDim)
@@ -89,8 +91,15 @@ func showProgress(begin *time.Time, cnt *atomic.Uint64, total int) {
 	i := 0
 	for {
 		<-tk.C
-		fmt.Printf("train: %d/%d, cost=%s\r", cnt.Load(),
+		x := testX
+		y := testY
+		for _, layer := range encoder {
+			x = layer.Forward(x, false)
+		}
+		loss := math.Softmax(x, 1).Sub(y).Value()
+		fmt.Printf("train: %d/%d, cost=%s\n", cnt.Load(),
 			total, time.Since(*begin).String())
+		fmt.Println(mat.Formatted(loss))
 		i++
 		if i%60 == 0 { // 每隔1分钟保存一次模型
 			save()
@@ -116,6 +125,7 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
 		x, y := buildTensor(xIn, xOut, embedding)
+		testX, testY = x, y
 		pred := forward(x, y)
 		grad := math.Softmax(pred.Sub(y), 1)
 		// grad := loss.Loss(pred, y)
