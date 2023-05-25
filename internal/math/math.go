@@ -71,13 +71,13 @@ func expand(v *mat.VecDense, rows, cols, axis int) *mat.Dense {
 	case 0:
 		for i := 0; i < rows; i++ {
 			for j := 0; j < cols; j++ {
-				ret.Set(i, j, v.AtVec(j)+math.SmallestNonzeroFloat64)
+				ret.Set(i, j, v.AtVec(j)+1e-6)
 			}
 		}
 		return ret
 	case 1:
 		for i := 0; i < rows; i++ {
-			n := v.AtVec(i) + math.SmallestNonzeroFloat64
+			n := v.AtVec(i) + 1e-6
 			for j := 0; j < cols; j++ {
 				ret.Set(i, j, n)
 			}
