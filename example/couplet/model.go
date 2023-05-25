@@ -6,17 +6,20 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	rt "runtime"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
-	"github.com/lwch/tnn/nn/layer/activation"
+	"github.com/lwch/tnn/nn/loss"
+	"github.com/lwch/tnn/nn/optimizer"
+	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
 )
 
 const modelDir = "./model"
-const embeddingDim = 4 // 4个float64表示一个字向量
-const batchSize = 1
+const embeddingDim = 2 // 2个float64表示一个字向量
+const batchSize = 4
 const epoch = 100
 const lr = 0.001
 const unitSize = padSize * embeddingDim
@@ -47,68 +50,108 @@ func loadEmbedding(vocabSize int) [][]float64 {
 }
 
 func train(trainX, trainY [][]int, embedding [][]float64) {
+	loss := loss.NewMSE()
+	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
+
+	ch := make(chan []int)
+	for i := 0; i < rt.NumCPU(); i++ {
+		go trainWorker(loss, optimizer, trainX, trainY, embedding, ch)
+	}
+
+	for i := 0; i < epoch; i++ {
+		trainEpoch(trainX, trainY, embedding, ch)
+	}
+}
+
+func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
+	trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
+	for {
+		idx := <-ch
+		xIn := make([][]int, 0, batchSize)
+		xOut := make([][]int, 0, batchSize)
+		for _, i := range idx {
+			xIn = append(xIn, trainX[i])
+			xOut = append(xOut, trainY[i])
+		}
+		rand.Shuffle(len(xIn), func(i, j int) {
+			xIn[i], xIn[j] = xIn[j], xIn[i]
+			xOut[i], xOut[j] = xOut[j], xOut[i]
+		})
+		x, y := buildTensor(xIn, xOut, embedding, true)
+		pred := forward(x, y)
+		grad := loss.Loss(pred, y)
+		grad.ZeroGrad()
+		grad.Backward(grad)
+		optimizer.Update(getParams())
+		pred = forward(x, y)
+		fmt.Println(loss.Loss(pred, y).Value().At(0, 0))
+	}
+}
+
+func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 	idx := make([]int, len(trainX))
 	for i := range idx {
 		idx[i] = i
 	}
-
-	for i := 0; i < epoch; i++ {
-		trainEpoch(trainX, trainY, embedding, idx)
-	}
-}
-
-func trainEpoch(trainX, trainY [][]int, embedding [][]float64, idx []int) {
 	rand.Shuffle(len(idx), func(i, j int) {
 		idx[i], idx[j] = idx[j], idx[i]
 	})
 	for i := 0; i < len(idx); i += batchSize {
-		xIn := make([][]int, 0, batchSize)
-		xOut := make([][]int, 0, batchSize)
+		list := make([]int, 0, batchSize)
 		for j := 0; j < batchSize; j++ {
 			if i+j >= len(idx) {
 				break
 			}
-			xIn = append(xIn, trainX[idx[i+j]])
-			xOut = append(xOut, trainY[idx[i+j]])
+			list = append(list, idx[i+j])
 		}
-		x, y := buildTensor(xIn, xOut, embedding, true)
-		y = forward(x, y)
-		fmt.Println(y.Dims())
+		ch <- list
 	}
 }
 
 var encoder []layer.Layer
 var decoder []layer.Layer
 
+func getParams() []*params.Params {
+	var ret []*params.Params
+	for _, layer := range encoder {
+		params := layer.Params()
+		if params.IsEmpty() {
+			continue
+		}
+		ret = append(ret, params)
+	}
+	for _, layer := range decoder {
+		params := layer.Params()
+		if params.IsEmpty() {
+			continue
+		}
+		ret = append(ret, params)
+	}
+	return ret
+}
+
 func init() {
 	init := initializer.NewXavierUniform(1)
 	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
-	encoder = append(encoder, layer.NewDense(unitSize*4, init))
-	encoder = append(encoder, activation.NewReLU())
-	encoder = append(encoder, layer.NewDense(unitSize, init))
+	// encoder = append(encoder, layer.NewDense(unitSize*4, init))
+	// encoder = append(encoder, activation.NewReLU())
+	// encoder = append(encoder, layer.NewDense(unitSize, init))
+
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
-	decoder = append(decoder, layer.NewDense(unitSize*4, init))
-	decoder = append(decoder, activation.NewReLU())
-	decoder = append(decoder, layer.NewDense(unitSize, init))
+	// decoder = append(decoder, layer.NewDense(unitSize*4, init))
+	// decoder = append(decoder, activation.NewReLU())
+	// decoder = append(decoder, layer.NewDense(unitSize, init))
 }
 
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
 	for i := range encoder {
 		x = encoder[i].Forward(x, true)
-		rows, cols := x.Dims()
-		fmt.Println("encoder", i, rows, cols)
 	}
 	y = decoder[0].Forward(y, true)
-	rows, cols := y.Dims()
-	fmt.Println("decoder", 0, rows, cols)
 	y = decoder[1].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
-	rows, cols = y.Dims()
-	fmt.Println("decoder", 1, rows, cols)
 	for i := 2; i < len(decoder); i++ {
 		y = decoder[i].Forward(y, true)
-		rows, cols := y.Dims()
-		fmt.Println("decoder", i, rows, cols)
 	}
 	return y
 }

@@ -18,13 +18,13 @@ import (
 
 const dataDir = "./data"
 const downloadUrl = "https://github.com/wb14123/couplet-dataset/releases/latest/download/couplet.tar.gz"
-const padSize = 40 // 最长句子为34，因此必须大于34
+const padSize = 36 // 最长句子为34，因此必须大于34
 var padEmbedding []float64
 
 func init() {
 	padEmbedding = make([]float64, embeddingDim)
 	for i := range padEmbedding {
-		padEmbedding[i] = math.Inf(-1)
+		padEmbedding[i] = math.SmallestNonzeroFloat64
 	}
 }
 

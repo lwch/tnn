@@ -57,3 +57,13 @@ func (params *Params) Load(from map[string]*pb.Dense) {
 		params.data[name] = tensor.New(param.GetData(), int(param.GetRows()), int(param.GetCols()))
 	}
 }
+
+func (params *Params) IsEmpty() bool {
+	if params == nil {
+		return true
+	}
+	if len(params.data) == 0 {
+		return true
+	}
+	return false
+}
