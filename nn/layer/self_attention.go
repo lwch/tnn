@@ -42,14 +42,33 @@ func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tens
 		layer.initParams()
 	}
 	Wq := layer.params.Get("Wq")
-	Bq := layer.params.Get("Bq")
 	Wk := layer.params.Get("Wk")
-	Bk := layer.params.Get("Bk")
 	Wv := layer.params.Get("Wv")
+	Bq := layer.params.Get("Bq")
+	Bk := layer.params.Get("Bk")
 	Bv := layer.params.Get("Bv")
 	q := input.Mul(Wq).AddVector(Bq)
 	k := input.Mul(Wk).AddVector(Bk)
 	v := input.Mul(Wv).AddVector(Bv)
+	a := k.T().Mul(q)
+	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
+	a = m.Softmax(a, 0)
+	return v.Mul(a)
+}
+
+func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, isTraining bool) *tensor.Tensor {
+	if !layer.hasInit {
+		layer.initParams()
+	}
+	Wq := layer.params.Get("Wq")
+	Wk := layer.params.Get("Wk")
+	Wv := layer.params.Get("Wv")
+	Bq := layer.params.Get("Bq")
+	Bk := layer.params.Get("Bk")
+	Bv := layer.params.Get("Bv")
+	q = q.Mul(Wq).AddVector(Bq)
+	k = k.Mul(Wk).AddVector(Bk)
+	v = v.Mul(Wv).AddVector(Bv)
 	a := k.T().Mul(q)
 	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
 	a = m.Softmax(a, 0)
