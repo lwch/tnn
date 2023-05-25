@@ -24,9 +24,8 @@ func LoadNor(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) L
 }
 
 func (layer *Nor) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
-	mean := math.Mean(input)
 	max := math.Max(input)
 	min := math.Min(input)
 	rows, cols := input.Dims()
-	return input.Sub(tensor.Numbers(rows, cols, mean)).Scale(1 / (max - min))
+	return input.Sub(tensor.Numbers(rows, cols, min)).Scale(1 / (max - min))
 }
