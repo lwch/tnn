@@ -90,6 +90,7 @@ func expand(v *mat.VecDense, rows, cols, axis int) *mat.Dense {
 
 // Softmax exp(x) / sum(exp(max(x,axis)))
 func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
+	haveNan(x, "src")
 	max := max(x, axis)
 	rows, cols := x.Dims()
 	dense := expand(max, rows, cols, axis)
@@ -97,16 +98,16 @@ func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	sum := sum(exp, axis)
 	dense = expand(sum, rows, cols, axis)
 	ret := exp.MulElem(tensor.FromDense(dense).Inv())
-	haveNan(ret)
+	haveNan(ret, "result")
 	return ret
 }
 
-func haveNan(x *tensor.Tensor) {
+func haveNan(x *tensor.Tensor, prefix string) {
 	rows, cols := x.Dims()
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			if math.IsNaN(x.Value().At(i, j)) {
-				fmt.Println("!!!!!!!!!!")
+				fmt.Println(prefix, "!!!!!!!!!!")
 			}
 		}
 	}
