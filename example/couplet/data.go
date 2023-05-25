@@ -95,7 +95,7 @@ func loadData(dir string, idx map[string]int) [][]int {
 		for _, v := range vocab {
 			row = append(row, idx[v])
 		}
-		row = append(row, idx["</s>"])
+		row = append(row, 1) // </s>
 		data = append(data, row)
 		if len(row) > max {
 			max = len(row)
