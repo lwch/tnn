@@ -110,9 +110,18 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
-		optimizer.Update(getParams())
-		pred = forward(x, y)
-		fmt.Println(loss.Loss(pred, y).Value().At(0, 0))
+		params := getParams()
+		optimizer.Update(params)
+		// paramSize := 0
+		// for _, ps := range params {
+		// 	ps.Range(func(_ string, dense *tensor.Tensor) {
+		// 		rows, cols := dense.Dims()
+		// 		paramSize += rows * cols
+		// 	})
+		// }
+		// pred = forward(x, y)
+		// fmt.Println()
+		// fmt.Println(loss.Loss(pred, y).Value().At(0, 0), paramSize)
 		cnt.Add(uint64(len(idx)))
 	}
 }
