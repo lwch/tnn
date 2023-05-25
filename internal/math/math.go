@@ -94,10 +94,11 @@ func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	rows, cols := x.Dims()
 	dense := expand(max, rows, cols, axis)
 	exp := x.Sub(tensor.FromDense(dense)).Exp()
-	haveNan(exp)
 	sum := sum(exp, axis)
 	dense = expand(sum, rows, cols, axis)
-	return exp.MulElem(tensor.FromDense(dense).Inv())
+	ret := exp.MulElem(tensor.FromDense(dense).Inv())
+	haveNan(ret)
+	return ret
 }
 
 func haveNan(x *tensor.Tensor) {
