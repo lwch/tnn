@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/lwch/runtime"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +28,9 @@ func main() {
 
 	rootCmd.AddCommand(&trainCmd)
 	rootCmd.AddCommand(&predictCmd)
+
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	runtime.Assert(rootCmd.Execute())
 }
 
 func runTrain(*cobra.Command, []string) {
@@ -41,4 +45,6 @@ func runTrain(*cobra.Command, []string) {
 }
 
 func runPredict(*cobra.Command, []string) {
+	idx2vocab, vocab2idx := loadVocab()
+	buildEmbedding(len(idx2vocab))
 }
