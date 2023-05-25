@@ -212,6 +212,7 @@ func haveNan(x *tensor.Tensor, prefix string) {
 		for j := 0; j < cols; j++ {
 			if math.IsNaN(x.Value().At(i, j)) {
 				fmt.Println(prefix, "!!!!!!!!!!")
+				return
 			}
 		}
 	}
