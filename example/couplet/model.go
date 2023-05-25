@@ -168,6 +168,9 @@ func getParams() []*params.Params {
 		if params.IsEmpty() {
 			continue
 		}
+		params.Range(func(name string, grad *tensor.Tensor) {
+			grad.CutGrad(-1, 1)
+		})
 		ret = append(ret, params)
 	}
 	for _, layer := range decoder {
@@ -175,6 +178,9 @@ func getParams() []*params.Params {
 		if params.IsEmpty() {
 			continue
 		}
+		params.Range(func(name string, grad *tensor.Tensor) {
+			grad.CutGrad(-1, 1)
+		})
 		ret = append(ret, params)
 	}
 	return ret
