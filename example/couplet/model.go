@@ -91,16 +91,16 @@ func showProgress(loss loss.Loss, begin *time.Time, cnt *atomic.Uint64, total in
 	upd := time.Now()
 	for {
 		<-tk.C
-		pred := testX
-		y := testY
-		for _, layer := range encoder {
-			pred = layer.Forward(pred, false)
-		}
+		// pred := testX
+		// y := testY
+		// for _, layer := range encoder {
+		// 	pred = layer.Forward(pred, false)
+		// }
 		// loss := math.Softmax(pred, 1).Sub(y).Sum().Value()
-		loss := loss.Loss(pred, y).Value()
+		// loss := loss.Loss(pred, y).Value()
 		fmt.Printf("train: %d/%d, cost=%s\n", cnt.Load(),
 			total, time.Since(*begin).String())
-		fmt.Println(mat.Formatted(loss))
+		// fmt.Println(mat.Formatted(loss))
 		if time.Since(upd).Seconds() >= 60 { // 每隔1分钟保存一次模型
 			save()
 			upd = time.Now()
