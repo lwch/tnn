@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -205,14 +206,33 @@ func init() {
 	decoder = append(decoder, layer.NewNor())
 }
 
+func haveNan(x *tensor.Tensor, prefix string) {
+	rows, cols := x.Dims()
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			if math.IsNaN(x.Value().At(i, j)) {
+				fmt.Println(prefix, "!!!!!!!!!!")
+			}
+		}
+	}
+}
+
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
+	haveNan(x, "x")
+	haveNan(y, "y")
 	for i := range encoder {
 		x = encoder[i].Forward(x, true)
+		haveNan(x, fmt.Sprintf("encoder:%d", i))
 	}
 	y = decoder[0].Forward(y, true)
+	haveNan(y, fmt.Sprintf("decoder:%d", 0))
+	y = decoder[1].Forward(y, true)
+	haveNan(y, fmt.Sprintf("decoder:%d", 1))
 	y = decoder[2].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
+	haveNan(y, fmt.Sprintf("decoder:%d", 2))
 	for i := 2; i < len(decoder); i++ {
 		y = decoder[i].Forward(y, true)
+		haveNan(y, fmt.Sprintf("decoder:%d", i))
 	}
 	return y
 }
