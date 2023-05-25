@@ -1,6 +1,8 @@
 package math
 
 import (
+	"math"
+
 	"github.com/lwch/tnn/nn/tensor"
 	"gonum.org/v1/gonum/mat"
 )
@@ -68,12 +70,17 @@ func expand(v *mat.VecDense, rows, cols, axis int) *mat.Dense {
 	switch axis {
 	case 0:
 		for i := 0; i < rows; i++ {
-			ret.RowView(i).(*mat.VecDense).CopyVec(v)
+			for j := 0; j < cols; j++ {
+				ret.Set(i, j, v.AtVec(j)+math.SmallestNonzeroFloat64)
+			}
 		}
 		return ret
 	case 1:
-		for i := 0; i < cols; i++ {
-			ret.ColView(i).(*mat.VecDense).CopyVec(v)
+		for i := 0; i < rows; i++ {
+			n := v.AtVec(i) + math.SmallestNonzeroFloat64
+			for j := 0; j < cols; j++ {
+				ret.Set(i, j, n)
+			}
 		}
 		return ret
 	}
@@ -91,10 +98,28 @@ func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	return exp.MulElem(tensor.FromDense(dense).Inv())
 }
 
-func Max(x *tensor.Tensor) float64 {
-	return mat.Max(x.Value())
+// Mean 按列求均值
+func Mean(x *tensor.Tensor) []float64 {
+	rows, cols := x.Dims()
+	ret := make([]float64, rows)
+	for i := 0; i < rows; i++ {
+		ret[i] = mat.Sum(x.Value().RowView(i)) / float64(cols)
+	}
+	return ret
 }
 
-func Min(x *tensor.Tensor) float64 {
-	return mat.Min(x.Value())
+// Var 按列求方差
+func Var(x *tensor.Tensor) []float64 {
+	rows, cols := x.Dims()
+	means := Mean(x)
+	ret := make([]float64, rows)
+	for i := 0; i < rows; i++ {
+		mean := means[i]
+		for j := 0; j < cols; j++ {
+			diff := x.Value().At(i, j) - mean
+			ret[i] += math.Pow(diff, 2)
+		}
+		ret[i] /= float64(cols)
+	}
+	return ret
 }
