@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lwch/runtime"
+	"github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
@@ -128,8 +128,8 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		x, y := buildTensor(xIn, xOut, embedding)
 		testX, testY = x, y
 		pred := forward(x, y)
-		// grad := math.Softmax(pred.Sub(y), 1).Sum()
-		grad := loss.Loss(pred, y)
+		grad := math.Softmax(pred, 1)
+		// grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
 		params := getParams()
@@ -200,17 +200,17 @@ func init() {
 	decoder = append(decoder, layer.NewNor())
 }
 
-func haveNan(x *tensor.Tensor, prefix string) {
-	rows, cols := x.Dims()
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			if math.IsNaN(x.Value().At(i, j)) {
-				fmt.Println(prefix, "!!!!!!!!!!")
-				return
-			}
-		}
-	}
-}
+// func haveNan(x *tensor.Tensor, prefix string) {
+// 	rows, cols := x.Dims()
+// 	for i := 0; i < rows; i++ {
+// 		for j := 0; j < cols; j++ {
+// 			if math.IsNaN(x.Value().At(i, j)) {
+// 				fmt.Println(prefix, "!!!!!!!!!!")
+// 				return
+// 			}
+// 		}
+// 	}
+// }
 
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
 	// haveNan(x, "x")

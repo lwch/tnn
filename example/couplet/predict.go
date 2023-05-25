@@ -27,17 +27,14 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	var decoder model.Model
 	runtime.Assert(decoder.Load(dir))
 	var pred string
-	var y *tensor.Tensor
+	mix := embedding[rand.Intn(len(embedding))]
+	y := tensor.New(mix, 1, embeddingDim)
 	for _, ch := range str {
 		x := tensor.New(embedding[vocab2idx[string(ch)]], 1, embeddingDim)
 		for _, layer := range encoder.Layers() {
 			x = layer.Forward(x, false)
 		}
 		layers := decoder.Layers()
-		if y == nil {
-			mix := embedding[rand.Intn(len(embedding))]
-			y = tensor.New(mix, 1, embeddingDim)
-		}
 		y = layers[0].Forward(y, false)
 		y = layers[1].Forward(y, false)
 		y = layers[2].(*layer.SelfAttention).ForwardQKV(y, x, y, false)
