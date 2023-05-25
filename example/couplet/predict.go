@@ -41,6 +41,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		for i := 3; i < len(layers); i++ {
 			y = layers[i].Forward(y, false)
 		}
+		y = tensor.FromDense(y.Value())
 		pred += tensorStr(y, vocabs, embedding)
 	}
 	fmt.Println(pred)
