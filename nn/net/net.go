@@ -19,6 +19,7 @@ var loadFuncs = map[string]loadFunc{
 	"rnn":            layer.LoadRnn,
 	"lstm":           layer.LoadLstm,
 	"self_attention": layer.LoadSelfAttention,
+	"nor":            layer.LoadNor,
 	// activation
 	"sigmoid":  activation.Load("sigmoid"),
 	"softplus": activation.Load("softplus"),

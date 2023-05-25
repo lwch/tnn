@@ -16,21 +16,22 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic("encoder model not found")
 	}
-	x := make([]float64, 0, padSize*embeddingDim)
+	x := make([]float64, 0, len(str)*embeddingDim)
+	var size int
 	for _, ch := range str {
 		x = append(x, embedding[vocab2idx[string(ch)]]...)
+		size++
 	}
 	x = append(x, embedding[1]...) // </s>
-	for len(x) < padSize*embeddingDim {
-		x = append(x, math.SmallestNonzeroFloat64)
-	}
+	size++
 	var m model.Model
 	runtime.Assert(m.Load(dir))
-	y := m.Predict(tensor.New(x, 1, padSize*embeddingDim))
+	y := m.Predict(tensor.New(x, size, embeddingDim))
 	fmt.Println(tensorStr(y, vocabs, embedding))
 }
 
 func lookupEmbedding(embedding [][]float64, v []float64) int {
+	fmt.Println(v)
 	min := math.MaxFloat64
 	ret := 0
 	for i := 0; i < len(embedding); i++ {
@@ -47,11 +48,12 @@ func lookupEmbedding(embedding [][]float64, v []float64) int {
 }
 
 func tensorStr(x *tensor.Tensor, vocabs []string, embedding [][]float64) string {
+	rows, _ := x.Dims()
 	var str string
-	for i := 0; i < padSize; i++ {
+	for i := 0; i < rows; i++ {
 		v := make([]float64, embeddingDim)
 		for j := 0; j < embeddingDim; j++ {
-			v[j] = x.Value().At(0, i*embeddingDim+j)
+			v[j] = x.Value().At(i, j)
 		}
 		idx := lookupEmbedding(embedding, v)
 		if idx == 1 {

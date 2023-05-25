@@ -90,3 +90,40 @@ func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	dense = expand(sum, rows, cols, axis)
 	return exp.MulElem(tensor.FromDense(dense).Inv())
 }
+
+func Mean(x *tensor.Tensor) float64 {
+	rows, cols := x.Dims()
+	sum := 0.0
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			sum += x.Value().At(i, j)
+		}
+	}
+	return sum / float64(rows*cols)
+}
+
+func Max(x *tensor.Tensor) float64 {
+	rows, cols := x.Dims()
+	max := x.Value().At(0, 0)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			if max < x.Value().At(i, j) {
+				max = x.Value().At(i, j)
+			}
+		}
+	}
+	return max
+}
+
+func Min(x *tensor.Tensor) float64 {
+	rows, cols := x.Dims()
+	min := x.Value().At(0, 0)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			if min > x.Value().At(i, j) {
+				min = x.Value().At(i, j)
+			}
+		}
+	}
+	return min
+}

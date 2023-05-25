@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lwch/runtime"
+	"github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
@@ -21,14 +22,14 @@ import (
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
+	"gonum.org/v1/gonum/mat"
 )
 
 const modelDir = "./model"
-const embeddingDim = 2 // 2个float64表示一个字向量
-const batchSize = 4
+const embeddingDim = 4 // 4个float64表示一个字向量
+const batchSize = 32
 const epoch = 10
 const lr = 0.001
-const unitSize = padSize * embeddingDim
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
@@ -79,6 +80,7 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 	}
 	close(ch)
 	wg.Wait()
+	save()
 }
 
 func showProgress(begin *time.Time, cnt *atomic.Uint64, total int) {
@@ -113,25 +115,24 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xIn[i], xIn[j] = xIn[j], xIn[i]
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
-		x, y := buildTensor(xIn, xOut, embedding, true)
+		x, y := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y)
-		grad := loss.Loss(pred, y)
+		grad := math.Softmax(pred.Sub(y), 1)
+		// grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
 		params := getParams()
 		optimizer.Update(params)
-		// paramSize := 0
-		// for _, ps := range params {
-		// 	ps.Range(func(_ string, dense *tensor.Tensor) {
-		// 		rows, cols := dense.Dims()
-		// 		paramSize += rows * cols
-		// 	})
-		// }
-		// pred = forward(x, y)
-		// fmt.Println()
-		// fmt.Println(loss.Loss(pred, y).Value().At(0, 0), paramSize)
+		// test(x)
 		cnt.Add(uint64(len(idx)))
 	}
+}
+
+func test(x *tensor.Tensor) {
+	for _, layer := range encoder {
+		x = layer.Forward(x, false)
+	}
+	fmt.Println(mat.Formatted(x.Value()))
 }
 
 func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
@@ -171,16 +172,21 @@ func getParams() []*params.Params {
 
 func init() {
 	init := initializer.NewXavierUniform(1)
-	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
-	encoder = append(encoder, layer.NewDense(unitSize*4, init))
+	encoder = append(encoder, layer.NewSelfAttention(embeddingDim, init))
+	encoder = append(encoder, layer.NewNor())
+	encoder = append(encoder, layer.NewDense(embeddingDim*4, init))
 	encoder = append(encoder, activation.NewReLU())
-	encoder = append(encoder, layer.NewDense(unitSize, init))
+	encoder = append(encoder, layer.NewDense(embeddingDim, init))
+	encoder = append(encoder, layer.NewNor())
 
-	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
-	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
-	decoder = append(decoder, layer.NewDense(unitSize*4, init))
+	decoder = append(decoder, layer.NewSelfAttention(embeddingDim, init))
+	decoder = append(decoder, layer.NewNor())
+	decoder = append(decoder, layer.NewSelfAttention(embeddingDim, init))
+	decoder = append(decoder, layer.NewNor())
+	decoder = append(decoder, layer.NewDense(embeddingDim*4, init))
 	decoder = append(decoder, activation.NewReLU())
-	decoder = append(decoder, layer.NewDense(unitSize, init))
+	decoder = append(decoder, layer.NewDense(embeddingDim, init))
+	decoder = append(decoder, layer.NewNor())
 }
 
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
@@ -188,7 +194,7 @@ func forward(x, y *tensor.Tensor) *tensor.Tensor {
 		x = encoder[i].Forward(x, true)
 	}
 	y = decoder[0].Forward(y, true)
-	y = decoder[1].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
+	y = decoder[2].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
 	for i := 2; i < len(decoder); i++ {
 		y = decoder[i].Forward(y, true)
 	}
@@ -200,6 +206,9 @@ func save() {
 	for _, layer := range encoder {
 		net.Add(layer)
 	}
+	// for _, layer := range decoder {
+	// 	net.Add(layer)
+	// }
 	dir := filepath.Join(modelDir, "encoder.model")
 	err := model.New(&net, loss.NewMSE(),
 		optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)).Save(dir)

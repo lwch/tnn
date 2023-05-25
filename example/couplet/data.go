@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,15 +17,6 @@ import (
 
 const dataDir = "./data"
 const downloadUrl = "https://github.com/wb14123/couplet-dataset/releases/latest/download/couplet.tar.gz"
-const padSize = 36 // 最长句子为34，因此必须大于34
-var padEmbedding []float64
-
-func init() {
-	padEmbedding = make([]float64, embeddingDim)
-	for i := range padEmbedding {
-		padEmbedding[i] = math.SmallestNonzeroFloat64
-	}
-}
 
 func download() {
 	fmt.Println("download dataset...")
@@ -105,52 +95,24 @@ func loadData(dir string, idx map[string]int) [][]int {
 	return data
 }
 
-func seq(x []int, embedding [][]float64) []float64 {
-	ret := make([]float64, 0, len(x)*embeddingDim)
-	for _, v := range x {
-		ret = append(ret, embedding[v]...)
-	}
-	return ret
-}
-
-func pad(n int) []float64 {
-	if n <= 0 {
-		return nil
-	}
-	ret := make([]float64, 0, n*embeddingDim)
-	for i := 0; i < n; i++ {
-		ret = append(ret, padEmbedding...)
-	}
-	return ret
-}
-
-func buildTensor(x, y [][]int, embedding [][]float64, mask bool) (*tensor.Tensor, *tensor.Tensor) {
-	dx := make([]float64, 0, len(x)*padSize*embeddingDim)
-	dy := make([]float64, 0, len(y)*padSize*embeddingDim)
+func buildTensor(x, y [][]int, embedding [][]float64) (*tensor.Tensor, *tensor.Tensor) {
+	dx := make([]float64, 0, len(x)*embeddingDim)
+	dy := make([]float64, 0, len(y)*embeddingDim)
 	rows := 0
-	add := func(x, y []int) {
-		dx = append(dx, seq(x, embedding)...)
-		dx = append(dx, pad(padSize-len(x))...)
-		dy = append(dy, seq(y, embedding)...)
-		dy = append(dy, pad(padSize-len(y))...)
+	add := func(x, y int) {
+		dx = append(dx, embedding[x]...)
+		dy = append(dy, embedding[y]...)
 		rows++
 	}
-	if mask {
-		// 使用下三角矩阵来mask
-		for i := range x {
-			for j := range x[i] {
-				if x[i][j] == 1 { // </s>
-					add(x[i][:j+1], y[i])
-					break
-				}
-				add(x[i][:j+1], y[i])
+	for i := range x {
+		for j := range x[i] {
+			if x[i][j] == 1 { // </s>
+				add(x[i][j], y[i][j])
+				break
 			}
-		}
-	} else {
-		for i := range x {
-			add(x[i], y[i])
+			add(x[i][j], y[i][j])
 		}
 	}
-	return tensor.New(dx, rows, padSize*embeddingDim),
-		tensor.New(dy, rows, padSize*embeddingDim)
+	return tensor.New(dx, rows, embeddingDim),
+		tensor.New(dy, rows, embeddingDim)
 }
