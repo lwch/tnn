@@ -74,7 +74,7 @@ func expand(v *mat.VecDense, rows, cols, axis int) *mat.Dense {
 		}
 		return ret
 	case 1:
-		for i := 0; i < rows; i++ {
+		for i := 0; i < cols; i++ {
 			ret.ColView(i).(*mat.VecDense).CopyVec(v)
 		}
 		return ret
