@@ -14,6 +14,7 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
+	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
@@ -171,15 +172,15 @@ func getParams() []*params.Params {
 func init() {
 	init := initializer.NewXavierUniform(1)
 	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
-	// encoder = append(encoder, layer.NewDense(unitSize*4, init))
-	// encoder = append(encoder, activation.NewReLU())
-	// encoder = append(encoder, layer.NewDense(unitSize, init))
+	encoder = append(encoder, layer.NewDense(unitSize*4, init))
+	encoder = append(encoder, activation.NewReLU())
+	encoder = append(encoder, layer.NewDense(unitSize, init))
 
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
-	// decoder = append(decoder, layer.NewDense(unitSize*4, init))
-	// decoder = append(decoder, activation.NewReLU())
-	// decoder = append(decoder, layer.NewDense(unitSize, init))
+	decoder = append(decoder, layer.NewDense(unitSize*4, init))
+	decoder = append(decoder, activation.NewReLU())
+	decoder = append(decoder, layer.NewDense(unitSize, init))
 }
 
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
