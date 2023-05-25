@@ -219,21 +219,21 @@ func haveNan(x *tensor.Tensor, prefix string) {
 }
 
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
-	haveNan(x, "x")
-	haveNan(y, "y")
+	// haveNan(x, "x")
+	// haveNan(y, "y")
 	for i := range encoder {
 		x = encoder[i].Forward(x, true)
-		haveNan(x, fmt.Sprintf("encoder:%d", i))
+		// haveNan(x, fmt.Sprintf("encoder:%d", i))
 	}
 	y = decoder[0].Forward(y, true)
-	haveNan(y, fmt.Sprintf("decoder:%d", 0))
+	// haveNan(y, fmt.Sprintf("decoder:%d", 0))
 	y = decoder[1].Forward(y, true)
-	haveNan(y, fmt.Sprintf("decoder:%d", 1))
+	// haveNan(y, fmt.Sprintf("decoder:%d", 1))
 	y = decoder[2].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
-	haveNan(y, fmt.Sprintf("decoder:%d", 2))
+	// haveNan(y, fmt.Sprintf("decoder:%d", 2))
 	for i := 2; i < len(decoder); i++ {
 		y = decoder[i].Forward(y, true)
-		haveNan(y, fmt.Sprintf("decoder:%d", i))
+		// haveNan(y, fmt.Sprintf("decoder:%d", i))
 	}
 	return y
 }
