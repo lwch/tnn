@@ -43,9 +43,6 @@ func (t *Tensor) Name() string {
 }
 
 func (t *Tensor) Value() *mat.Dense {
-	if t.op != nil {
-		return t.op.Forward().Value()
-	}
 	return t.data
 }
 

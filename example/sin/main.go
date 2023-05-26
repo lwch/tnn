@@ -69,7 +69,7 @@ func main() {
 		pred := m.Predict(input)
 		real = append(real, plotter.XY{X: float64(i), Y: output.Value().At(0, 0)})
 		predict = append(predict, plotter.XY{X: float64(i), Y: pred.Value().At(0, 0)})
-		if i%100 == 0 {
+		if i%10 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, loss, acc)
