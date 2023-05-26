@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/layer"
@@ -27,7 +27,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	var decoder model.Model
 	runtime.Assert(decoder.Load(dir))
 	var pred string
-	mix := embedding[rand.Intn(len(embedding))]
+	mix := embedding[int(time.Now().UnixNano())%len(embedding)]
 	y := tensor.New(mix, 1, embeddingDim)
 	for _, ch := range str {
 		x := tensor.New(embedding[vocab2idx[string(ch)]], 1, embeddingDim)
