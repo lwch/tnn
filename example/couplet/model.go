@@ -129,13 +129,20 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 }
 
 func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
+	idx := make([]int, len(trainX))
+	for i := range trainX {
+		idx[i] = i
+	}
+	rand.Shuffle(len(idx), func(i, j int) {
+		idx[i], idx[j] = idx[j], idx[i]
+	})
 	for i := 0; i < len(trainX); i += batchSize {
 		list := make([]int, 0, batchSize)
 		for j := 0; j < batchSize; j++ {
 			if i+j >= len(trainX) {
 				break
 			}
-			list = append(list, i)
+			list = append(list, idx[i])
 		}
 		ch <- list
 	}
