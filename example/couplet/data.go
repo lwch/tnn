@@ -19,6 +19,15 @@ const dataDir = "./data"
 const downloadUrl = "https://github.com/wb14123/couplet-dataset/releases/latest/download/couplet.tar.gz"
 const padSize = 40
 
+var padEmbedding []float64
+
+func init() {
+	padEmbedding = make([]float64, embeddingDim)
+	for i := range padEmbedding {
+		padEmbedding[i] = 1
+	}
+}
+
 func download() {
 	fmt.Println("download dataset...")
 	u := downloadUrl
@@ -105,13 +114,13 @@ func buildTensor(x, y [][]int, embedding [][]float64) (*tensor.Tensor, *tensor.T
 			dx = append(dx, embedding[ch]...)
 		}
 		for i := len(x); i < padSize; i++ {
-			dx = append(dx, embedding[1]...)
+			dx = append(dx, padEmbedding...)
 		}
 		for _, ch := range y {
 			dy = append(dy, embedding[ch]...)
 		}
 		for i := len(y); i < padSize; i++ {
-			dy = append(dy, embedding[1]...)
+			dy = append(dy, padEmbedding...)
 		}
 		// dx = append(dx, embedding[x]...)
 		// dy = append(dy, embedding[y]...)

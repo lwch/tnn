@@ -14,6 +14,7 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
+	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/net"
@@ -117,14 +118,17 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		})
 		x, y := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y)
-		grad := loss.Loss(pred, y)
+		grad := loss.Loss(pred, labels(y))
 		grad.ZeroGrad()
 		grad.Backward(grad)
 		params := getParams()
 		optimizer.Update(params)
-		// test(x)
 		cnt.Add(uint64(len(idx)))
 	}
+}
+
+func labels(y *tensor.Tensor) *tensor.Tensor {
+	return y.Scale(0.9)
 }
 
 func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
@@ -141,21 +145,31 @@ func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 }
 
 func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) float64 {
+	idx := make([]int, len(trainX))
+	for i := range trainX {
+		idx[i] = i
+	}
+	rand.Shuffle(len(idx), func(i, j int) {
+		idx[i], idx[j] = idx[j], idx[i]
+	})
 	var sum float64
-	for i := 0; i < len(trainX); i += batchSize {
-		xIn := make([][]int, 0, batchSize)
-		xOut := make([][]int, 0, batchSize)
-		for j := 0; j < batchSize; j++ {
-			if i+j >= len(trainX) {
-				break
-			}
-			xIn = append(xIn, trainX[i+j])
-			xOut = append(xOut, trainY[i+j])
+	xIn := make([][]int, 0, batchSize)
+	xOut := make([][]int, 0, batchSize)
+	for cnt, i := range idx {
+		if cnt >= 10000 {
+			break
+		}
+		xIn = append(xIn, trainX[i])
+		xOut = append(xOut, trainY[i])
+		if len(xIn) < batchSize {
+			continue
 		}
 		x, y := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y)
-		loss := loss.Loss(pred, tensor.Ones(y.Dims())).Value()
+		loss := loss.Loss(pred, labels(y)).Value()
 		sum += loss.At(0, 0)
+		xIn = xIn[:0]
+		xOut = xOut[:0]
 	}
 	return sum / float64(len(trainX))
 }
@@ -187,7 +201,7 @@ func init() {
 	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
 	encoder = append(encoder, layer.NewNor())
 	encoder = append(encoder, layer.NewDense(unitSize*4, init))
-	// encoder = append(encoder, activation.NewReLU())
+	encoder = append(encoder, activation.NewReLU())
 	encoder = append(encoder, layer.NewDense(unitSize, init))
 	encoder = append(encoder, layer.NewNor())
 
@@ -196,7 +210,7 @@ func init() {
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
 	decoder = append(decoder, layer.NewDense(unitSize*4, init))
-	// decoder = append(decoder, activation.NewReLU())
+	decoder = append(decoder, activation.NewReLU())
 	decoder = append(decoder, layer.NewDense(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
 }

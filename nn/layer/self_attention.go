@@ -52,21 +52,9 @@ func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tens
 	k := input.Mul(Wk).AddVector(Bk)
 	v := input.Mul(Wv).AddVector(Bv)
 	a := k.T().Mul(q)
-	hasNan(a.Value())
 	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
 	a = m.Softmax(a, 0)
 	return v.Mul(a)
-}
-
-func hasNan(x *mat.Dense) {
-	rows, cols := x.Dims()
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			if math.IsNaN(x.At(i, j)) {
-				panic("nan")
-			}
-		}
-	}
 }
 
 func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, isTraining bool) *tensor.Tensor {
