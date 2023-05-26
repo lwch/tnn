@@ -25,8 +25,8 @@ import (
 
 const modelDir = "./model"
 const embeddingDim = 8 // 8个float64表示一个字向量
-const unitSize = padSize * embeddingDim
-const batchSize = 32
+const unitSize = embeddingDim
+const batchSize = 128
 const epoch = 1000
 const lr = 1e-3
 
@@ -76,7 +76,7 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 		cnt.Store(0)
 		trainEpoch(trainX, trainY, embedding, ch)
 		if i%10 == 0 {
-			fmt.Printf("cost=%s, loss=%.05f\n", time.Since(begin).String(),
+			fmt.Printf("cost=%s, loss=%e\n", time.Since(begin).String(),
 				avgLoss(loss, trainX, trainY, embedding))
 		}
 	}
@@ -118,17 +118,13 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		})
 		x, y := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y)
-		grad := loss.Loss(pred, labels(y))
+		grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
 		params := getParams()
 		optimizer.Update(params)
 		cnt.Add(uint64(len(idx)))
 	}
-}
-
-func labels(y *tensor.Tensor) *tensor.Tensor {
-	return y.Scale(0.9)
 }
 
 func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
@@ -166,7 +162,7 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) floa
 		}
 		x, y := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y)
-		loss := loss.Loss(pred, labels(y)).Value()
+		loss := loss.Loss(pred, y).Value()
 		sum += loss.At(0, 0)
 		xIn = xIn[:0]
 		xOut = xOut[:0]

@@ -21,5 +21,5 @@ func (*Softmax) Loss(predict, targets *tensor.Tensor) *tensor.Tensor {
 	exps := predict.Sub(tensor.FromColVector(max)).Exp()
 	sum := exps.SumAxis(1)
 	logSoftmax := predict.Sub(tensor.FromColVector(max)).Sub(sum.Log())
-	return logSoftmax.MulElem(targets).Scale(-1).Sum().Scale(1 / float64(rows))
+	return logSoftmax.MulElem(targets).Sum().Scale(1 / float64(rows))
 }
