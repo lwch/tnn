@@ -148,33 +148,60 @@ func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 	}
 }
 
-func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) float64 {
-	idx := make([]int, len(trainX))
-	for i := range trainX {
-		idx[i] = i
-	}
-	rand.Shuffle(len(idx), func(i, j int) {
-		idx[i], idx[j] = idx[j], idx[i]
-	})
-	var sum float64
-	xIn := make([][]int, 0, batchSize)
-	xOut := make([][]int, 0, batchSize)
-	var size float64
-	for _, i := range idx {
-		xIn = append(xIn, trainX[i])
-		xOut = append(xOut, trainY[i])
-		if len(xIn) < batchSize {
-			continue
+var sumLoss float64
+
+func lossWorker(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
+	for {
+		idx, ok := <-ch
+		if !ok {
+			return
+		}
+		xIn := make([][]int, 0, batchSize)
+		xOut := make([][]int, 0, batchSize)
+		for _, i := range idx {
+			xIn = append(xIn, trainX[i])
+			xOut = append(xOut, trainY[i])
 		}
 		x, y := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y)
 		loss := loss.Loss(pred, y).Value()
-		sum += loss.At(0, 0)
-		xIn = xIn[:0]
-		xOut = xOut[:0]
+		sumLoss += loss.At(0, 0)
+	}
+}
+
+func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) float64 {
+	sumLoss = 0
+
+	ch := make(chan []int)
+	var wg sync.WaitGroup
+	wg.Add(rt.NumCPU())
+	for i := 0; i < rt.NumCPU(); i++ {
+		go func() {
+			defer wg.Done()
+			lossWorker(loss, trainX, trainY, embedding, ch)
+		}()
+	}
+
+	var size float64
+	var list []int
+	for i := range trainX {
+		list = append(list, i)
+		if len(list) < batchSize {
+			continue
+		}
+		dup := make([]int, len(list))
+		copy(dup, list)
+		ch <- dup
+		list = list[:0]
 		size++
 	}
-	return sum / size
+	if len(list) > 0 {
+		ch <- list
+		size++
+	}
+	close(ch)
+	wg.Wait()
+	return sumLoss / size
 }
 
 var encoder []layer.Layer
