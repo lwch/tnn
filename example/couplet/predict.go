@@ -5,10 +5,8 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/lwch/runtime"
-	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/tensor"
 )
@@ -18,32 +16,45 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic("encoder model not found")
 	}
-	var encoder model.Model
-	runtime.Assert(encoder.Load(dir))
+	var enc model.Model
+	runtime.Assert(enc.Load(dir))
 	dir = filepath.Join(modelDir, "decoder.model")
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic("decoder model not found")
 	}
-	var decoder model.Model
-	runtime.Assert(decoder.Load(dir))
-	var pred string
-	mix := embedding[int(time.Now().UnixNano())%len(embedding)]
-	y := tensor.New(mix, 1, embeddingDim)
+	var dec model.Model
+	runtime.Assert(dec.Load(dir))
+	encoder = enc.Layers()
+	decoder = dec.Layers()
+	dx := make([]int, 0, len(str)*embeddingDim)
+	dy := make([]int, 0, len(str)*embeddingDim)
 	for _, ch := range str {
-		x := tensor.New(embedding[vocab2idx[string(ch)]], 1, embeddingDim)
-		for _, layer := range encoder.Layers() {
-			x = layer.Forward(x, false)
-		}
-		layers := decoder.Layers()
-		y = layers[0].Forward(y, false)
-		y = layers[1].Forward(y, false)
-		y = layers[2].(*layer.SelfAttention).ForwardQKV(y, x, y, false)
-		for i := 3; i < len(layers); i++ {
-			y = layers[i].Forward(y, false)
-		}
-		pred += tensorStr(y, vocabs, embedding)[0]
+		dx = append(dx, vocab2idx[string(ch)])
+		dy = append(dy, 0)
 	}
-	fmt.Println(pred)
+	dx = append(dx, 1)
+	dy = append(dy, 0)
+	x, y := buildTensor([][]int{dx}, [][]int{dy}, embedding)
+	pred := forward(x, y, false)
+	fmt.Println(tensorStr(pred, vocabs, embedding))
+	// var pred string
+	// mix := embedding[int(time.Now().UnixNano())%len(embedding)]
+	// y := tensor.New(mix, 1, embeddingDim)
+	// for _, ch := range str {
+	// 	x := tensor.New(embedding[vocab2idx[string(ch)]], 1, embeddingDim)
+	// 	for _, layer := range encoder.Layers() {
+	// 		x = layer.Forward(x, false)
+	// 	}
+	// 	layers := decoder.Layers()
+	// 	y = layers[0].Forward(y, false)
+	// 	y = layers[1].Forward(y, false)
+	// 	y = layers[2].(*layer.SelfAttention).ForwardQKV(y, x, y, false)
+	// 	for i := 3; i < len(layers); i++ {
+	// 		y = layers[i].Forward(y, false)
+	// 	}
+	// 	pred += tensorStr(y, vocabs, embedding)[0]
+	// }
+	// fmt.Println(pred)
 }
 
 func lookupEmbedding(embedding [][]float64, v []float64) int {

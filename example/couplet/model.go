@@ -25,7 +25,7 @@ import (
 
 const modelDir = "./model"
 const embeddingDim = 8 // 8个float64表示一个字向量
-const unitSize = embeddingDim
+const unitSize = paddingSize * embeddingDim
 const batchSize = 128
 const epoch = 1000
 const lr = 1e-3
@@ -56,8 +56,8 @@ func loadEmbedding(vocabSize int) [][]float64 {
 }
 
 func train(trainX, trainY [][]int, embedding [][]float64) {
-	// loss := loss.NewSoftmax()
-	loss := loss.NewMSE()
+	loss := loss.NewSoftmax()
+	// loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 
 	ch := make(chan []int)
@@ -118,7 +118,7 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
 		x, y := buildTensor(xIn, xOut, embedding)
-		pred := forward(x, y)
+		pred := forward(x, y, true)
 		grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
@@ -163,7 +163,7 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64, c
 			xOut = append(xOut, trainY[i])
 		}
 		x, y := buildTensor(xIn, xOut, embedding)
-		pred := forward(x, y)
+		pred := forward(x, y, false)
 		loss := loss.Loss(pred, y).Value()
 		sumLoss += loss.At(0, 0)
 	}
@@ -245,16 +245,29 @@ func init() {
 	decoder = append(decoder, layer.NewNor())
 }
 
-func forward(x, y *tensor.Tensor) *tensor.Tensor {
-	for i := range encoder {
-		x = encoder[i].Forward(x, true)
-	}
-	y = decoder[0].Forward(y, true)
-	y = decoder[1].Forward(y, true)
-	y = decoder[2].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
-	for i := 3; i < len(decoder); i++ {
-		y = decoder[i].Forward(y, true)
-	}
+func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
+	srcX := x
+	srcY := y
+	x = encoder[0].Forward(x, train) // self attention
+	x = x.Add(srcX)
+	encSelfOut := encoder[1].Forward(x, train) // nor
+	x = encoder[2].Forward(encSelfOut, train)  // dense1
+	x = encoder[3].Forward(x, train)           // relu
+	x = encoder[4].Forward(x, train)           // dense2
+	x = x.Add(encSelfOut)
+	x = encoder[5].Forward(x, train) // nor
+
+	y = decoder[0].Forward(y, train) // self attention1
+	y = y.Add(srcY)
+	decSelfOut1 := decoder[1].Forward(y, train)                                // nor
+	y = decoder[2].(*layer.SelfAttention).ForwardQKV(decSelfOut1, x, x, train) // self attention2
+	y = y.Add(decSelfOut1)
+	decSelfOut2 := decoder[3].Forward(y, train) // nor
+	y = decoder[4].Forward(decSelfOut2, train)  // dense1
+	y = decoder[5].Forward(y, train)            // relu
+	y = decoder[6].Forward(y, train)            // dense2
+	y = y.Add(decSelfOut2)
+	y = decoder[7].Forward(y, train) // nor
 	return y
 }
 
