@@ -14,7 +14,7 @@ func dupVec(vec *mat.VecDense) []float64 {
 	return data
 }
 
-func (op *sub) Forward() *Tensor {
+func (op *sub) f() *mat.Dense {
 	aRows, aCols := op.a.Dims()
 	bRows, bCols := op.b.Dims()
 	if aRows == bRows && aCols != bCols { // 减去列向量
@@ -27,7 +27,7 @@ func (op *sub) Forward() *Tensor {
 			vec.SubVec(op.a.Value().ColView(i), op.b.Value().ColView(0))
 			ret.SetCol(i, dupVec(&vec))
 		}
-		return FromDense(ret)
+		return ret
 	} else if aCols == bCols && aRows != bRows { // 减去行向量
 		if bRows != 1 {
 			panic("bRows!=1")
@@ -38,15 +38,15 @@ func (op *sub) Forward() *Tensor {
 			vec.SubVec(op.a.Value().RowView(i), op.b.Value().RowView(0))
 			ret.SetRow(i, dupVec(&vec))
 		}
-		return FromDense(ret)
+		return ret
 	} else {
 		var value mat.Dense
 		value.Sub(op.a.Value(), op.b.Value())
-		return FromDense(&value)
+		return &value
 	}
 }
 
-func (op *sub) Backward(grad *Tensor) {
+func (op *sub) df(grad *Tensor) {
 	op.a.AddGrad(grad.Value())
 	op.a.Backward(grad)
 	gRows, gCols := grad.Dims()
@@ -67,10 +67,6 @@ func (op *sub) Backward(grad *Tensor) {
 	}
 	op.b.AddGrad(db.Value())
 	op.b.Backward(db)
-}
-
-func (op *sub) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *sub) ZeroGrad() {

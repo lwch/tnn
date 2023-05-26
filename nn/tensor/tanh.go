@@ -18,21 +18,17 @@ func tanhDense(x *mat.Dense) *mat.Dense {
 	return &value
 }
 
-func (op *tanh) Forward() *Tensor {
-	return FromDense(tanhDense(op.a.Value()))
+func (op *tanh) f() *mat.Dense {
+	return tanhDense(op.a.Value())
 }
 
-func (op *tanh) Backward(grad *Tensor) {
+func (op *tanh) df(grad *Tensor) {
 	a := Ones(grad.Dims())
 	b := powDense(tanhDense(grad.Value()), 2)
 	var delta mat.Dense
 	delta.Sub(a.Value(), b)
 	op.a.AddGrad(&delta)
 	op.a.Backward(FromDense(&delta))
-}
-
-func (op *tanh) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *tanh) ZeroGrad() {

@@ -8,21 +8,17 @@ type add struct {
 	a, b *Tensor
 }
 
-func (op *add) Forward() *Tensor {
+func (op *add) f() *mat.Dense {
 	var value mat.Dense
 	value.Add(op.a.Value(), op.b.Value())
-	return FromDense(&value)
+	return &value
 }
 
-func (op *add) Backward(grad *Tensor) {
+func (op *add) df(grad *Tensor) {
 	op.a.AddGrad(grad.Value())
 	op.b.AddGrad(grad.Value())
 	op.a.Backward(grad)
 	op.b.Backward(grad)
-}
-
-func (op *add) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *add) ZeroGrad() {
@@ -34,7 +30,7 @@ type addVector struct {
 	a, b *Tensor
 }
 
-func (op *addVector) Forward() *Tensor {
+func (op *addVector) f() *mat.Dense {
 	av := op.a.Value()
 	rows, cols := av.Dims()
 	b0 := op.b.Value().RowView(0)
@@ -42,10 +38,10 @@ func (op *addVector) Forward() *Tensor {
 	for i := 0; i < rows; i++ {
 		value.RowView(i).(*mat.VecDense).AddVec(av.RowView(i), b0)
 	}
-	return FromDense(value)
+	return value
 }
 
-func (op *addVector) Backward(grad *Tensor) {
+func (op *addVector) df(grad *Tensor) {
 	gv := grad.Value()
 	rows, cols := gv.Dims()
 	delta := mat.NewVecDense(cols, nil)
@@ -57,10 +53,6 @@ func (op *addVector) Backward(grad *Tensor) {
 	op.b.AddGrad(vec2Dense(delta))
 	op.a.Backward(grad)
 	op.b.Backward(FromRowVector(delta))
-}
-
-func (op *addVector) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *addVector) ZeroGrad() {

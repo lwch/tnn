@@ -10,12 +10,12 @@ type inv struct {
 	a *Tensor
 }
 
-func (op *inv) Forward() *Tensor {
+func (op *inv) f() *mat.Dense {
 	var value mat.Dense
 	value.Apply(func(i, j int, v float64) float64 {
 		return 1 / v
 	}, op.a.Value())
-	return FromDense(&value)
+	return &value
 }
 
 func powDense(x *mat.Dense, n float64) *mat.Dense {
@@ -26,16 +26,12 @@ func powDense(x *mat.Dense, n float64) *mat.Dense {
 	return &value
 }
 
-func (op *inv) Backward(grad *Tensor) {
+func (op *inv) df(grad *Tensor) {
 	var delta mat.Dense
 	delta.DivElem(grad.Value(), powDense(op.a.Value(), 2))
 	delta.Scale(-1, &delta)
 	op.a.AddGrad(&delta)
 	op.a.Backward(FromDense(&delta))
-}
-
-func (op *inv) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *inv) ZeroGrad() {

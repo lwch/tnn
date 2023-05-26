@@ -8,13 +8,13 @@ type mul struct {
 	a, b *Tensor
 }
 
-func (op *mul) Forward() *Tensor {
+func (op *mul) f() *mat.Dense {
 	var value mat.Dense
 	value.Mul(op.a.Value(), op.b.Value())
-	return FromDense(&value)
+	return &value
 }
 
-func (op *mul) Backward(grad *Tensor) {
+func (op *mul) df(grad *Tensor) {
 	var da, db mat.Dense
 	da.Mul(grad.Value(), op.b.Value().T())
 	db.Mul(op.a.Value().T(), grad.Value())
@@ -22,12 +22,6 @@ func (op *mul) Backward(grad *Tensor) {
 	op.b.AddGrad(&db)
 	op.a.Backward(FromDense(&da))
 	op.b.Backward(FromDense(&db))
-}
-
-func (op *mul) Dims() (int, int) {
-	rows, _ := op.a.Value().Dims()
-	_, cols := op.b.Value().Dims()
-	return rows, cols
 }
 
 func (op *mul) ZeroGrad() {
@@ -39,13 +33,13 @@ type mulElem struct {
 	a, b *Tensor
 }
 
-func (op *mulElem) Forward() *Tensor {
+func (op *mulElem) f() *mat.Dense {
 	var value mat.Dense
 	value.MulElem(op.a.Value(), op.b.Value())
-	return FromDense(&value)
+	return &value
 }
 
-func (op *mulElem) Backward(grad *Tensor) {
+func (op *mulElem) df(grad *Tensor) {
 	var da, db mat.Dense
 	da.MulElem(op.b.Value(), grad.Value())
 	db.MulElem(op.a.Value(), grad.Value())
@@ -53,10 +47,6 @@ func (op *mulElem) Backward(grad *Tensor) {
 	op.b.AddGrad(&db)
 	op.a.Backward(FromDense(&da))
 	op.b.Backward(FromDense(&db))
-}
-
-func (op *mulElem) Dims() (int, int) {
-	return op.a.Value().Dims()
 }
 
 func (op *mulElem) ZeroGrad() {

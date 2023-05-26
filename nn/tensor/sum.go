@@ -8,20 +8,16 @@ type sum struct {
 	a *Tensor
 }
 
-func (op *sum) Forward() *Tensor {
+func (op *sum) f() *mat.Dense {
 	n := mat.Sum(op.a.Value())
-	return New([]float64{n}, 1, 1)
+	return mat.NewDense(1, 1, []float64{n})
 }
 
-func (op *sum) Backward(grad *Tensor) {
+func (op *sum) df(grad *Tensor) {
 	rows, cols := op.a.Value().Dims()
 	delta := Numbers(rows, cols, grad.Value().At(0, 0))
 	op.a.AddGrad(delta.Value())
 	op.a.Backward(delta)
-}
-
-func (op *sum) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *sum) ZeroGrad() {
@@ -33,7 +29,7 @@ type sumAxis struct {
 	axis int
 }
 
-func (op *sumAxis) Forward() *Tensor {
+func (op *sumAxis) f() *mat.Dense {
 	rows, cols := op.a.Dims()
 	switch op.axis {
 	case 0:
@@ -41,19 +37,19 @@ func (op *sumAxis) Forward() *Tensor {
 		for i := 0; i < rows; i++ {
 			v.AddVec(v, op.a.Value().RowView(i))
 		}
-		return FromRowVector(v)
+		return mat.NewDense(1, cols, dupVec(v))
 	case 1:
 		v := mat.NewVecDense(rows, nil)
 		for i := 0; i < cols; i++ {
 			v.AddVec(v, op.a.Value().ColView(i))
 		}
-		return FromColVector(v)
+		return mat.NewDense(rows, 1, dupVec(v))
 	default:
 		panic("invalid axis")
 	}
 }
 
-func (op *sumAxis) Backward(grad *Tensor) {
+func (op *sumAxis) df(grad *Tensor) {
 	rows, cols := op.a.Value().Dims()
 	delta := mat.NewDense(rows, cols, nil)
 	switch op.axis {
@@ -70,18 +66,6 @@ func (op *sumAxis) Backward(grad *Tensor) {
 	}
 	op.a.AddGrad(delta)
 	op.a.Backward(FromDense(delta))
-}
-
-func (op *sumAxis) Dims() (int, int) {
-	rows, cols := op.a.Dims()
-	switch op.axis {
-	case 0:
-		return 1, cols
-	case 1:
-		return rows, 1
-	default:
-		panic("invalid axis")
-	}
 }
 
 func (op *sumAxis) ZeroGrad() {

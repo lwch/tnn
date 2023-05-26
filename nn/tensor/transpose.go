@@ -8,21 +8,17 @@ type transpose struct {
 	a *Tensor
 }
 
-func (op *transpose) Forward() *Tensor {
+func (op *transpose) f() *mat.Dense {
 	var value mat.Dense
 	value.CloneFrom(op.a.Value().T())
-	return FromDense(&value)
+	return &value
 }
 
-func (op *transpose) Backward(grad *Tensor) {
+func (op *transpose) df(grad *Tensor) {
 	var delta mat.Dense
 	delta.CloneFrom(grad.Value().T())
 	op.a.AddGrad(&delta)
 	op.a.Backward(FromDense(&delta))
-}
-
-func (op *transpose) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *transpose) ZeroGrad() {

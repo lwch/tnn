@@ -8,13 +8,13 @@ type divElem struct {
 	a, b *Tensor
 }
 
-func (op *divElem) Forward() *Tensor {
+func (op *divElem) f() *mat.Dense {
 	var value mat.Dense
 	value.DivElem(op.a.Value(), op.b.Value())
-	return FromDense(&value)
+	return &value
 }
 
-func (op *divElem) Backward(grad *Tensor) {
+func (op *divElem) df(grad *Tensor) {
 	var da mat.Dense
 	da.DivElem(grad.Value(), op.b.Value())
 	var db mat.Dense
@@ -25,10 +25,6 @@ func (op *divElem) Backward(grad *Tensor) {
 	op.b.AddGrad(&db)
 	op.a.Backward(FromDense(&da))
 	op.b.Backward(FromDense(&db))
-}
-
-func (op *divElem) Dims() (int, int) {
-	return op.a.Value().Dims()
 }
 
 func (op *divElem) ZeroGrad() {

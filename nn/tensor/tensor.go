@@ -55,18 +55,11 @@ func (t *Tensor) Clone() *Tensor {
 	return &Tensor{data: &data}
 }
 
-func (t *Tensor) Forward() *Tensor {
-	if t.op == nil {
-		return nil
-	}
-	return t.op.Forward()
-}
-
 func (t *Tensor) Backward(grad *Tensor) {
 	if t.op == nil {
 		return
 	}
-	t.op.Backward(grad)
+	t.op.df(grad)
 }
 
 func (t *Tensor) ZeroGrad() {
@@ -108,9 +101,6 @@ func (t *Tensor) Grad() *Tensor {
 }
 
 func (t *Tensor) Dims() (int, int) {
-	if t.op != nil {
-		return t.op.Dims()
-	}
 	return t.data.Dims()
 }
 

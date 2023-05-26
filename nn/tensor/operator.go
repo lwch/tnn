@@ -1,9 +1,10 @@
 package tensor
 
+import "gonum.org/v1/gonum/mat"
+
 type Operator interface {
-	Forward() *Tensor
-	Backward(grad *Tensor)
-	Dims() (int, int)
+	f() *mat.Dense
+	df(grad *Tensor)
 	ZeroGrad()
 }
 
@@ -12,7 +13,7 @@ func (t *Tensor) Add(t2 *Tensor) *Tensor {
 		a: t,
 		b: t2,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) AddVector(t2 *Tensor) *Tensor {
@@ -23,7 +24,7 @@ func (t *Tensor) AddVector(t2 *Tensor) *Tensor {
 		a: t,
 		b: t2,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Sub(t2 *Tensor) *Tensor {
@@ -31,7 +32,7 @@ func (t *Tensor) Sub(t2 *Tensor) *Tensor {
 		a: t,
 		b: t2,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Scale(n float64) *Tensor {
@@ -39,7 +40,7 @@ func (t *Tensor) Scale(n float64) *Tensor {
 		a: n,
 		b: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Mul(t2 *Tensor) *Tensor {
@@ -47,7 +48,7 @@ func (t *Tensor) Mul(t2 *Tensor) *Tensor {
 		a: t,
 		b: t2,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) MulElem(t2 *Tensor) *Tensor {
@@ -55,7 +56,7 @@ func (t *Tensor) MulElem(t2 *Tensor) *Tensor {
 		a: t,
 		b: t2,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) DivElem(t2 *Tensor) *Tensor {
@@ -63,35 +64,35 @@ func (t *Tensor) DivElem(t2 *Tensor) *Tensor {
 		a: t,
 		b: t2,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Exp() *Tensor {
 	op := &exp{
 		a: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Log() *Tensor {
 	op := &log{
 		a: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Inv() *Tensor {
 	op := &inv{
 		a: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Sum() *Tensor {
 	op := &sum{
 		a: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) SumAxis(axis int) *Tensor {
@@ -99,7 +100,7 @@ func (t *Tensor) SumAxis(axis int) *Tensor {
 		a:    t,
 		axis: axis,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Pow(n float64) *Tensor {
@@ -107,14 +108,14 @@ func (t *Tensor) Pow(n float64) *Tensor {
 		a: t,
 		b: n,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Tanh() *Tensor {
 	op := &tanh{
 		a: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Slice(topY, bottomY, leftX, rightX int) *Tensor {
@@ -125,19 +126,19 @@ func (t *Tensor) Slice(topY, bottomY, leftX, rightX int) *Tensor {
 		leftX:   leftX,
 		rightX:  rightX,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) T() *Tensor {
 	op := &transpose{
 		a: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }
 
 func (t *Tensor) Sqrt() *Tensor {
 	op := &sqrt{
 		a: t,
 	}
-	return &Tensor{op: op, data: op.Forward().Value()}
+	return &Tensor{op: op, data: op.f()}
 }

@@ -18,20 +18,16 @@ func sqrtDense(x *mat.Dense) *mat.Dense {
 	return &value
 }
 
-func (op *sqrt) Forward() *Tensor {
-	return FromDense(sqrtDense(op.a.Value()))
+func (op *sqrt) f() *mat.Dense {
+	return sqrtDense(op.a.Value())
 }
 
-func (op *sqrt) Backward(grad *Tensor) {
+func (op *sqrt) df(grad *Tensor) {
 	sqrt := sqrtDense(grad.Value())
 	sqrt.Scale(2, sqrt)
 	delta := FromDense(sqrt).Inv()
 	op.a.AddGrad(delta.Value())
 	op.a.Backward(delta)
-}
-
-func (op *sqrt) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *sqrt) ZeroGrad() {

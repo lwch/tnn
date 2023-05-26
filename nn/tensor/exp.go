@@ -18,19 +18,15 @@ func (op *exp) expValue() *mat.Dense {
 	return &value
 }
 
-func (op *exp) Forward() *Tensor {
-	return FromDense(op.expValue())
+func (op *exp) f() *mat.Dense {
+	return op.expValue()
 }
 
-func (op *exp) Backward(grad *Tensor) {
+func (op *exp) df(grad *Tensor) {
 	delta := op.expValue()
 	delta.MulElem(grad.Value(), delta)
 	op.a.AddGrad(delta)
 	op.a.Backward(FromDense(delta))
-}
-
-func (op *exp) Dims() (int, int) {
-	return op.a.Dims()
 }
 
 func (op *exp) ZeroGrad() {
