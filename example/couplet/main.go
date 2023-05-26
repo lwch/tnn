@@ -40,8 +40,8 @@ func runTrain(*cobra.Command, []string) {
 		buildEmbedding(len(idx2vocab))
 	}
 	embedding := loadEmbedding(len(idx2vocab))
-	trainX := loadData("train/in.txt", vocab2idx)
-	trainY := loadData("train/out.txt", vocab2idx)
+	trainX := loadData("train/in2.txt", vocab2idx)
+	trainY := loadData("train/out2.txt", vocab2idx)
 	train(trainX, trainY, embedding)
 }
 

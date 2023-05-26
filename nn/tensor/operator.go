@@ -94,6 +94,14 @@ func (t *Tensor) Sum() *Tensor {
 	return &Tensor{op: op}
 }
 
+func (t *Tensor) SumAxis(axis int) *Tensor {
+	op := &sumAxis{
+		a:    t,
+		axis: axis,
+	}
+	return &Tensor{op: op}
+}
+
 func (t *Tensor) Pow(n float64) *Tensor {
 	op := &pow{
 		a: t,

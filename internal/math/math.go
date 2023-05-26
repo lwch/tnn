@@ -13,7 +13,7 @@ func Sigmoid(x *tensor.Tensor) *tensor.Tensor {
 	return x.Scale(-1).Exp().Add(one).Inv()
 }
 
-func max(x *tensor.Tensor, axis int) *mat.VecDense {
+func Max(x *tensor.Tensor, axis int) *mat.VecDense {
 	rows, cols := x.Dims()
 	switch axis {
 	case 0:
@@ -84,14 +84,27 @@ func expand(v *mat.VecDense, rows, cols, axis int) *mat.Dense {
 
 // Softmax exp(x) / sum(exp(max(x,axis)))
 func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
-	max := max(x, axis)
+	max := Max(x, axis)
 	rows, cols := x.Dims()
 	dense := expand(max, rows, cols, axis)
 	exp := x.Sub(tensor.FromDense(dense)).Exp()
 	sum := sum(exp, axis)
 	dense = expand(sum, rows, cols, axis)
-	v := exp.MulElem(tensor.FromDense(dense).Inv()).Value()
-	return tensor.FromDense(v)
+	v := exp.DivElem(tensor.FromDense(dense))
+	return tensor.FromDense(v.Value())
+}
+
+// LogSoftmax x - max(x,axis) - log(sum(exp(x - max(x,axis))))
+func LogSoftmax(x *tensor.Tensor, axis int) *tensor.Tensor {
+	max := Max(x, axis)
+	rows, cols := x.Dims()
+	maxDense := expand(max, rows, cols, axis)
+	exp := x.Sub(tensor.FromDense(maxDense)).Exp()
+	sum := sum(exp, axis)
+	sumDense := expand(sum, rows, cols, axis)
+	x = x.Sub(tensor.FromDense(maxDense))
+	v := x.Sub(tensor.FromDense(sumDense).Log())
+	return tensor.FromDense(v.Value())
 }
 
 // Mean 按列求均值

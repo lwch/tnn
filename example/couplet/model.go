@@ -15,7 +15,6 @@ import (
 	"github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
-	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/net"
@@ -26,7 +25,8 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 8 // 8个float64表示一个字向量
+const embeddingDim = 2 // 8个float64表示一个字向量
+const unitSize = padSize * embeddingDim
 const batchSize = 16
 const epoch = 10
 const lr = 1e-3
@@ -79,6 +79,7 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 		cnt.Store(0)
 		begin = time.Now()
 		trainEpoch(trainX, trainY, embedding, ch)
+		fmt.Printf("loss=%.05f\n", avgLoss(loss, trainX, trainY, embedding))
 	}
 	close(ch)
 	wg.Wait()
@@ -128,7 +129,10 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		x, y := buildTensor(xIn, xOut, embedding)
 		testX, testY = x, y
 		pred := forward(x, y)
-		grad := math.Softmax(pred, 1)
+		pred = math.Softmax(pred, 1)
+		ones := tensor.Ones(pred.Dims())
+		grad := ones.Sub(pred).Sum().Scale(1 / float64(len(idx)))
+		// grad := math.Softmax(pred, 1).Log().Sub(ones).Sum()
 		// grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
@@ -159,6 +163,29 @@ func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 	}
 }
 
+func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) float64 {
+	var sum float64
+	for i := 0; i < len(trainX); i += batchSize {
+		xIn := make([][]int, 0, batchSize)
+		xOut := make([][]int, 0, batchSize)
+		for j := 0; j < batchSize; j++ {
+			if i+j >= len(trainX) {
+				break
+			}
+			xIn = append(xIn, trainX[i+j])
+			xOut = append(xOut, trainY[i+j])
+		}
+		x, y := buildTensor(xIn, xOut, embedding)
+		pred := forward(x, y)
+		pred = math.Softmax(pred, 1)
+		ones := tensor.Ones(pred.Dims())
+		// loss := math.Softmax(pred, 1).Sum().Value()
+		loss := ones.Sub(pred).Sum().Value()
+		sum += loss.At(0, 0)
+	}
+	return sum / float64(len(trainX))
+}
+
 var encoder []layer.Layer
 var decoder []layer.Layer
 
@@ -182,21 +209,22 @@ func getParams() []*params.Params {
 }
 
 func init() {
-	init := initializer.NewXavierUniform(1)
-	encoder = append(encoder, layer.NewSelfAttention(embeddingDim, init))
+	// init := initializer.NewXavierUniform(1)
+	init := initializer.NewZero()
+	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
 	encoder = append(encoder, layer.NewNor())
-	encoder = append(encoder, layer.NewDense(embeddingDim*4, init))
-	encoder = append(encoder, activation.NewReLU())
-	encoder = append(encoder, layer.NewDense(embeddingDim, init))
+	encoder = append(encoder, layer.NewDense(unitSize*4, init))
+	// encoder = append(encoder, activation.NewReLU())
+	encoder = append(encoder, layer.NewDense(unitSize, init))
 	encoder = append(encoder, layer.NewNor())
 
-	decoder = append(decoder, layer.NewSelfAttention(embeddingDim, init))
+	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
-	decoder = append(decoder, layer.NewSelfAttention(embeddingDim, init))
+	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
-	decoder = append(decoder, layer.NewDense(embeddingDim*4, init))
-	decoder = append(decoder, activation.NewReLU())
-	decoder = append(decoder, layer.NewDense(embeddingDim, init))
+	decoder = append(decoder, layer.NewDense(unitSize*4, init))
+	// decoder = append(decoder, activation.NewReLU())
+	decoder = append(decoder, layer.NewDense(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
 }
 
@@ -244,4 +272,5 @@ func saveModel(layers []layer.Layer, name string) {
 func save() {
 	saveModel(encoder, "encoder")
 	saveModel(decoder, "decoder")
+	fmt.Println("model saved")
 }

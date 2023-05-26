@@ -17,6 +17,7 @@ import (
 
 const dataDir = "./data"
 const downloadUrl = "https://github.com/wb14123/couplet-dataset/releases/latest/download/couplet.tar.gz"
+const padSize = 40
 
 func download() {
 	fmt.Println("download dataset...")
@@ -99,20 +100,33 @@ func buildTensor(x, y [][]int, embedding [][]float64) (*tensor.Tensor, *tensor.T
 	dx := make([]float64, 0, len(x)*embeddingDim)
 	dy := make([]float64, 0, len(y)*embeddingDim)
 	rows := 0
-	add := func(x, y int) {
-		dx = append(dx, embedding[x]...)
-		dy = append(dy, embedding[y]...)
+	add := func(x, y []int) {
+		for _, ch := range x {
+			dx = append(dx, embedding[ch]...)
+		}
+		for i := len(x); i < padSize; i++ {
+			dx = append(dx, embedding[1]...)
+		}
+		for _, ch := range y {
+			dy = append(dy, embedding[ch]...)
+		}
+		for i := len(y); i < padSize; i++ {
+			dy = append(dy, embedding[1]...)
+		}
+		// dx = append(dx, embedding[x]...)
+		// dy = append(dy, embedding[y]...)
 		rows++
 	}
 	for i := range x {
-		for j := range x[i] {
-			if x[i][j] == 1 { // </s>
-				add(x[i][j], y[i][j])
-				break
-			}
-			add(x[i][j], y[i][j])
-		}
+		// for j := range x[i] {
+		// 	if x[i][j] == 1 { // </s>
+		// 		add(x[i][j], y[i][j])
+		// 		break
+		// 	}
+		// 	add(x[i][j], y[i][j])
+		// }
+		add(x[i], y[i])
 	}
-	return tensor.New(dx, rows, embeddingDim),
-		tensor.New(dy, rows, embeddingDim)
+	return tensor.New(dx, rows, unitSize),
+		tensor.New(dy, rows, unitSize)
 }

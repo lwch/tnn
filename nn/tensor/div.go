@@ -1,6 +1,8 @@
 package tensor
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"gonum.org/v1/gonum/mat"
+)
 
 type divElem struct {
 	a, b *Tensor

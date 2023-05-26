@@ -56,7 +56,7 @@ func (op *addVector) Backward(grad *Tensor) {
 	op.a.AddGrad(grad.Value())
 	op.b.AddGrad(vec2Dense(delta))
 	op.a.Backward(grad)
-	op.b.Backward(FromVector(delta))
+	op.b.Backward(FromRowVector(delta))
 }
 
 func (op *addVector) Dims() (int, int) {

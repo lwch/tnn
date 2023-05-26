@@ -22,10 +22,16 @@ func FromDense(dense *mat.Dense) *Tensor {
 	return &Tensor{data: dense}
 }
 
-func FromVector(vector *mat.VecDense) *Tensor {
+func FromRowVector(vector *mat.VecDense) *Tensor {
 	var data []float64
 	data = append(data, vector.RawVector().Data...)
 	return &Tensor{data: mat.NewDense(1, vector.Len(), data)}
+}
+
+func FromColVector(vector *mat.VecDense) *Tensor {
+	var data []float64
+	data = append(data, vector.RawVector().Data...)
+	return &Tensor{data: mat.NewDense(vector.Len(), 1, data)}
 }
 
 func (t *Tensor) SetName(name string) {
