@@ -159,10 +159,8 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) floa
 	var sum float64
 	xIn := make([][]int, 0, batchSize)
 	xOut := make([][]int, 0, batchSize)
-	for cnt, i := range idx {
-		if cnt >= 10000 {
-			break
-		}
+	var size float64
+	for _, i := range idx {
 		xIn = append(xIn, trainX[i])
 		xOut = append(xOut, trainY[i])
 		if len(xIn) < batchSize {
@@ -174,8 +172,9 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) floa
 		sum += loss.At(0, 0)
 		xIn = xIn[:0]
 		xOut = xOut[:0]
+		size++
 	}
-	return sum / float64(len(trainX))
+	return sum / size
 }
 
 var encoder []layer.Layer
