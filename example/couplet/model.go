@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/lwch/runtime"
-	"github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/loss"
@@ -21,17 +20,14 @@ import (
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 const modelDir = "./model"
-const embeddingDim = 2 // 8个float64表示一个字向量
+const embeddingDim = 8 // 8个float64表示一个字向量
 const unitSize = padSize * embeddingDim
-const batchSize = 16
-const epoch = 10
+const batchSize = 32
+const epoch = 1000
 const lr = 1e-3
-
-var testX, testY *tensor.Tensor
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
@@ -59,49 +55,42 @@ func loadEmbedding(vocabSize int) [][]float64 {
 }
 
 func train(trainX, trainY [][]int, embedding [][]float64) {
-	loss := loss.NewMSE()
+	loss := loss.NewSoftmax()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 
 	ch := make(chan []int)
 	var wg sync.WaitGroup
 	wg.Add(rt.NumCPU())
 	var cnt atomic.Uint64
-	var begin time.Time
 	for i := 0; i < rt.NumCPU(); i++ {
 		go func() {
 			defer wg.Done()
 			trainWorker(loss, optimizer, trainX, trainY, embedding, ch, &cnt)
 		}()
 	}
-	go showProgress(loss, &begin, &cnt, len(trainX))
+	go showProgress(&cnt, len(trainX))
 
+	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		cnt.Store(0)
-		begin = time.Now()
 		trainEpoch(trainX, trainY, embedding, ch)
-		fmt.Printf("loss=%.05f\n", avgLoss(loss, trainX, trainY, embedding))
+		if i%10 == 0 {
+			fmt.Printf("cost=%s, loss=%.05f\n", time.Since(begin).String(),
+				avgLoss(loss, trainX, trainY, embedding))
+		}
 	}
 	close(ch)
 	wg.Wait()
 	save()
 }
 
-func showProgress(loss loss.Loss, begin *time.Time, cnt *atomic.Uint64, total int) {
+func showProgress(cnt *atomic.Uint64, total int) {
 	tk := time.NewTicker(time.Second)
 	defer tk.Stop()
 	upd := time.Now()
 	for {
 		<-tk.C
-		// pred := testX
-		// y := testY
-		// for _, layer := range encoder {
-		// 	pred = layer.Forward(pred, false)
-		// }
-		// loss := math.Softmax(pred, 1).Sub(y).Sum().Value()
-		// loss := loss.Loss(pred, y).Value()
-		fmt.Printf("train: %d/%d, cost=%s\n", cnt.Load(),
-			total, time.Since(*begin).String())
-		// fmt.Println(mat.Formatted(loss))
+		fmt.Printf("train: %d/%d\r", cnt.Load(), total)
 		if time.Since(upd).Seconds() >= 60 { // 每隔1分钟保存一次模型
 			save()
 			upd = time.Now()
@@ -127,13 +116,8 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
 		x, y := buildTensor(xIn, xOut, embedding)
-		testX, testY = x, y
 		pred := forward(x, y)
-		pred = math.Softmax(pred, 1)
-		ones := tensor.Ones(pred.Dims())
-		grad := ones.Sub(pred).Sum().Scale(1 / float64(len(idx)))
-		// grad := math.Softmax(pred, 1).Log().Sub(ones).Sum()
-		// grad := loss.Loss(pred, y)
+		grad := loss.Loss(pred, y)
 		grad.ZeroGrad()
 		grad.Backward(grad)
 		params := getParams()
@@ -141,13 +125,6 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		// test(x)
 		cnt.Add(uint64(len(idx)))
 	}
-}
-
-func test(x *tensor.Tensor) {
-	for _, layer := range encoder {
-		x = layer.Forward(x, false)
-	}
-	fmt.Println(mat.Formatted(x.Value()))
 }
 
 func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
@@ -177,10 +154,7 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) floa
 		}
 		x, y := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y)
-		pred = math.Softmax(pred, 1)
-		ones := tensor.Ones(pred.Dims())
-		// loss := math.Softmax(pred, 1).Sum().Value()
-		loss := ones.Sub(pred).Sum().Value()
+		loss := loss.Loss(pred, tensor.Ones(y.Dims())).Value()
 		sum += loss.At(0, 0)
 	}
 	return sum / float64(len(trainX))
@@ -209,8 +183,7 @@ func getParams() []*params.Params {
 }
 
 func init() {
-	// init := initializer.NewXavierUniform(1)
-	init := initializer.NewZero()
+	init := initializer.NewXavierUniform(1)
 	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
 	encoder = append(encoder, layer.NewNor())
 	encoder = append(encoder, layer.NewDense(unitSize*4, init))
@@ -228,34 +201,15 @@ func init() {
 	decoder = append(decoder, layer.NewNor())
 }
 
-// func haveNan(x *tensor.Tensor, prefix string) {
-// 	rows, cols := x.Dims()
-// 	for i := 0; i < rows; i++ {
-// 		for j := 0; j < cols; j++ {
-// 			if math.IsNaN(x.Value().At(i, j)) {
-// 				fmt.Println(prefix, "!!!!!!!!!!")
-// 				return
-// 			}
-// 		}
-// 	}
-// }
-
 func forward(x, y *tensor.Tensor) *tensor.Tensor {
-	// haveNan(x, "x")
-	// haveNan(y, "y")
 	for i := range encoder {
 		x = encoder[i].Forward(x, true)
-		// haveNan(x, fmt.Sprintf("encoder:%d", i))
 	}
 	y = decoder[0].Forward(y, true)
-	// haveNan(y, fmt.Sprintf("decoder:%d", 0))
 	y = decoder[1].Forward(y, true)
-	// haveNan(y, fmt.Sprintf("decoder:%d", 1))
 	y = decoder[2].(*layer.SelfAttention).ForwardQKV(y, x, y, true)
-	// haveNan(y, fmt.Sprintf("decoder:%d", 2))
 	for i := 3; i < len(decoder); i++ {
 		y = decoder[i].Forward(y, true)
-		// haveNan(y, fmt.Sprintf("decoder:%d", i))
 	}
 	return y
 }
