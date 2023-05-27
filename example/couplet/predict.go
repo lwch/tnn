@@ -63,9 +63,9 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 func lookup(prob []float64) int {
 	var max float64
 	var idx int
-	for i, v := range prob {
-		if v > max {
-			max = v
+	for i := 2; i < len(prob); i++ {
+		if prob[i] > max {
+			max = prob[i]
 			idx = i
 		}
 	}
