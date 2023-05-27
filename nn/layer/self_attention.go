@@ -19,11 +19,11 @@ func NewSelfAttention(dims int, init initializer.Initializer) Layer {
 	var layer SelfAttention
 	layer.base = new("self_attention", map[string]Shape{
 		"Wq": {dims, dims},
-		"Bq": {NoneShape, 1},
+		"Bq": {1, dims},
 		"Wk": {dims, dims},
-		"Bk": {NoneShape, 1},
+		"Bk": {1, dims},
 		"Wv": {dims, dims},
-		"Bv": {NoneShape, 1},
+		"Bv": {1, dims},
 	}, init)
 	layer.dims = dims
 	return &layer
@@ -40,17 +40,6 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 
 func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
-		layer.mInit.Lock()
-		shapeBq := layer.shapes["Bq"]
-		shapeBk := layer.shapes["Bk"]
-		shapeBv := layer.shapes["Bv"]
-		shapeBq.M, _ = input.Dims()
-		shapeBk.M, _ = input.Dims()
-		shapeBv.M, _ = input.Dims()
-		layer.shapes["Bq"] = shapeBq
-		layer.shapes["Bk"] = shapeBk
-		layer.shapes["Bv"] = shapeBv
-		layer.mInit.Unlock()
 		layer.initParams()
 	}
 	Wq := layer.params.Get("Wq")
@@ -70,17 +59,6 @@ func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tens
 
 func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
-		layer.mInit.Lock()
-		shapeBq := layer.shapes["Bq"]
-		shapeBk := layer.shapes["Bk"]
-		shapeBv := layer.shapes["Bv"]
-		shapeBq.M, _ = q.Dims()
-		shapeBk.M, _ = k.Dims()
-		shapeBv.M, _ = v.Dims()
-		layer.shapes["Bq"] = shapeBq
-		layer.shapes["Bk"] = shapeBk
-		layer.shapes["Bv"] = shapeBv
-		layer.mInit.Unlock()
 		layer.initParams()
 	}
 	Wq := layer.params.Get("Wq")

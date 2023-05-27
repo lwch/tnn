@@ -19,24 +19,24 @@ func NewLstm(featureSize, steps, hidden int, init initializer.Initializer) Layer
 	layer.base = new("lstm", map[string]Shape{
 		// It
 		"Wii": {featureSize, hidden},
-		"Bii": {NoneShape, 1},
+		"Bii": {1, hidden},
 		"Whi": {hidden, hidden},
-		"Bhi": {NoneShape, 1},
+		"Bhi": {1, hidden},
 		// Ft
 		"Wif": {featureSize, hidden},
-		"Bif": {NoneShape, 1},
+		"Bif": {1, hidden},
 		"Whf": {hidden, hidden},
-		"Bhf": {NoneShape, 1},
+		"Bhf": {1, hidden},
 		// Gt
 		"Wig": {featureSize, hidden},
-		"Big": {NoneShape, 1},
+		"Big": {1, hidden},
 		"Whg": {hidden, hidden},
-		"Bhg": {NoneShape, 1},
+		"Bhg": {1, hidden},
 		// Ot
 		"Wio": {featureSize, hidden},
-		"Bio": {NoneShape, 1},
+		"Bio": {1, hidden},
 		"Who": {hidden, hidden},
-		"Bho": {NoneShape, 1},
+		"Bho": {1, hidden},
 	}, init)
 	layer.featureSize = featureSize
 	layer.steps = steps
@@ -59,32 +59,6 @@ func LoadLstm(name string, params map[string]*pb.Dense, args map[string]*pb.Dens
 // Forward https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
 func (layer *Lstm) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
-		layer.mInit.Lock()
-		shapeBii := layer.shapes["Bii"]
-		shapeBhi := layer.shapes["Bhi"]
-		shapeBif := layer.shapes["Bif"]
-		shapeBhf := layer.shapes["Bhf"]
-		shapeBig := layer.shapes["Big"]
-		shapeBhg := layer.shapes["Bhg"]
-		shapeBio := layer.shapes["Bio"]
-		shapeBho := layer.shapes["Bho"]
-		shapeBii.M, _ = input.Dims()
-		shapeBhi.M, _ = input.Dims()
-		shapeBif.M, _ = input.Dims()
-		shapeBhf.M, _ = input.Dims()
-		shapeBig.M, _ = input.Dims()
-		shapeBhg.M, _ = input.Dims()
-		shapeBio.M, _ = input.Dims()
-		shapeBho.M, _ = input.Dims()
-		layer.shapes["Bii"] = shapeBii
-		layer.shapes["Bhi"] = shapeBhi
-		layer.shapes["Bif"] = shapeBif
-		layer.shapes["Bhf"] = shapeBhf
-		layer.shapes["Big"] = shapeBig
-		layer.shapes["Bhg"] = shapeBhg
-		layer.shapes["Bio"] = shapeBio
-		layer.shapes["Bho"] = shapeBho
-		layer.mInit.Unlock()
 		layer.initParams()
 	}
 	// It

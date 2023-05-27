@@ -17,9 +17,9 @@ func NewRnn(featureSize, steps, hidden int, init initializer.Initializer) Layer 
 	var layer Rnn
 	layer.base = new("rnn", map[string]Shape{
 		"Wih": {featureSize, hidden},
-		"Bih": {NoneShape, 1},
+		"Bih": {1, hidden},
 		"Whh": {hidden, hidden},
-		"Bhh": {NoneShape, 1},
+		"Bhh": {1, hidden},
 	}, init)
 	layer.featureSize = featureSize
 	layer.steps = steps
@@ -42,14 +42,6 @@ func LoadRnn(name string, params map[string]*pb.Dense, args map[string]*pb.Dense
 // Forward https://pytorch.org/docs/stable/generated/torch.nn.RNN.html
 func (layer *Rnn) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
-		layer.mInit.Lock()
-		shapeBih := layer.shapes["Bih"]
-		shapeBhh := layer.shapes["Bhh"]
-		shapeBih.M, _ = input.Dims()
-		shapeBhh.M, _ = input.Dims()
-		layer.shapes["Bih"] = shapeBih
-		layer.shapes["Bhh"] = shapeBhh
-		layer.mInit.Unlock()
 		layer.initParams()
 	}
 	Wih := layer.params.Get("Wih")
