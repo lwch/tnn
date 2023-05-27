@@ -28,7 +28,7 @@ const embeddingDim = 2 // 2个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
 const batchSize = 8
 const epoch = 1000
-const lr = 1e-2
+const lr = 0.1
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
