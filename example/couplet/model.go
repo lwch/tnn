@@ -259,10 +259,10 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	x = x.Add(encSelfOut)
 	x = encoder[5].Forward(x, train) // nor
 
-	y = decoder[0].Forward(y, train) // self attention1
+	y = decoder[0].(*layer.SelfAttention).ForwardQKV(y, y, y, true, train) // self attention1
 	y = y.Add(srcY)
-	decSelfOut1 := decoder[1].Forward(y, train)                                // nor
-	y = decoder[2].(*layer.SelfAttention).ForwardQKV(decSelfOut1, x, x, train) // self attention2
+	decSelfOut1 := decoder[1].Forward(y, train)                                       // nor
+	y = decoder[2].(*layer.SelfAttention).ForwardQKV(decSelfOut1, x, x, false, train) // self attention2
 	y = y.Add(decSelfOut1)
 	decSelfOut2 := decoder[3].Forward(y, train) // nor
 	y = decoder[4].Forward(decSelfOut2, train)  // dense1
