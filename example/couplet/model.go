@@ -74,13 +74,11 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 	go showProgress(&cnt, len(trainX))
 
 	begin := time.Now()
-	for i := 0; i < epoch; i++ {
+	for {
 		cnt.Store(0)
 		trainEpoch(trainX, trainY, embedding, ch)
-		if i%10 == 0 {
-			fmt.Printf("cost=%s, loss=%e\n", time.Since(begin).String(),
-				avgLoss(loss, trainX, trainY, embedding))
-		}
+		fmt.Printf("cost=%s, loss=%e\n", time.Since(begin).String(),
+			avgLoss(loss, trainX, trainY, embedding))
 	}
 	close(ch)
 	wg.Wait()
