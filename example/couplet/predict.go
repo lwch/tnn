@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/model"
-	"github.com/lwch/tnn/nn/tensor"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -35,16 +33,14 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	}
 	dy := make([]int, 0, len(str)*embeddingDim)
 	dy = append(dy, 0)
-	output := make([]float64, 0, len(str)*embeddingDim)
 	for i := 0; i < size; i++ {
 		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, embedding, false)
 		pred := forward(x, y, false)
-		predEmbedding := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
-		output = append(output, predEmbedding...)
-		label := lookupEmbedding(embedding, predEmbedding)
+		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
+		label := lookup(predProb)
 		dy = append(dy, label)
 	}
-	fmt.Println(tensorStr(tensor.New(output, 1, size*embeddingDim), vocabs, embedding))
+	fmt.Println(values(vocabs, dy[1:]))
 	// var pred string
 	// mix := embedding[int(time.Now().UnixNano())%len(embedding)]
 	// y := tensor.New(mix, 1, embeddingDim)
@@ -65,40 +61,22 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	// fmt.Println(pred)
 }
 
-func lookupEmbedding(embedding [][]float64, v []float64) int {
-	// fmt.Println(v)
-	min := math.MaxFloat64
-	ret := 0
-	for i := 0; i < len(embedding); i++ {
-		d := 0.0
-		for j := 0; j < len(embedding[i]); j++ {
-			d += math.Pow(embedding[i][j]-v[j], 2)
-		}
-		if d < min {
-			min = d
-			ret = i
+func lookup(prob []float64) int {
+	var max float64
+	var idx int
+	for i, v := range prob {
+		if v > max {
+			max = v
+			idx = i
 		}
 	}
-	return ret
+	return idx
 }
 
-func tensorStr(x *tensor.Tensor, vocabs []string, embedding [][]float64) []string {
-	rows, cols := x.Dims()
-	var ret []string
-	for row := 0; row < rows; row++ {
-		var str string
-		for start := 0; start < cols/embeddingDim; start++ {
-			v := make([]float64, embeddingDim)
-			for j := 0; j < embeddingDim; j++ {
-				v[j] = x.Value().At(row, start*embeddingDim+j)
-			}
-			idx := lookupEmbedding(embedding, v)
-			if idx == 1 {
-				break
-			}
-			str += vocabs[idx]
-		}
-		ret = append(ret, str)
+func values(vocabs []string, idx []int) string {
+	var str string
+	for _, i := range idx {
+		str += vocabs[i]
 	}
-	return ret
+	return str
 }
