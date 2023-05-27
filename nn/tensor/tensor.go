@@ -7,11 +7,12 @@ import (
 )
 
 type Tensor struct {
-	name  string
-	data  *mat.Dense
-	op    Operator
-	gradM sync.Mutex
-	grad  *Tensor
+	name        string
+	data        *mat.Dense
+	op          Operator
+	gradM       sync.Mutex
+	grad        *Tensor
+	requireGrad bool
 }
 
 func New(data []float64, rows, cols int) *Tensor {
@@ -32,6 +33,10 @@ func FromColVector(vector *mat.VecDense) *Tensor {
 	var data []float64
 	data = append(data, vector.RawVector().Data...)
 	return &Tensor{data: mat.NewDense(vector.Len(), 1, data)}
+}
+
+func (t *Tensor) SetRequireGrad(v bool) {
+	t.requireGrad = v
 }
 
 func (t *Tensor) SetName(name string) {
@@ -111,6 +116,9 @@ func (t *Tensor) AddValue(v *mat.Dense) {
 func (t *Tensor) AddGrad(v *mat.Dense) {
 	t.gradM.Lock()
 	defer t.gradM.Unlock()
+	if !t.requireGrad {
+		return
+	}
 	if t.grad == nil {
 		t.grad = Zeros(v.Dims())
 	}

@@ -19,6 +19,7 @@ func New() *Params {
 }
 
 func (p *Params) Set(name string, data *tensor.Tensor) {
+	data.SetRequireGrad(true)
 	p.m.Lock()
 	defer p.m.Unlock()
 	p.data[name] = data
@@ -54,7 +55,9 @@ func (params *Params) Load(from map[string]*pb.Dense) {
 	defer params.m.Unlock()
 	params.data = make(map[string]*tensor.Tensor, len(from))
 	for name, param := range from {
-		params.data[name] = tensor.New(param.GetData(), int(param.GetRows()), int(param.GetCols()))
+		p := tensor.New(param.GetData(), int(param.GetRows()), int(param.GetCols()))
+		p.SetRequireGrad(true)
+		params.data[name] = p
 	}
 }
 
