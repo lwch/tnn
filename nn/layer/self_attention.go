@@ -76,7 +76,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 		rows, cols := a.Dims()
 		data := make([]float64, rows*cols)
 		for i := 0; i < rows; i++ {
-			for j := i; j < cols; j++ {
+			for j := 0; j < i; j++ {
 				data[i*cols+j] = -1e9
 			}
 		}
