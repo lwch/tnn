@@ -76,8 +76,8 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 		rows, cols := a.Dims()
 		data := make([]float64, rows*cols)
 		for i := 0; i < rows; i++ {
-			for j := 0; j <= i; j++ {
-				data[i*cols+j] = 1
+			for j := i + 1; j < cols; j++ {
+				data[i*cols+j] = math.Inf(-1)
 			}
 		}
 		a = a.MulElem(tensor.New(data, rows, cols))
