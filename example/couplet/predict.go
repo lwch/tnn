@@ -25,13 +25,13 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	runtime.Assert(dec.Load(dir))
 	encoder = enc.Layers()
 	decoder = dec.Layers()
-	dx := make([]int, 0, len(str)*embeddingDim)
+	dx := make([]int, 0, len(str))
 	var size int
 	for _, ch := range str {
 		dx = append(dx, vocab2idx[string(ch)])
 		size++
 	}
-	dy := make([]int, 0, len(str)*embeddingDim)
+	dy := make([]int, 0, len(str))
 	for i := 0; i < size; i++ {
 		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, embedding, false)
 		pred := forward(x, y, false)
@@ -39,7 +39,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		label := lookup(predProb)
 		dy = append(dy, label)
 	}
-	fmt.Println(values(vocabs, dy[1:]))
+	fmt.Println(values(vocabs, dy))
 	// var pred string
 	// mix := embedding[int(time.Now().UnixNano())%len(embedding)]
 	// y := tensor.New(mix, 1, embeddingDim)
