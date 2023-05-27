@@ -34,6 +34,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		size++
 	}
 	dy := make([]int, 0, len(str)*embeddingDim)
+	dy = append(dy, 0)
 	output := make([]float64, 0, len(str)*embeddingDim)
 	for i := 0; i < size; i++ {
 		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, embedding, false)

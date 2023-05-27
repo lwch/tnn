@@ -13,14 +13,14 @@ func Sigmoid(x *tensor.Tensor) *tensor.Tensor {
 	return x.Scale(-1).Exp().Add(one).Inv()
 }
 
-// Softmax exp(x) / sum(exp(max(x,axis)))
+// Softmax exp(x) / sum(exp(max(x)))
 func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	max := x.MaxAxis(axis)
 	exp := x.Sub(max).Exp()
 	return exp.DivElem(exp.SumAxis(axis))
 }
 
-// LogSoftmax x - max(x,axis) - log(sum(exp(x - max(x,axis))))
+// LogSoftmax x - max(x) - log(sum(exp(x - max(x))))
 func LogSoftmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	max := x.MaxAxis(axis)
 	exp := x.Sub(max).Exp()

@@ -113,6 +113,7 @@ func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Te
 		for _, v := range x {
 			dx = append(dx, embedding[v]...)
 		}
+		dy = append(dy, embedding[0]...) // <s>
 		for _, v := range y {
 			dy = append(dy, embedding[v]...)
 		}
@@ -120,7 +121,7 @@ func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Te
 		for i := len(x); i < paddingSize; i++ {
 			dx = append(dx, paddingEmbedding...)
 		}
-		for i := len(y); i < paddingSize; i++ {
+		for i := len(y) + 1; i < paddingSize; i++ {
 			dy = append(dy, paddingEmbedding...)
 		}
 		rows++
