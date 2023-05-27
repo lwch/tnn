@@ -16,17 +16,6 @@ func (t *Tensor) Add(t2 *Tensor) *Tensor {
 	return &Tensor{op: op, data: op.f()}
 }
 
-func (t *Tensor) AddVector(t2 *Tensor) *Tensor {
-	if rows, _ := t2.Dims(); rows != 1 {
-		panic("t2 must be a vector")
-	}
-	op := &addVector{
-		a: t,
-		b: t2,
-	}
-	return &Tensor{op: op, data: op.f()}
-}
-
 func (t *Tensor) Sub(t2 *Tensor) *Tensor {
 	op := &sub{
 		a: t,

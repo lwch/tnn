@@ -9,53 +9,61 @@ type add struct {
 }
 
 func (op *add) f() *mat.Dense {
-	var value mat.Dense
-	value.Add(op.a.Value(), op.b.Value())
-	return &value
+	aRows, aCols := op.a.Dims()
+	bRows, bCols := op.b.Dims()
+	if aRows == bRows && aCols != bCols { // 减去列向量
+		if bCols != 1 {
+			panic("bCols!=1")
+		}
+		ret := mat.NewDense(aRows, aCols, nil)
+		for i := 0; i < aCols; i++ {
+			var vec mat.VecDense
+			vec.AddVec(op.a.Value().ColView(i), op.b.Value().ColView(0))
+			ret.SetCol(i, dupVec(&vec))
+		}
+		return ret
+	} else if aCols == bCols && aRows != bRows { // 减去行向量
+		if bRows != 1 {
+			panic("bRows!=1")
+		}
+		ret := mat.NewDense(aRows, aCols, nil)
+		for i := 0; i < aRows; i++ {
+			var vec mat.VecDense
+			vec.AddVec(op.a.Value().RowView(i), op.b.Value().RowView(0))
+			ret.SetRow(i, dupVec(&vec))
+		}
+		return ret
+	} else {
+		var value mat.Dense
+		value.Add(op.a.Value(), op.b.Value())
+		return &value
+	}
 }
 
 func (op *add) df(grad *Tensor) {
 	op.a.AddGrad(grad.Value())
-	op.b.AddGrad(grad.Value())
 	op.a.Backward(grad)
-	op.b.Backward(grad)
+	gRows, gCols := grad.Dims()
+	bRows, bCols := op.b.Dims()
+	db := grad.Value()
+	if gRows != bRows {
+		sum := mat.NewVecDense(gCols, nil)
+		for i := 0; i < gRows; i++ {
+			sum.AddVec(sum, grad.Value().RowView(i))
+		}
+		db = mat.NewDense(bRows, bCols, dupVec(sum))
+	} else if gCols != bCols {
+		sum := mat.NewVecDense(gRows, nil)
+		for i := 0; i < gCols; i++ {
+			sum.AddVec(sum, grad.Value().ColView(i))
+		}
+		db = mat.NewDense(bRows, bCols, dupVec(sum))
+	}
+	op.b.AddGrad(db)
+	op.b.Backward(FromDense(db))
 }
 
 func (op *add) ZeroGrad() {
-	op.a.ZeroGrad()
-	op.b.ZeroGrad()
-}
-
-type addVector struct {
-	a, b *Tensor
-}
-
-func (op *addVector) f() *mat.Dense {
-	av := op.a.Value()
-	rows, cols := av.Dims()
-	b0 := op.b.Value().RowView(0)
-	value := mat.NewDense(rows, cols, nil)
-	for i := 0; i < rows; i++ {
-		value.RowView(i).(*mat.VecDense).AddVec(av.RowView(i), b0)
-	}
-	return value
-}
-
-func (op *addVector) df(grad *Tensor) {
-	gv := grad.Value()
-	rows, cols := gv.Dims()
-	delta := mat.NewVecDense(cols, nil)
-	for i := 0; i < rows; i++ {
-		delta.AddVec(delta, gv.RowView(i))
-	}
-	delta.ScaleVec(1/float64(rows), delta)
-	op.a.AddGrad(grad.Value())
-	op.b.AddGrad(vec2Dense(delta))
-	op.a.Backward(grad)
-	op.b.Backward(FromRowVector(delta))
-}
-
-func (op *addVector) ZeroGrad() {
 	op.a.ZeroGrad()
 	op.b.ZeroGrad()
 }

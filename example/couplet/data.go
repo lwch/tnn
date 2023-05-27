@@ -95,6 +95,9 @@ func loadData(dir string, idx map[string]int) [][]int {
 			row = append(row, idx[v])
 		}
 		row = append(row, 1) // </s>
+		for len(row) < paddingSize {
+			row = append(row, 1)
+		}
 		data = append(data, row)
 		if len(row) > max {
 			max = len(row)
@@ -127,10 +130,10 @@ func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Te
 	}
 	if training {
 		for i := range y {
-			for j := range y[i] {
-				if y[i][j] == 1 { // </s>
-					break
-				}
+			for j := 0; j < len(y[i])-1; j++ {
+				// if y[i][j] == 1 { // </s>
+				// 	break
+				// }
 				add(x[i], y[i][:j], y[i][j+1])
 			}
 			// add(x[i], y[i])

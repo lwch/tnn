@@ -19,24 +19,24 @@ func NewLstm(featureSize, steps, hidden int, init initializer.Initializer) Layer
 	layer.base = new("lstm", map[string]Shape{
 		// It
 		"Wii": {featureSize, hidden},
-		"Bii": {1, hidden},
+		"Bii": {NoneShape, 1},
 		"Whi": {hidden, hidden},
-		"Bhi": {1, hidden},
+		"Bhi": {NoneShape, 1},
 		// Ft
 		"Wif": {featureSize, hidden},
-		"Bif": {1, hidden},
+		"Bif": {NoneShape, 1},
 		"Whf": {hidden, hidden},
-		"Bhf": {1, hidden},
+		"Bhf": {NoneShape, 1},
 		// Gt
 		"Wig": {featureSize, hidden},
-		"Big": {1, hidden},
+		"Big": {NoneShape, 1},
 		"Whg": {hidden, hidden},
-		"Bhg": {1, hidden},
+		"Bhg": {NoneShape, 1},
 		// Ot
 		"Wio": {featureSize, hidden},
-		"Bio": {1, hidden},
+		"Bio": {NoneShape, 1},
 		"Who": {hidden, hidden},
-		"Bho": {1, hidden},
+		"Bho": {NoneShape, 1},
 	}, init)
 	layer.featureSize = featureSize
 	layer.steps = steps
@@ -59,6 +59,32 @@ func LoadLstm(name string, params map[string]*pb.Dense, args map[string]*pb.Dens
 // Forward https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
 func (layer *Lstm) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
+		layer.mInit.Lock()
+		shapeBii := layer.shapes["Bii"]
+		shapeBhi := layer.shapes["Bhi"]
+		shapeBif := layer.shapes["Bif"]
+		shapeBhf := layer.shapes["Bhf"]
+		shapeBig := layer.shapes["Big"]
+		shapeBhg := layer.shapes["Bhg"]
+		shapeBio := layer.shapes["Bio"]
+		shapeBho := layer.shapes["Bho"]
+		shapeBii.M, _ = input.Dims()
+		shapeBhi.M, _ = input.Dims()
+		shapeBif.M, _ = input.Dims()
+		shapeBhf.M, _ = input.Dims()
+		shapeBig.M, _ = input.Dims()
+		shapeBhg.M, _ = input.Dims()
+		shapeBio.M, _ = input.Dims()
+		shapeBho.M, _ = input.Dims()
+		layer.shapes["Bii"] = shapeBii
+		layer.shapes["Bhi"] = shapeBhi
+		layer.shapes["Bif"] = shapeBif
+		layer.shapes["Bhf"] = shapeBhf
+		layer.shapes["Big"] = shapeBig
+		layer.shapes["Bhg"] = shapeBhg
+		layer.shapes["Bio"] = shapeBio
+		layer.shapes["Bho"] = shapeBho
+		layer.mInit.Unlock()
 		layer.initParams()
 	}
 	// It
@@ -87,10 +113,10 @@ func (layer *Lstm) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor
 	for t := layer.steps - 1; t >= 0; t-- {
 		start := t * layer.featureSize
 		x := input.Slice(0, batchSize, start, start+layer.featureSize)
-		It := math.Sigmoid(x.Mul(Wii).AddVector(Bii).Add(h.Mul(Whi)).AddVector(Bhi))
-		Ft := math.Sigmoid(x.Mul(Wif).AddVector(Bif).Add(h.Mul(Whf)).AddVector(Bhf))
-		Gt := x.Mul(Wig).AddVector(Big).Add(h.Mul(Whg)).AddVector(Bhg).Tanh()
-		Ot := math.Sigmoid(x.Mul(Wio).AddVector(Bio).Add(h.Mul(Who)).AddVector(Bho))
+		It := math.Sigmoid(x.Mul(Wii).Add(Bii).Add(h.Mul(Whi)).Add(Bhi))
+		Ft := math.Sigmoid(x.Mul(Wif).Add(Bif).Add(h.Mul(Whf)).Add(Bhf))
+		Gt := x.Mul(Wig).Add(Big).Add(h.Mul(Whg)).Add(Bhg).Tanh()
+		Ot := math.Sigmoid(x.Mul(Wio).Add(Bio).Add(h.Mul(Who)).Add(Bho))
 		c = Ft.MulElem(c).Add(It.MulElem(Gt))
 		h = Ot.MulElem(c.Tanh())
 	}

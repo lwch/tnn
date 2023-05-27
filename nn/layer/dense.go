@@ -14,7 +14,7 @@ func NewDense(output int, init initializer.Initializer) Layer {
 	var layer Dense
 	layer.base = new("dense", map[string]Shape{
 		"w": {NoneShape, output},
-		"b": {1, output},
+		"b": {NoneShape, 1},
 	}, init)
 	return &layer
 }
@@ -31,12 +31,14 @@ func (layer *Dense) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tenso
 	if !layer.hasInit {
 		layer.mInit.Lock()
 		shapeW := layer.shapes["w"]
-		_, shapeW.M = input.Dims()
+		shapeB := layer.shapes["b"]
+		shapeB.M, shapeW.M = input.Dims()
 		layer.shapes["w"] = shapeW
+		layer.shapes["b"] = shapeB
 		layer.mInit.Unlock()
 		layer.initParams()
 	}
 	w := layer.params.Get("w")
 	b := layer.params.Get("b")
-	return input.Mul(w).AddVector(b) // wx+b
+	return input.Mul(w).Add(b) // wx+b
 }
