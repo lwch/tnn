@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -32,6 +33,11 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		size++
 	}
 	dy := make([]int, 0, len(str))
+	n := rand.Intn(len(embedding))
+	if n < 2 {
+		n += 2
+	}
+	dy = append(dy, n)
 	for i := 0; i < size; i++ {
 		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, embedding, false)
 		pred := forward(x, y, false)
