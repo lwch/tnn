@@ -36,7 +36,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	dy := make([]int, 0, len(str)*embeddingDim)
 	output := make([]float64, 0, len(str)*embeddingDim)
 	for i := 0; i < size; i++ {
-		x, y, _ := buildTensor([][]int{dx}, [][]int{pad(dy, len(dx))}, embedding, false)
+		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, embedding, false)
 		pred := forward(x, y, false)
 		predEmbedding := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
 		output = append(output, predEmbedding...)
@@ -62,13 +62,6 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	// 	pred += tensorStr(y, vocabs, embedding)[0]
 	// }
 	// fmt.Println(pred)
-}
-
-func pad(x []int, n int) []int {
-	for len(x) < n {
-		x = append(x, 1) // </s>
-	}
-	return x
 }
 
 func lookupEmbedding(embedding [][]float64, v []float64) int {
