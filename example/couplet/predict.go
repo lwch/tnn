@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -34,21 +33,15 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		dx = append(dx, vocab2idx[string(ch)])
 		size++
 	}
-	// 第一个字随机，后面的使用模型推理出的内容
 	dy := make([]int, 0, len(str)*embeddingDim)
 	output := make([]float64, 0, len(str)*embeddingDim)
-	y := rand.Intn(len(vocabs))
-	if y <= 1 {
-		y += 2
-	}
-	dy = append(dy, y)
-	output = append(output, embedding[y]...)
-	for i := 1; i < size; i++ {
-		x, y, _ := buildTensor([][]int{dx}, [][]int{pad(dy, len(dx))}, embedding)
+	for i := 0; i < size; i++ {
+		x, y, _ := buildTensor([][]int{dx}, [][]int{pad(dy, len(dx))}, embedding, false)
 		pred := forward(x, y, false)
 		predEmbedding := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
 		output = append(output, predEmbedding...)
-		dy = append(dy, lookupEmbedding(embedding, predEmbedding))
+		label := lookupEmbedding(embedding, predEmbedding)
+		dy = append(dy, label)
 	}
 	fmt.Println(tensorStr(tensor.New(output, 1, size*embeddingDim), vocabs, embedding))
 	// var pred string

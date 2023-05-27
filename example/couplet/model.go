@@ -117,7 +117,7 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xIn[i], xIn[j] = xIn[j], xIn[i]
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
-		x, y, z := buildTensor(xIn, xOut, embedding)
+		x, y, z := buildTensor(xIn, xOut, embedding, true)
 		pred := forward(x, y, true)
 		grad := loss.Loss(pred, z)
 		grad.ZeroGrad()
@@ -162,7 +162,7 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64, c
 			xIn = append(xIn, trainX[i])
 			xOut = append(xOut, trainY[i])
 		}
-		x, y, z := buildTensor(xIn, xOut, embedding)
+		x, y, z := buildTensor(xIn, xOut, embedding, true)
 		pred := forward(x, y, false)
 		loss := loss.Loss(pred, z).Value()
 		sumLoss += loss.At(0, 0)
