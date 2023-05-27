@@ -96,33 +96,37 @@ func loadData(dir string, idx map[string]int) [][]int {
 	return data
 }
 
-func buildTensor(x, y [][]int, embedding [][]float64) (*tensor.Tensor, *tensor.Tensor) {
+func buildTensor(x, y [][]int, embedding [][]float64) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	dx := make([]float64, 0, len(x)*unitSize)
 	dy := make([]float64, 0, len(y)*unitSize)
+	dz := make([]float64, 0, len(y)*embeddingDim)
 	rows := 0
-	add := func(x, y []int) {
+	add := func(x, y []int, z int) {
 		for _, v := range x {
 			dx = append(dx, embedding[v]...)
 		}
 		for _, v := range y {
 			dy = append(dy, embedding[v]...)
 		}
+		dz = append(dz, embedding[z]...)
 		for i := len(x); i < paddingSize; i++ {
 			dx = append(dx, embedding[1]...) // </s>
+		}
+		for i := len(y); i < paddingSize; i++ {
 			dy = append(dy, embedding[1]...) // </s>
 		}
 		rows++
 	}
-	for i := range x {
-		// for j := range x[i] {
-		// 	if x[i][j] == 1 { // </s>
-		// 		add(x[i][j], y[i][j])
-		// 		break
-		// 	}
-		// 	add(x[i][j], y[i][j])
-		// }
-		add(x[i], y[i])
+	for i := range y {
+		for j := range y[i] {
+			if y[i][j] == 1 { // </s>
+				break
+			}
+			add(x[i], y[i][:j], y[i][j+1])
+		}
+		// add(x[i], y[i])
 	}
 	return tensor.New(dx, rows, unitSize),
-		tensor.New(dy, rows, unitSize)
+		tensor.New(dy, rows, unitSize),
+		tensor.New(dz, rows, embeddingDim)
 }

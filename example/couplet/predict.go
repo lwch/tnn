@@ -10,6 +10,7 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/model"
 	"github.com/lwch/tnn/nn/tensor"
+	"gonum.org/v1/gonum/mat"
 )
 
 func predict(str string, vocabs []string, vocab2idx map[string]int, embedding [][]float64) {
@@ -28,20 +29,28 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	encoder = enc.Layers()
 	decoder = dec.Layers()
 	dx := make([]int, 0, len(str)*embeddingDim)
-	dy := make([]int, 0, len(str)*embeddingDim)
+	var size int
 	for _, ch := range str {
 		dx = append(dx, vocab2idx[string(ch)])
-		n := rand.Intn(len(vocabs))
-		if n <= 1 {
-			n += 2
-		}
-		dy = append(dy, n)
+		size++
 	}
-	dx = append(dx, 1)
-	dy = append(dy, 1)
-	x, y := buildTensor([][]int{dx}, [][]int{dy}, embedding)
-	pred := forward(x, y, false)
-	fmt.Println(tensorStr(pred, vocabs, embedding))
+	// 第一个字随机，后面的使用模型推理出的内容
+	dy := make([]int, 0, len(str)*embeddingDim)
+	output := make([]float64, 0, len(str)*embeddingDim)
+	y := rand.Intn(len(vocabs))
+	if y <= 1 {
+		y += 2
+	}
+	dy = append(dy, y)
+	output = append(output, embedding[y]...)
+	for i := 1; i < size; i++ {
+		x, y, _ := buildTensor([][]int{dx}, [][]int{pad(dy, len(dx))}, embedding)
+		pred := forward(x, y, false)
+		predEmbedding := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
+		output = append(output, predEmbedding...)
+		dy = append(dy, lookupEmbedding(embedding, predEmbedding))
+	}
+	fmt.Println(tensorStr(tensor.New(output, 1, size*embeddingDim), vocabs, embedding))
 	// var pred string
 	// mix := embedding[int(time.Now().UnixNano())%len(embedding)]
 	// y := tensor.New(mix, 1, embeddingDim)
@@ -60,6 +69,13 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	// 	pred += tensorStr(y, vocabs, embedding)[0]
 	// }
 	// fmt.Println(pred)
+}
+
+func pad(x []int, n int) []int {
+	for len(x) < n {
+		x = append(x, 1) // </s>
+	}
+	return x
 }
 
 func lookupEmbedding(embedding [][]float64, v []float64) int {

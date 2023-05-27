@@ -117,9 +117,9 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xIn[i], xIn[j] = xIn[j], xIn[i]
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
-		x, y := buildTensor(xIn, xOut, embedding)
+		x, y, z := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y, true)
-		grad := loss.Loss(pred, y)
+		grad := loss.Loss(pred, z)
 		grad.ZeroGrad()
 		grad.Backward(grad)
 		params := getParams()
@@ -162,9 +162,9 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64, c
 			xIn = append(xIn, trainX[i])
 			xOut = append(xOut, trainY[i])
 		}
-		x, y := buildTensor(xIn, xOut, embedding)
+		x, y, z := buildTensor(xIn, xOut, embedding)
 		pred := forward(x, y, false)
-		loss := loss.Loss(pred, y).Value()
+		loss := loss.Loss(pred, z).Value()
 		sumLoss += loss.At(0, 0)
 	}
 }
@@ -239,10 +239,12 @@ func init() {
 	decoder = append(decoder, layer.NewNor())
 	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
-	decoder = append(decoder, layer.NewDense(unitSize*4, init))
+	decoder = append(decoder, layer.NewDense(unitSize, init))
 	decoder = append(decoder, activation.NewReLU())
 	decoder = append(decoder, layer.NewDense(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
+	decoder = append(decoder, activation.NewReLU())
+	decoder = append(decoder, layer.NewDense(embeddingDim, init))
 }
 
 func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
@@ -268,6 +270,8 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	y = decoder[6].Forward(y, train)            // dense2
 	y = y.Add(decSelfOut2)
 	y = decoder[7].Forward(y, train) // nor
+	y = decoder[8].Forward(y, train) // relu
+	y = decoder[9].Forward(y, train) // dense3
 	return y
 }
 
