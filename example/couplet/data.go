@@ -104,10 +104,16 @@ func loadData(dir string, idx map[string]int) [][]int {
 	return data
 }
 
+func onehot(x, size int) []float64 {
+	ret := make([]float64, size)
+	ret[x] = 1
+	return ret
+}
+
 func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	dx := make([]float64, 0, len(x)*unitSize)
 	dy := make([]float64, 0, len(y)*unitSize)
-	dz := make([]float64, 0, len(y)*embeddingDim)
+	dz := make([]float64, 0, len(y)*len(embedding))
 	rows := 0
 	add := func(x, y []int, z int) {
 		for _, v := range x {
@@ -117,7 +123,7 @@ func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Te
 		for _, v := range y {
 			dy = append(dy, embedding[v]...)
 		}
-		dz = append(dz, embedding[z]...)
+		dz = append(dz, onehot(z, len(embedding))...)
 		for i := len(x); i < paddingSize; i++ {
 			dx = append(dx, paddingEmbedding...)
 		}
@@ -141,5 +147,5 @@ func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Te
 	}
 	return tensor.New(dx, rows, unitSize),
 		tensor.New(dy, rows, unitSize),
-		tensor.New(dz, rows, embeddingDim)
+		tensor.New(dz, rows, len(embedding))
 }

@@ -56,6 +56,7 @@ func loadEmbedding(vocabSize int) [][]float64 {
 }
 
 func train(trainX, trainY [][]int, embedding [][]float64) {
+	initModel(len(embedding))
 	// loss := loss.NewSoftmax()
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
@@ -226,7 +227,7 @@ func getParams() []*params.Params {
 	return ret
 }
 
-func init() {
+func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
 	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
 	encoder = append(encoder, layer.NewNor())
@@ -244,7 +245,7 @@ func init() {
 	decoder = append(decoder, layer.NewDense(unitSize, init))
 	decoder = append(decoder, layer.NewNor())
 	decoder = append(decoder, activation.NewReLU())
-	decoder = append(decoder, layer.NewDense(embeddingDim, init))
+	decoder = append(decoder, layer.NewDense(vocabSize, init))
 }
 
 func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
