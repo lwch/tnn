@@ -30,6 +30,24 @@ func (op *maxAxis) f() *mat.Dense {
 }
 
 func (op *maxAxis) df(grad *Tensor) {
+	rows, cols := op.a.Dims()
+	delta := mat.NewDense(rows, cols, nil)
+	switch op.axis {
+	case 0:
+		v := grad.Value().RowView(0)
+		for i := 0; i < rows; i++ {
+			delta.RowView(i).(*mat.VecDense).CopyVec(v)
+		}
+	case 1:
+		v := grad.Value().ColView(0)
+		for i := 0; i < cols; i++ {
+			delta.ColView(i).(*mat.VecDense).CopyVec(v)
+		}
+	default:
+		panic("invalid axis")
+	}
+	op.a.AddGrad(delta)
+	op.a.Backward(FromDense(delta))
 }
 
 func (op *maxAxis) ZeroGrad() {

@@ -142,3 +142,11 @@ func (t *Tensor) Sqrt() *Tensor {
 	}
 	return &Tensor{op: op, data: op.f()}
 }
+
+func (t *Tensor) MaxAxis(axis int) *Tensor {
+	op := &maxAxis{
+		a:    t,
+		axis: axis,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
