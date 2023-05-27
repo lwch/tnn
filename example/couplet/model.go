@@ -142,7 +142,7 @@ func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 			if i+j >= len(trainX) {
 				break
 			}
-			list = append(list, idx[i])
+			list = append(list, idx[i+j])
 		}
 		ch <- list
 	}
