@@ -23,7 +23,7 @@ var paddingEmbedding []float64
 
 func init() {
 	for i := 0; i < embeddingDim; i++ {
-		paddingEmbedding = append(paddingEmbedding, 1e-9)
+		paddingEmbedding = append(paddingEmbedding, -1e9)
 	}
 }
 
