@@ -93,7 +93,7 @@ func showProgress(cnt *atomic.Uint64, total int) {
 	for {
 		<-tk.C
 		fmt.Printf("train: %d/%d\r", cnt.Load(), total)
-		if time.Since(upd).Seconds() >= 60 { // 每隔1分钟保存一次模型
+		if time.Since(upd).Seconds() >= 10 { // 每隔10秒保存一次模型
 			save()
 			upd = time.Now()
 		}
