@@ -26,7 +26,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	}
 	dy := make([]int, 0, len(str))
 	for i := 0; i < size; i++ {
-		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
+		x, y, _ := buildTensor([][]int{dx[:i]}, [][]int{dy}, vocabs, embedding, false)
 		pred := forward(x, y, false)
 		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
 		label := lookup(predProb)
