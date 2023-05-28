@@ -167,6 +167,7 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 			copy(dz[j*len(embedding):(j+1)*len(embedding)], dza)
 		})
 	} else {
+		y[0] = append([]int{0}, y[0]...) // <s>
 		add(x[0], y[0], 1)
 	}
 	return tensor.New(dx, rows, unitSize),
