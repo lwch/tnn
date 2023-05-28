@@ -24,7 +24,7 @@ var paddingEmbedding []float64
 
 func init() {
 	for i := 0; i < embeddingDim; i++ {
-		paddingEmbedding = append(paddingEmbedding, -1e9)
+		paddingEmbedding = append(paddingEmbedding, 1e-9)
 	}
 }
 
@@ -122,57 +122,53 @@ func encode(vocabs []string, idx []int) string {
 	return ret
 }
 
-func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
+func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor) {
 	dx := make([]float64, 0, len(x)*unitSize)
-	dy := make([]float64, 0, len(y)*unitSize)
 	dz := make([]float64, 0, len(y)*len(embedding))
 	rows := 0
-	add := func(x, y, yy []int, z int) {
+	add := func(x, y []int, z int) {
 		// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
 		for _, v := range x {
 			dx = append(dx, embedding[v]...)
 		}
-		dy = append(dy, embedding[0]...) // <s>
-		for _, v := range y {
-			dy = append(dy, embedding[v]...)
-		}
-		dz = append(dz, onehot(z, len(embedding))...)
-		for i := len(x); i < paddingSize; i++ {
+		dx = append(dx, embedding[1]...) // </s>
+		for i := len(x) + 1; i < paddingSize; i++ {
 			dx = append(dx, paddingEmbedding...)
 		}
-		for i := len(y) + 1; i < paddingSize; i++ {
-			dy = append(dy, paddingEmbedding...)
+		// dx = append(dx, embedding[0]...) // <s>
+		for _, v := range y {
+			dx = append(dx, embedding[v]...)
 		}
+		for i := len(y); i < paddingSize; i++ {
+			dx = append(dx, paddingEmbedding...)
+		}
+		dz = append(dz, onehot(z, len(embedding))...)
 		rows++
 	}
 	if training {
 		for i := range y {
-			for j := 0; j < len(y[i]); j++ {
+			y := append([]int{0}, y[i]...)
+			for j := 0; j < len(y); j++ {
 				// if y[i][j] == 1 { // </s>
 				// 	break
 				// }
-				add(x[i], y[i][:j], y[i], y[i][j])
+				add(x[i], y[:j], y[j])
 			}
 			// add(x[i], y[i])
 		}
 		dxa := make([]float64, unitSize)
-		dya := make([]float64, unitSize)
 		dza := make([]float64, len(embedding))
 		rand.Shuffle(rows, func(i, j int) {
 			copy(dxa, dx[i*unitSize:(i+1)*unitSize])
-			copy(dya, dy[i*unitSize:(i+1)*unitSize])
 			copy(dza, dz[i*len(embedding):(i+1)*len(embedding)])
 			copy(dx[i*unitSize:(i+1)*unitSize], dx[j*unitSize:(j+1)*unitSize])
-			copy(dy[i*unitSize:(i+1)*unitSize], dy[j*unitSize:(j+1)*unitSize])
 			copy(dz[i*len(embedding):(i+1)*len(embedding)], dz[j*len(embedding):(j+1)*len(embedding)])
 			copy(dx[j*unitSize:(j+1)*unitSize], dxa)
-			copy(dy[j*unitSize:(j+1)*unitSize], dya)
 			copy(dz[j*len(embedding):(j+1)*len(embedding)], dza)
 		})
 	} else {
-		add(x[0], y[0], y[0], 1)
+		add(x[0], y[0], 1)
 	}
-	return tensor.New(dx, rows, unitSize),
-		tensor.New(dy, rows, unitSize),
+	return tensor.New(dx, rows, unitSize*2),
 		tensor.New(dz, rows, len(embedding))
 }

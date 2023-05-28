@@ -24,7 +24,7 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 32 // 2个float64表示一个字向量
+const embeddingDim = 2 // 2个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
 const batchSize = 8
 const epoch = 1000
@@ -116,8 +116,8 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xIn[i], xIn[j] = xIn[j], xIn[i]
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
-		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		pred := forward(x, y, true)
+		x, z := buildTensor(xIn, xOut, vocabs, embedding, true)
+		pred := forward(x, true)
 		grad := loss.Loss(pred, z)
 		grad.ZeroGrad()
 		grad.Backward(grad)
@@ -161,8 +161,8 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 			xIn = append(xIn, trainX[i])
 			xOut = append(xOut, trainY[i])
 		}
-		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		pred := forward(x, y, false)
+		x, z := buildTensor(xIn, xOut, vocabs, embedding, true)
+		pred := forward(x, false)
 		loss := loss.Loss(pred, z).Value()
 		sumLoss += loss.At(0, 0)
 	}
@@ -171,10 +171,13 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 func avgLoss(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embedding [][]float64) float64 {
 	sumLoss = 0
 
+	workerCount := rt.NumCPU()
+	// workerCount = 1
+
 	ch := make(chan []int)
 	var wg sync.WaitGroup
-	wg.Add(rt.NumCPU())
-	for i := 0; i < rt.NumCPU(); i++ {
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
 		go func() {
 			defer wg.Done()
 			lossWorker(loss, trainX, trainY, vocabs, embedding, ch)
@@ -218,11 +221,11 @@ func getParams() []*params.Params {
 }
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(unitSize, init))
+	layers = append(layers, layer.NewSelfAttention(unitSize*2, init))
 	layers = append(layers, layer.NewNor())
-	layers = append(layers, layer.NewDense(unitSize*4, init))
+	layers = append(layers, layer.NewDense(unitSize*8, init))
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(unitSize, init))
+	layers = append(layers, layer.NewDense(unitSize*2, init))
 	layers = append(layers, layer.NewNor())
 }
 
@@ -236,26 +239,27 @@ func initModel(vocabSize int) {
 
 var dropout = layer.NewDropout(0.1)
 
-func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	srcY := y
-	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
+func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
+	srcX := x
+	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, true, train)
 	if train {
 		y = dropout.Forward(y, true)
 	}
 	y = layers[i+1].Forward(y, train) // nor
-	y = y.Add(srcY)
+	y = y.Add(srcX)
 	y = layers[i+2].Forward(y, train) // dense
 	y = layers[i+3].Forward(y, train) // relu
 	y = layers[i+4].Forward(y, train) // dense
-	y = y.Add(srcY)
+	y = y.Add(srcX)
 	y = layers[i+5].Forward(y, train) // nor
 	return y, i + 6
 }
 
-func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
+func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+	var y *tensor.Tensor
 	i := 0
 	// y, i = forwardTransformer(i, x, y, train)
-	y, i = forwardTransformer(i, x, y, train)
+	y, i = forwardTransformer(i, x, train)
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
 	return y
