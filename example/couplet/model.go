@@ -240,7 +240,7 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	y = layers[i+2].Forward(selfOut, train)  // dense
 	y = layers[i+3].Forward(y, train)        // relu
 	y = layers[i+4].Forward(y, train)        // dense
-	y = y.Add(selfOut)
+	// y = y.Add(selfOut)
 	y = layers[i+5].Forward(y, train) // nor
 	return y, i + 6
 }
