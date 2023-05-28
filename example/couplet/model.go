@@ -116,8 +116,8 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xIn[i], xIn[j] = xIn[j], xIn[i]
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
-		x, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		pred := forward(x, true)
+		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
+		pred := forward(x, y, true)
 		grad := loss.Loss(pred, z)
 		grad.ZeroGrad()
 		grad.Backward(grad)
@@ -161,8 +161,8 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 			xIn = append(xIn, trainX[i])
 			xOut = append(xOut, trainY[i])
 		}
-		x, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		pred := forward(x, false)
+		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
+		pred := forward(x, y, false)
 		loss := loss.Loss(pred, z).Value()
 		sumLoss += loss.At(0, 0)
 	}
@@ -220,46 +220,49 @@ func getParams() []*params.Params {
 	return ret
 }
 
+const transformerSize = 4
+
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(unitSize*2, init))
+	layers = append(layers, layer.NewSelfAttention(unitSize, init))
 	layers = append(layers, layer.NewNor())
-	layers = append(layers, layer.NewDense(unitSize*8, init))
+	layers = append(layers, layer.NewDense(unitSize*4, init))
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(unitSize*2, init))
+	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, layer.NewNor())
 }
 
 func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
-	// addTransformer(init)
-	addTransformer(init)
+	for i := 0; i < transformerSize; i++ {
+		addTransformer(init)
+	}
 	layers = append(layers, activation.NewReLU())
 	layers = append(layers, layer.NewDense(vocabSize, init))
 }
 
 var dropout = layer.NewDropout(0.1)
 
-func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	srcX := x
-	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, true, train)
+func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
+	srcY := y
+	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
 	if train {
 		y = dropout.Forward(y, true)
 	}
+	y = y.Add(srcY)
 	y = layers[i+1].Forward(y, train) // nor
-	y = y.Add(srcX)
 	y = layers[i+2].Forward(y, train) // dense
 	y = layers[i+3].Forward(y, train) // relu
 	y = layers[i+4].Forward(y, train) // dense
-	y = y.Add(srcX)
+	y = y.Add(srcY)
 	y = layers[i+5].Forward(y, train) // nor
 	return y, i + 6
 }
 
-func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
-	var y *tensor.Tensor
+func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	i := 0
-	// y, i = forwardTransformer(i, x, y, train)
-	y, i = forwardTransformer(i, x, train)
+	for j := 0; j < transformerSize; j++ {
+		y, i = forwardTransformer(i, x, y, train)
+	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
 	return y
