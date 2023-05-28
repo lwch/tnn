@@ -138,10 +138,13 @@ func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimize
 		idx[i], idx[j] = idx[j], idx[i]
 	})
 
+	workerCount := rt.NumCPU()
+	// workerCount = 1
+
 	ch := make(chan []int)
 	var wg sync.WaitGroup
-	wg.Add(rt.NumCPU())
-	for i := 0; i < rt.NumCPU(); i++ {
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
 		go func() {
 			defer wg.Done()
 			trainWorker(loss, trainX, trainY, vocabs, embedding, ch, cnt)
@@ -188,13 +191,10 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 func avgLoss(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embedding [][]float64) float64 {
 	sumLoss = 0
 
-	workerCount := rt.NumCPU()
-	// workerCount = 1
-
 	ch := make(chan []int)
 	var wg sync.WaitGroup
-	wg.Add(workerCount)
-	for i := 0; i < workerCount; i++ {
+	wg.Add(rt.NumCPU())
+	for i := 0; i < rt.NumCPU(); i++ {
 		go func() {
 			defer wg.Done()
 			lossWorker(loss, trainX, trainY, vocabs, embedding, ch)
@@ -237,7 +237,7 @@ func getParams() []*params.Params {
 	return ret
 }
 
-const transformerSize = 1
+const transformerSize = 2
 
 func addTransformer(init initializer.Initializer) {
 	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, init))
