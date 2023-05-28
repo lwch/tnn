@@ -229,7 +229,7 @@ func getParams() []*params.Params {
 	return ret
 }
 
-const transformerSize = 4
+const transformerSize = 1
 
 func addTransformer(init initializer.Initializer) {
 	layers = append(layers, layer.NewSelfAttention(unitSize, init))
@@ -277,7 +277,7 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
-	return x
+	return y
 }
 
 func saveModel(layers []layer.Layer, name string) {
