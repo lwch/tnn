@@ -34,7 +34,7 @@ func (layer *Nor) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor 
 		for j := 0; j < cols; j++ {
 			means.Set(i, j, mean[i])
 			stds.Set(i, j, std[i])
-			eps.Set(i, j, 1e-6)
+			eps.Set(i, j, 1e-9)
 		}
 	}
 	return input.Sub(means).DivElem(stds.Add(eps).Sqrt())
