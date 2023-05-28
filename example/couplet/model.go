@@ -232,7 +232,7 @@ func addTransformer(init initializer.Initializer) {
 }
 
 func initModel(vocabSize int) {
-	init := initializer.NewXavierUniform(1)
+	init := initializer.NewZero()
 	for i := 0; i < transformerSize; i++ {
 		addTransformer(init)
 	}
