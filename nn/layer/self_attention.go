@@ -19,11 +19,11 @@ func NewSelfAttention(dims int, init initializer.Initializer) Layer {
 	var layer SelfAttention
 	layer.base = new("self_attention", map[string]Shape{
 		"Wq": {dims, dims},
-		"Bq": {1, dims},
+		// "Bq": {1, dims},
 		"Wk": {dims, dims},
-		"Bk": {1, dims},
+		// "Bk": {1, dims},
 		"Wv": {dims, dims},
-		"Bv": {1, dims},
+		// "Bv": {1, dims},
 	}, init)
 	layer.dims = dims
 	return &layer
@@ -45,12 +45,12 @@ func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tens
 	Wq := layer.params.Get("Wq")
 	Wk := layer.params.Get("Wk")
 	Wv := layer.params.Get("Wv")
-	Bq := layer.params.Get("Bq")
-	Bk := layer.params.Get("Bk")
-	Bv := layer.params.Get("Bv")
-	q := input.Mul(Wq).Add(Bq)
-	k := input.Mul(Wk).Add(Bk)
-	v := input.Mul(Wv).Add(Bv)
+	// Bq := layer.params.Get("Bq")
+	// Bk := layer.params.Get("Bk")
+	// Bv := layer.params.Get("Bv")
+	q := input.Mul(Wq)
+	k := input.Mul(Wk)
+	v := input.Mul(Wv)
 	a := k.T().Mul(q)
 	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
 	a = m.Softmax(a, 1)
@@ -64,12 +64,12 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 	Wq := layer.params.Get("Wq")
 	Wk := layer.params.Get("Wk")
 	Wv := layer.params.Get("Wv")
-	Bq := layer.params.Get("Bq")
-	Bk := layer.params.Get("Bk")
-	Bv := layer.params.Get("Bv")
-	q = q.Mul(Wq).Add(Bq)
-	k = k.Mul(Wk).Add(Bk)
-	v = v.Mul(Wv).Add(Bv)
+	// Bq := layer.params.Get("Bq")
+	// Bk := layer.params.Get("Bk")
+	// Bv := layer.params.Get("Bv")
+	q = q.Mul(Wq)
+	k = k.Mul(Wk)
+	v = v.Mul(Wv)
 	a := k.T().Mul(q)
 	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
 	if mask {
