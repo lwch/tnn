@@ -132,8 +132,7 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 		for _, v := range x {
 			dx = append(dx, embedding[v]...)
 		}
-		dx = append(dx, embedding[1]...) // </s>
-		for i := len(x) + 1; i < paddingSize; i++ {
+		for i := len(x); i < paddingSize; i++ {
 			dx = append(dx, paddingEmbedding...)
 		}
 		for _, v := range y {
