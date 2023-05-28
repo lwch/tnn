@@ -81,7 +81,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 		q = q.Mul(Wq).Add(Bq)
 		k = k.Mul(Wk).Add(Bk)
 		v = v.Mul(Wv).Add(Bv)
-		a := k.T().Mul(q)
+		a := q.Mul(k.T())
 		a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
 		if mask {
 			rows, cols := a.Dims()
@@ -97,7 +97,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 			a = a.MulElem(tensor.New(data, rows, cols))
 		}
 		a = m.Softmax(a, 1)
-		a = v.Mul(a)
+		a = a.Mul(v)
 		if ret == nil {
 			ret = a
 		} else {
