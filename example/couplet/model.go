@@ -256,7 +256,7 @@ var dropout = layer.NewDropout(0.5)
 
 func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
 	srcY := y
-	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
+	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, false, train)
 	y = y.Add(srcY)
 	// if train {
 	// 	y = dropout.Forward(y, true)
