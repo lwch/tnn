@@ -66,33 +66,20 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	// optimizer := optimizer.NewSGD(lr, 0)
 
-	ch := make(chan []int)
-	var wg sync.WaitGroup
-	wg.Add(rt.NumCPU())
 	var cnt atomic.Uint64
-	for i := 0; i < rt.NumCPU(); i++ {
-		go func() {
-			defer wg.Done()
-			trainWorker(loss, optimizer, trainX, trainY, vocabs, embedding, ch, &cnt)
-		}()
-	}
 	go showProgress(&cnt, len(trainX))
 
 	begin := time.Now()
 	i := 0
 	for {
 		cnt.Store(0)
-		trainEpoch(trainX, trainY, embedding, ch)
-		params := getParams()
-		optimizer.Update(params)
+		trainEpoch(&cnt, loss, optimizer, trainX, trainY, vocabs, embedding)
 		if i%10 == 0 {
 			fmt.Printf("cost=%s, loss=%.05f\n", time.Since(begin).String(),
 				avgLoss(loss, trainX, trainY, vocabs, embedding))
 		}
 		i++
 	}
-	close(ch)
-	wg.Wait()
 	save()
 }
 
@@ -110,8 +97,8 @@ func showProgress(cnt *atomic.Uint64, total int) {
 	}
 }
 
-func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
-	trainX, trainY [][]int, vocabs []string, embedding [][]float64, ch chan []int, cnt *atomic.Uint64) {
+func trainWorker(loss loss.Loss, trainX, trainY [][]int,
+	vocabs []string, embedding [][]float64, ch chan []int, cnt *atomic.Uint64) {
 	for {
 		idx, ok := <-ch
 		if !ok {
@@ -136,7 +123,8 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 	}
 }
 
-func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
+func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimizer,
+	trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	idx := make([]int, len(trainX))
 	for i := range trainX {
 		idx[i] = i
@@ -144,6 +132,17 @@ func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 	rand.Shuffle(len(idx), func(i, j int) {
 		idx[i], idx[j] = idx[j], idx[i]
 	})
+
+	ch := make(chan []int)
+	var wg sync.WaitGroup
+	wg.Add(rt.NumCPU())
+	for i := 0; i < rt.NumCPU(); i++ {
+		go func() {
+			defer wg.Done()
+			trainWorker(loss, trainX, trainY, vocabs, embedding, ch, cnt)
+		}()
+	}
+
 	for i := 0; i < len(trainX); i += batchSize {
 		list := make([]int, 0, batchSize)
 		for j := 0; j < batchSize; j++ {
@@ -154,6 +153,10 @@ func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 		}
 		ch <- list
 	}
+	close(ch)
+	wg.Wait()
+	params := getParams()
+	optimizer.Update(params)
 }
 
 var sumLoss float64
