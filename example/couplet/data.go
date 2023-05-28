@@ -98,7 +98,7 @@ func loadData(dir string, idx map[string]int) [][]int {
 			}
 			row = append(row, idx[v])
 		}
-		// row = append(row, 1) // </s>
+		row = append(row, 1) // </s>
 		data = append(data, row)
 		if len(row) > max {
 			max = len(row)
@@ -148,7 +148,7 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 	if training {
 		for i := range y {
 			y := append([]int{0}, y[i]...)
-			for j := 0; j < len(y); j++ {
+			for j := 1; j < len(y); j++ {
 				add(x[i], y[:j], y[j])
 			}
 		}

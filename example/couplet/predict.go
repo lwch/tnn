@@ -24,12 +24,9 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		dx = append(dx, vocab2idx[string(ch)])
 		size++
 	}
+	dx = append(dx, 1) // </s>
 	dy := make([]int, 0, len(str))
-	// n := rand.Intn(len(embedding))
-	// if n < 2 {
-	// 	n += 2
-	// }
-	// dy = append(dy, n)
+	dy = append(dy, 0) // <s>
 	for i := 0; i < size; i++ {
 		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
 		pred := forward(x, y, false)
@@ -38,24 +35,6 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		dy = append(dy, label)
 	}
 	fmt.Println(values(vocabs, dy))
-	// var pred string
-	// mix := embedding[int(time.Now().UnixNano())%len(embedding)]
-	// y := tensor.New(mix, 1, embeddingDim)
-	// for _, ch := range str {
-	// 	x := tensor.New(embedding[vocab2idx[string(ch)]], 1, embeddingDim)
-	// 	for _, layer := range encoder.Layers() {
-	// 		x = layer.Forward(x, false)
-	// 	}
-	// 	layers := decoder.Layers()
-	// 	y = layers[0].Forward(y, false)
-	// 	y = layers[1].Forward(y, false)
-	// 	y = layers[2].(*layer.SelfAttention).ForwardQKV(y, x, y, false)
-	// 	for i := 3; i < len(layers); i++ {
-	// 		y = layers[i].Forward(y, false)
-	// 	}
-	// 	pred += tensorStr(y, vocabs, embedding)[0]
-	// }
-	// fmt.Println(pred)
 }
 
 func lookup(prob []float64) int {
