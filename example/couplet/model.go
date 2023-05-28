@@ -240,7 +240,7 @@ func getParams() []*params.Params {
 const transformerSize = 1
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, init))
+	layers = append(layers, layer.NewSelfAttention(paddingSize, unitSize, init))
 	layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, activation.NewReLU())
