@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -38,6 +39,9 @@ func buildEmbedding(vocabSize int) {
 	f, err := os.Create(dir)
 	runtime.Assert(err)
 	defer f.Close()
+	for i, v := range data {
+		data[i] = math.Abs(v)
+	}
 	runtime.Assert(binary.Write(f, binary.BigEndian, data))
 }
 
