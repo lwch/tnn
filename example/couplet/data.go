@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -154,6 +155,20 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 			}
 			// add(x[i], y[i])
 		}
+		dxa := make([]float64, unitSize)
+		dya := make([]float64, unitSize)
+		dza := make([]float64, len(embedding))
+		rand.Shuffle(rows, func(i, j int) {
+			copy(dxa, dx[i*unitSize:(i+1)*unitSize])
+			copy(dya, dy[i*unitSize:(i+1)*unitSize])
+			copy(dza, dz[i*len(embedding):(i+1)*len(embedding)])
+			copy(dx[i*unitSize:(i+1)*unitSize], dx[j*unitSize:(j+1)*unitSize])
+			copy(dy[i*unitSize:(i+1)*unitSize], dy[j*unitSize:(j+1)*unitSize])
+			copy(dz[i*len(embedding):(i+1)*len(embedding)], dz[j*len(embedding):(j+1)*len(embedding)])
+			copy(dx[j*unitSize:(j+1)*unitSize], dxa)
+			copy(dy[j*unitSize:(j+1)*unitSize], dya)
+			copy(dz[j*len(embedding):(j+1)*len(embedding)], dza)
+		})
 	} else {
 		add(x[0], y[0], y[0], 1)
 	}
