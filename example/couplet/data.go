@@ -148,9 +148,10 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 	if training {
 		for i := range y {
 			y := append([]int{0}, y[i]...)
-			for j := 1; j < len(y); j++ {
-				add(x[i], y[:j], y[j])
-			}
+			// for j := 1; j < len(y); j++ {
+			// 	add(x[i], y[:j], y[j])
+			// }
+			add(x[i], y, 1)
 		}
 		dxa := make([]float64, unitSize)
 		dya := make([]float64, unitSize)
