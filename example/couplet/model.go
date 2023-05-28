@@ -234,9 +234,14 @@ func initModel(vocabSize int) {
 	layers = append(layers, layer.NewDense(vocabSize, init))
 }
 
+var dropout = layer.NewDropout(0.1)
+
 func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
 	srcY := y
 	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
+	if train {
+		y = dropout.Forward(y, true)
+	}
 	y = layers[i+1].Forward(y, train) // nor
 	y = y.Add(srcY)
 	y = layers[i+2].Forward(y, train) // dense

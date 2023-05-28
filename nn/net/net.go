@@ -12,8 +12,8 @@ import (
 type loadFunc func(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
-	"dense": layer.LoadDense,
-	// "dropout": layer.LoadDropout,
+	"dense":   layer.LoadDense,
+	"dropout": layer.LoadDropout,
 	// "conv2d":  layer.LoadConv2D,
 	// "maxpool": layer.LoadMaxPool,
 	"rnn":            layer.LoadRnn,
