@@ -230,7 +230,7 @@ const transformerSize = 1
 func addTransformer(init initializer.Initializer) {
 	layers = append(layers, layer.NewSelfAttention(unitSize, init))
 	layers = append(layers, layer.NewNor())
-	layers = append(layers, layer.NewDense(unitSize*4, init))
+	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, activation.NewReLU())
 	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, layer.NewNor())
@@ -254,11 +254,11 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	// 	y = dropout.Forward(y, true)
 	// }
 	y = y.Add(srcY)
-	y = layers[i+1].Forward(y, train) // nor
-	y = layers[i+2].Forward(y, train) // dense
-	y = layers[i+3].Forward(y, train) // relu
-	y = layers[i+4].Forward(y, train) // dense
-	y = y.Add(srcY)
+	selfOut := layers[i+1].Forward(y, train) // nor
+	y = layers[i+2].Forward(y, train)        // dense
+	y = layers[i+3].Forward(y, train)        // relu
+	y = layers[i+4].Forward(y, train)        // dense
+	y = y.Add(selfOut)
 	y = layers[i+5].Forward(y, train) // nor
 	return y, i + 6
 }
