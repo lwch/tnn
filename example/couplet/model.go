@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/lwch/runtime"
-	m "github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
@@ -62,8 +61,8 @@ func loadEmbedding(vocabSize int) [][]float64 {
 
 func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	initModel(len(embedding))
-	// loss := loss.NewSoftmax()
-	loss := loss.NewMSE()
+	loss := loss.NewSoftmax()
+	// loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	// optimizer := optimizer.NewSGD(lr, 0)
 
@@ -286,7 +285,6 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
-	y = m.Softmax(y, 1)
 	return y
 }
 
