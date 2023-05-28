@@ -139,3 +139,11 @@ func (t *Tensor) MaxAxis(axis int) *Tensor {
 	}
 	return &Tensor{op: op, data: op.f()}
 }
+
+func (t *Tensor) Stack(t2 *Tensor) *Tensor {
+	op := &stack{
+		a: t,
+		b: t2,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
