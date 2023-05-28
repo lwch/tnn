@@ -53,7 +53,7 @@ func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tens
 	v := input.Mul(Wv).Add(Bv)
 	a := k.T().Mul(q)
 	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
-	a = m.Softmax(a, 0)
+	a = m.Softmax(a, 1)
 	return v.Mul(a)
 }
 
@@ -85,7 +85,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 		}
 		a = a.MulElem(tensor.New(data, rows, cols))
 	}
-	a = m.Softmax(a, 0)
+	a = m.Softmax(a, 1)
 	return v.Mul(a)
 }
 
