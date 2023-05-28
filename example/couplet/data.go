@@ -97,7 +97,7 @@ func loadData(dir string, idx map[string]int) [][]int {
 			}
 			row = append(row, idx[v])
 		}
-		row = append(row, 1) // </s>
+		// row = append(row, 1) // </s>
 		data = append(data, row)
 		if len(row) > max {
 			max = len(row)
