@@ -62,8 +62,8 @@ func loadEmbedding(vocabSize int) [][]float64 {
 
 func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	initModel(len(embedding))
-	loss := loss.NewSoftmax()
-	// loss := loss.NewMSE()
+	// loss := loss.NewSoftmax()
+	loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	// optimizer := optimizer.NewSGD(lr, 0)
 
