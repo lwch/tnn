@@ -26,9 +26,9 @@ import (
 const modelDir = "./model"
 const embeddingDim = 2 // 2个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
-const batchSize = 8
+const batchSize = 32
 const epoch = 1000
-const lr = 0.01
+const lr = 0.001
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
@@ -78,7 +78,7 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	for {
 		cnt.Store(0)
 		trainEpoch(trainX, trainY, embedding, ch)
-		fmt.Printf("cost=%s, loss=%e\n", time.Since(begin).String(),
+		fmt.Printf("cost=%s, loss=%.05f\n", time.Since(begin).String(),
 			avgLoss(loss, trainX, trainY, vocabs, embedding))
 	}
 	close(ch)
