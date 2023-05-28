@@ -106,9 +106,14 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 		}
 		xIn := make([][]int, 0, batchSize)
 		xOut := make([][]int, 0, batchSize)
+		dup := func(x []int) []int {
+			ret := make([]int, len(x))
+			copy(ret, x)
+			return ret
+		}
 		for _, i := range idx {
-			xIn = append(xIn, trainX[i])
-			xOut = append(xOut, trainY[i])
+			xIn = append(xIn, dup(trainX[i]))
+			xOut = append(xOut, dup(trainY[i]))
 		}
 		rand.Shuffle(len(xIn), func(i, j int) {
 			xIn[i], xIn[j] = xIn[j], xIn[i]
