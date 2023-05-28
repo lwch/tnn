@@ -83,6 +83,8 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	for {
 		cnt.Store(0)
 		trainEpoch(trainX, trainY, embedding, ch)
+		params := getParams()
+		optimizer.Update(params)
 		if i%10 == 0 {
 			fmt.Printf("cost=%s, loss=%.05f\n", time.Since(begin).String(),
 				avgLoss(loss, trainX, trainY, vocabs, embedding))
@@ -130,8 +132,6 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 		grad := loss.Loss(pred, z)
 		grad.ZeroGrad()
 		grad.Backward(grad)
-		params := getParams()
-		optimizer.Update(params)
 		cnt.Add(uint64(len(idx)))
 	}
 }
