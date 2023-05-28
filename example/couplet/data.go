@@ -114,6 +114,11 @@ func onehot(x, size int) []float64 {
 	return ret
 }
 
+func zerohot(size int) []float64 {
+	ret := make([]float64, size)
+	return ret
+}
+
 func encode(vocabs []string, idx []int) string {
 	var ret string
 	for _, idx := range idx {
@@ -121,6 +126,8 @@ func encode(vocabs []string, idx []int) string {
 	}
 	return ret
 }
+
+const paddingIdx = 1000000
 
 func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	dx := make([]float64, 0, len(x)*unitSize)
@@ -141,7 +148,11 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 		for i := len(y); i < paddingSize; i++ {
 			dy = append(dy, paddingEmbedding...)
 		}
-		dz = append(dz, onehot(z, len(embedding))...)
+		if z == paddingIdx {
+			dz = append(dz, zerohot(len(embedding))...)
+		} else {
+			dz = append(dz, onehot(z, len(embedding))...)
+		}
 		rows++
 	}
 	if training {
@@ -149,6 +160,9 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 			y := append([]int{0}, y[i]...)
 			for j := 1; j < len(y); j++ {
 				add(x[i], y[:j], y[j])
+			}
+			for j := len(y); j < paddingSize; j++ {
+				add(x[i], y, paddingIdx)
 			}
 		}
 		dxa := make([]float64, unitSize)
