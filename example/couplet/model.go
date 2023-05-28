@@ -26,7 +26,7 @@ import (
 const modelDir = "./model"
 const embeddingDim = 2 // 2个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
-const batchSize = 32
+const batchSize = 8
 const epoch = 1000
 const lr = 0.01
 
@@ -55,7 +55,7 @@ func loadEmbedding(vocabSize int) [][]float64 {
 	return ret
 }
 
-func train(trainX, trainY [][]int, embedding [][]float64) {
+func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	initModel(len(embedding))
 	loss := loss.NewSoftmax()
 	// loss := loss.NewMSE()
@@ -68,7 +68,7 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 	for i := 0; i < rt.NumCPU(); i++ {
 		go func() {
 			defer wg.Done()
-			trainWorker(loss, optimizer, trainX, trainY, embedding, ch, &cnt)
+			trainWorker(loss, optimizer, trainX, trainY, vocabs, embedding, ch, &cnt)
 		}()
 	}
 	go showProgress(&cnt, len(trainX))
@@ -78,7 +78,7 @@ func train(trainX, trainY [][]int, embedding [][]float64) {
 		cnt.Store(0)
 		trainEpoch(trainX, trainY, embedding, ch)
 		fmt.Printf("cost=%s, loss=%e\n", time.Since(begin).String(),
-			avgLoss(loss, trainX, trainY, embedding))
+			avgLoss(loss, trainX, trainY, vocabs, embedding))
 	}
 	close(ch)
 	wg.Wait()
@@ -100,7 +100,7 @@ func showProgress(cnt *atomic.Uint64, total int) {
 }
 
 func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
-	trainX, trainY [][]int, embedding [][]float64, ch chan []int, cnt *atomic.Uint64) {
+	trainX, trainY [][]int, vocabs []string, embedding [][]float64, ch chan []int, cnt *atomic.Uint64) {
 	for {
 		idx, ok := <-ch
 		if !ok {
@@ -116,7 +116,7 @@ func trainWorker(loss loss.Loss, optimizer optimizer.Optimizer,
 			xIn[i], xIn[j] = xIn[j], xIn[i]
 			xOut[i], xOut[j] = xOut[j], xOut[i]
 		})
-		x, y, z := buildTensor(xIn, xOut, embedding, true)
+		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
 		pred := forward(x, y, true)
 		grad := loss.Loss(pred, z)
 		grad.ZeroGrad()
@@ -149,7 +149,7 @@ func trainEpoch(trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
 
 var sumLoss float64
 
-func lossWorker(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64, ch chan []int) {
+func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embedding [][]float64, ch chan []int) {
 	for {
 		idx, ok := <-ch
 		if !ok {
@@ -161,14 +161,14 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64, c
 			xIn = append(xIn, trainX[i])
 			xOut = append(xOut, trainY[i])
 		}
-		x, y, z := buildTensor(xIn, xOut, embedding, true)
+		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
 		pred := forward(x, y, false)
 		loss := loss.Loss(pred, z).Value()
 		sumLoss += loss.At(0, 0)
 	}
 }
 
-func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) float64 {
+func avgLoss(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embedding [][]float64) float64 {
 	sumLoss = 0
 
 	ch := make(chan []int)
@@ -177,7 +177,7 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) floa
 	for i := 0; i < rt.NumCPU(); i++ {
 		go func() {
 			defer wg.Done()
-			lossWorker(loss, trainX, trainY, embedding, ch)
+			lossWorker(loss, trainX, trainY, vocabs, embedding, ch)
 		}()
 	}
 
@@ -203,19 +203,11 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, embedding [][]float64) floa
 	return sumLoss / size
 }
 
-var encoder []layer.Layer
-var decoder []layer.Layer
+var layers []layer.Layer
 
 func getParams() []*params.Params {
 	var ret []*params.Params
-	for _, layer := range encoder {
-		params := layer.Params()
-		if params.IsEmpty() {
-			continue
-		}
-		ret = append(ret, params)
-	}
-	for _, layer := range decoder {
+	for _, layer := range layers {
 		params := layer.Params()
 		if params.IsEmpty() {
 			continue
@@ -225,52 +217,44 @@ func getParams() []*params.Params {
 	return ret
 }
 
+func addTransformer(init initializer.Initializer) {
+	layers = append(layers, layer.NewSelfAttention(unitSize, init))
+	layers = append(layers, layer.NewNor())
+	layers = append(layers, layer.NewDense(unitSize*4, init))
+	layers = append(layers, activation.NewReLU())
+	layers = append(layers, layer.NewDense(unitSize, init))
+	layers = append(layers, layer.NewNor())
+}
+
 func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
-	encoder = append(encoder, layer.NewSelfAttention(unitSize, init))
-	encoder = append(encoder, layer.NewNor())
-	encoder = append(encoder, layer.NewDense(unitSize*4, init))
-	encoder = append(encoder, activation.NewReLU())
-	encoder = append(encoder, layer.NewDense(unitSize, init))
-	encoder = append(encoder, layer.NewNor())
+	// addTransformer(init)
+	addTransformer(init)
+	layers = append(layers, activation.NewReLU())
+	layers = append(layers, layer.NewDense(vocabSize*embeddingDim, init))
+	layers = append(layers, activation.NewReLU())
+	layers = append(layers, layer.NewDense(vocabSize, init))
+}
 
-	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
-	decoder = append(decoder, layer.NewNor())
-	decoder = append(decoder, layer.NewSelfAttention(unitSize, init))
-	decoder = append(decoder, layer.NewNor())
-	decoder = append(decoder, layer.NewDense(unitSize, init))
-	decoder = append(decoder, activation.NewReLU())
-	decoder = append(decoder, layer.NewDense(unitSize, init))
-	decoder = append(decoder, layer.NewNor())
-	decoder = append(decoder, activation.NewReLU())
-	decoder = append(decoder, layer.NewDense(vocabSize, init))
+func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
+	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
+	selfOut := layers[i+1].Forward(y, train) // nor
+	y = layers[i+2].Forward(selfOut, train)  // dense
+	y = layers[i+3].Forward(y, train)        // relu
+	y = layers[i+4].Forward(y, train)        // dense
+	y = y.Add(selfOut)
+	y = layers[i+5].Forward(y, train) // nor
+	return y, i + 6
 }
 
 func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
-	srcX := x
-	srcY := y
-	x = encoder[0].Forward(x, train) // self attention
-	x = x.Add(srcX)
-	encSelfOut := encoder[1].Forward(x, train) // nor
-	x = encoder[2].Forward(encSelfOut, train)  // dense1
-	x = encoder[3].Forward(x, train)           // relu
-	x = encoder[4].Forward(x, train)           // dense2
-	x = x.Add(encSelfOut)
-	x = encoder[5].Forward(x, train) // nor
-
-	y = decoder[0].(*layer.SelfAttention).ForwardQKV(y, y, y, true, train) // self attention1
-	y = y.Add(srcY)
-	decSelfOut1 := decoder[1].Forward(y, train)                                       // nor
-	y = decoder[2].(*layer.SelfAttention).ForwardQKV(decSelfOut1, x, x, false, train) // self attention2
-	y = y.Add(decSelfOut1)
-	decSelfOut2 := decoder[3].Forward(y, train) // nor
-	y = decoder[4].Forward(decSelfOut2, train)  // dense1
-	y = decoder[5].Forward(y, train)            // relu
-	y = decoder[6].Forward(y, train)            // dense2
-	y = y.Add(decSelfOut2)
-	y = decoder[7].Forward(y, train) // nor
-	y = decoder[8].Forward(y, train) // relu
-	y = decoder[9].Forward(y, train) // dense3
+	i := 0
+	// y, i = forwardTransformer(i, x, y, train)
+	y, i = forwardTransformer(i, x, y, train)
+	y = layers[i].Forward(y, train)   // relu
+	y = layers[i+1].Forward(y, train) // dense1
+	y = layers[i+2].Forward(y, train) // relu
+	y = layers[i+3].Forward(y, train) // output
 	return y
 }
 
@@ -284,7 +268,6 @@ func saveModel(layers []layer.Layer, name string) {
 }
 
 func save() {
-	saveModel(encoder, "encoder")
-	saveModel(decoder, "decoder")
+	saveModel(layers, "couplet")
 	fmt.Println("model saved")
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -12,20 +11,13 @@ import (
 )
 
 func predict(str string, vocabs []string, vocab2idx map[string]int, embedding [][]float64) {
-	dir := filepath.Join(modelDir, "encoder.model")
+	dir := filepath.Join(modelDir, "couplet.model")
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		panic("encoder model not found")
+		panic("model not found")
 	}
-	var enc model.Model
-	runtime.Assert(enc.Load(dir))
-	dir = filepath.Join(modelDir, "decoder.model")
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		panic("decoder model not found")
-	}
-	var dec model.Model
-	runtime.Assert(dec.Load(dir))
-	encoder = enc.Layers()
-	decoder = dec.Layers()
+	var m model.Model
+	runtime.Assert(m.Load(dir))
+	layers = m.Layers()
 	dx := make([]int, 0, len(str))
 	var size int
 	for _, ch := range str {
@@ -33,13 +25,13 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		size++
 	}
 	dy := make([]int, 0, len(str))
-	n := rand.Intn(len(embedding))
-	if n < 2 {
-		n += 2
-	}
-	dy = append(dy, n)
+	// n := rand.Intn(len(embedding))
+	// if n < 2 {
+	// 	n += 2
+	// }
+	// dy = append(dy, n)
 	for i := 0; i < size; i++ {
-		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, embedding, false)
+		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
 		pred := forward(x, y, false)
 		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
 		label := lookup(predProb)
@@ -69,7 +61,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 func lookup(prob []float64) int {
 	var max float64
 	var idx int
-	for i := 2; i < len(prob); i++ {
+	for i := 0; i < len(prob); i++ {
 		if prob[i] > max {
 			max = prob[i]
 			idx = i

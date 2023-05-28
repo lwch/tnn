@@ -92,6 +92,9 @@ func loadData(dir string, idx map[string]int) [][]int {
 		var row []int
 		vocab := strings.Split(s.Text(), " ")
 		for _, v := range vocab {
+			if len(v) == 0 {
+				continue
+			}
 			row = append(row, idx[v])
 		}
 		row = append(row, 1) // </s>
@@ -110,12 +113,21 @@ func onehot(x, size int) []float64 {
 	return ret
 }
 
-func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
+func encode(vocabs []string, idx []int) string {
+	var ret string
+	for _, idx := range idx {
+		ret += vocabs[idx]
+	}
+	return ret
+}
+
+func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	dx := make([]float64, 0, len(x)*unitSize)
 	dy := make([]float64, 0, len(y)*unitSize)
 	dz := make([]float64, 0, len(y)*len(embedding))
 	rows := 0
-	add := func(x, y []int, z int) {
+	add := func(x, y, yy []int, z int) {
+		// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
 		for _, v := range x {
 			dx = append(dx, embedding[v]...)
 		}
@@ -134,16 +146,16 @@ func buildTensor(x, y [][]int, embedding [][]float64, training bool) (*tensor.Te
 	}
 	if training {
 		for i := range y {
-			for j := 0; j < len(y[i])-1; j++ {
+			for j := 0; j < len(y[i]); j++ {
 				// if y[i][j] == 1 { // </s>
 				// 	break
 				// }
-				add(x[i], y[i][:j], y[i][j+1])
+				add(x[i], y[i][:j], y[i], y[i][j])
 			}
 			// add(x[i], y[i])
 		}
 	} else {
-		add(x[0], y[0], 1)
+		add(x[0], y[0], y[0], 1)
 	}
 	return tensor.New(dx, rows, unitSize),
 		tensor.New(dy, rows, unitSize),

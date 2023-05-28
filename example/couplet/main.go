@@ -42,7 +42,7 @@ func runTrain(*cobra.Command, []string) {
 	embedding := loadEmbedding(len(idx2vocab))
 	trainX := loadData("train/in2.txt", vocab2idx)
 	trainY := loadData("train/out2.txt", vocab2idx)
-	train(trainX, trainY, embedding)
+	train(trainX, trainY, idx2vocab, embedding)
 }
 
 func runPredict(_ *cobra.Command, args []string) {
