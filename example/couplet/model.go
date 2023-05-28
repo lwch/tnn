@@ -229,7 +229,7 @@ func getParams() []*params.Params {
 	return ret
 }
 
-const transformerSize = 1
+const transformerSize = 4
 
 func addTransformer(init initializer.Initializer) {
 	layers = append(layers, layer.NewSelfAttention(unitSize, init))
