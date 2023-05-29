@@ -156,10 +156,11 @@ func (t *Tensor) MeanAxis(axis int) *Tensor {
 	return &Tensor{op: op, data: op.f()}
 }
 
-func (t *Tensor) VarianceAxis(axis int) *Tensor {
+func (t *Tensor) VarianceAxis(axis int, unbiased bool) *Tensor {
 	op := &varianceAxis{
-		a:    t,
-		axis: axis,
+		a:        t,
+		axis:     axis,
+		unbiased: unbiased,
 	}
 	return &Tensor{op: op, data: op.f()}
 }

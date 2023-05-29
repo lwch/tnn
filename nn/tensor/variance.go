@@ -5,9 +5,10 @@ import (
 )
 
 type varianceAxis struct {
-	a     *Tensor
-	axis  int
-	value *Tensor
+	a        *Tensor
+	axis     int
+	unbiased bool
+	value    *Tensor
 }
 
 func (op *varianceAxis) f() *mat.Dense {
@@ -21,7 +22,10 @@ func (op *varianceAxis) f() *mat.Dense {
 		panic("invalid axis")
 	}
 	mean := op.a.MeanAxis(op.axis)
-	op.value = op.a.Sub(mean).Pow(2).SumAxis(op.axis).Scale(1 / float64(size-1))
+	if op.unbiased {
+		size--
+	}
+	op.value = op.a.Sub(mean).Pow(2).SumAxis(op.axis).Scale(1 / float64(size))
 	return op.value.Value()
 }
 

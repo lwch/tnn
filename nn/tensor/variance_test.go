@@ -10,7 +10,7 @@ import (
 func TestVarianceAxisRows(t *testing.T) {
 	x := New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
 	x.requireGrad = true
-	y := x.VarianceAxis(0)
+	y := x.VarianceAxis(0, true)
 	fmt.Println(mat.Formatted(y.Value()))
 	y.Backward(Ones(y.Dims()))
 	fmt.Println(mat.Formatted(x.Grad().Value()))
@@ -19,7 +19,7 @@ func TestVarianceAxisRows(t *testing.T) {
 func TestVarianceAxisCols(t *testing.T) {
 	x := New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
 	x.requireGrad = true
-	y := x.VarianceAxis(1)
+	y := x.VarianceAxis(1, true)
 	fmt.Println(mat.Formatted(y.Value()))
 	y.Backward(Ones(y.Dims()))
 	fmt.Println(mat.Formatted(x.Grad().Value()))
