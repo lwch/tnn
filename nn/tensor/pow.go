@@ -15,8 +15,9 @@ func (op *pow) f() *mat.Dense {
 func (op *pow) df(grad *Tensor) {
 	pow := powDense(op.a.Value(), op.b-1)
 	pow.Scale(op.b, pow)
-	op.a.AddGrad(pow)
-	op.a.Backward(FromDense(pow))
+	delta := grad.MulElem(FromDense(pow))
+	op.a.AddGrad(delta.Value())
+	op.a.Backward(delta)
 }
 
 func (op *pow) ZeroGrad() {
