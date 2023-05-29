@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
 	rt "runtime"
+	"runtime/pprof"
+	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
@@ -31,6 +34,17 @@ const transformerSize = 1
 
 func main() {
 	init := initializer.NewXavierUniform(1)
+	f, err := os.Create("cpu.pprof")
+	runtime.Assert(err)
+	defer f.Close()
+	runtime.Assert(pprof.StartCPUProfile(f))
+	go func() {
+		time.Sleep(time.Minute)
+		pprof.StopCPUProfile()
+		f.Close()
+		os.Exit(0)
+	}()
+	defer pprof.StopCPUProfile()
 
 	var net net.Net
 	for i := 0; i < transformerSize; i++ {
