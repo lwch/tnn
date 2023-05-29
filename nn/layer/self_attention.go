@@ -12,11 +12,10 @@ import (
 
 type SelfAttention struct {
 	*base
-	nseq int
 	dims int
 }
 
-func NewSelfAttention(nseq, dims int, init initializer.Initializer) Layer {
+func NewSelfAttention(dims int, init initializer.Initializer) Layer {
 	var layer SelfAttention
 	layer.base = new("self_attention", map[string]Shape{
 		"Wq": {dims, dims},
@@ -26,7 +25,6 @@ func NewSelfAttention(nseq, dims int, init initializer.Initializer) Layer {
 		"Wv": {dims, dims},
 		"Bv": {1, dims},
 	}, init)
-	layer.nseq = nseq
 	layer.dims = dims
 	return &layer
 }
@@ -35,30 +33,14 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 	var layer SelfAttention
 	layer.base = new("self_attention", nil, nil)
 	p := args["params"].GetData()
-	layer.nseq = int(p[0])
-	layer.dims = int(p[1])
+	layer.dims = int(p[0])
 	layer.name = name
 	layer.base.loadParams(params)
 	return &layer
 }
 
 func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
-	if !layer.hasInit {
-		layer.initParams()
-	}
-	Wq := layer.params.Get("Wq")
-	Wk := layer.params.Get("Wk")
-	Wv := layer.params.Get("Wv")
-	Bq := layer.params.Get("Bq")
-	Bk := layer.params.Get("Bk")
-	Bv := layer.params.Get("Bv")
-	q := input.Mul(Wq).Add(Bq)
-	k := input.Mul(Wk).Add(Bk)
-	v := input.Mul(Wv).Add(Bv)
-	a := k.T().Mul(q)
-	a = a.Scale(1 / math.Sqrt(float64(layer.dims)))
-	a = m.Softmax(a, 1)
-	return v.Mul(a)
+	return layer.ForwardQKV(input, input, input, false, isTraining)
 }
 
 func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining bool) *tensor.Tensor {
@@ -109,8 +91,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 
 func (layer *SelfAttention) Args() map[string]*mat.VecDense {
 	return map[string]*mat.VecDense{
-		"params": mat.NewVecDense(2, []float64{
-			float64(layer.nseq),
+		"params": mat.NewVecDense(1, []float64{
 			float64(layer.dims),
 		}),
 	}

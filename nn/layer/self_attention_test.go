@@ -11,7 +11,7 @@ import (
 
 func TestSelfAttention(t *testing.T) {
 	input := tensor.New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
-	layer := NewSelfAttention(1, 3, initializer.NewXavierUniform(1))
+	layer := NewSelfAttention(3, initializer.NewNumber(1))
 	output := layer.Forward(input, false)
 	fmt.Println(mat.Formatted(output.Value()))
 	output.Backward(tensor.Ones(output.Dims()))
@@ -22,9 +22,16 @@ func TestSelfAttention(t *testing.T) {
 }
 
 func TestSelfAttentionCustom(t *testing.T) {
-	input := tensor.New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
-	layer := NewSelfAttention(1, 3, initializer.NewXavierUniform(1))
-	output := layer.(*SelfAttention).ForwardQKV(input, input, input, false, false)
+	x := tensor.New([]float64{
+		1, 2, 3,
+		4, 5, 6,
+	}, 2, 3)
+	y := tensor.New([]float64{
+		1, 0, 0,
+		0, 0, 0,
+	}, 2, 3)
+	layer := NewSelfAttention(3, initializer.NewNumber(1))
+	output := layer.(*SelfAttention).ForwardQKV(x, y, y, false, false)
 	fmt.Println(mat.Formatted(output.Value()))
 	output.Backward(tensor.Ones(output.Dims()))
 	layer.Params().Range(func(name string, value *tensor.Tensor) {

@@ -240,7 +240,7 @@ func getParams() []*params.Params {
 const transformerSize = 1
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize, unitSize, init))
+	layers = append(layers, layer.NewSelfAttention(unitSize, init))
 	layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, activation.NewReLU())
@@ -260,9 +260,9 @@ func initModel(vocabSize int) {
 var dropout = layer.NewDropout(0.5)
 
 func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	srcY := y
+	srcX := x
 	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
-	y = y.Add(srcY)
+	y = y.Add(srcX)
 	// if train {
 	// 	y = dropout.Forward(y, true)
 	// }
