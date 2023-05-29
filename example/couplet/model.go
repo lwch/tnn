@@ -25,11 +25,13 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 2 // 2个float64表示一个字向量
+const embeddingDim = 8 // 8个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
+const head = 2
 const batchSize = 2
 const epoch = 1000
 const lr = 0.01
+const transformerSize = 1
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
@@ -122,7 +124,6 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
 		pred := forward(x, y, true)
 		grad := loss.Loss(pred, z)
-		grad.ZeroGrad()
 		grad.Backward(grad)
 		cnt.Add(uint64(len(idx)))
 	}
@@ -165,6 +166,7 @@ func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimize
 	wg.Wait()
 	params := getParams()
 	optimizer.Update(params)
+	zeroGrads(params)
 }
 
 var sumLoss float64
@@ -237,10 +239,16 @@ func getParams() []*params.Params {
 	return ret
 }
 
-const transformerSize = 1
+func zeroGrads(paramList []*params.Params) {
+	for _, params := range paramList {
+		params.Range(func(_ string, p *tensor.Tensor) {
+			p.ZeroGrad()
+		})
+	}
+}
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(unitSize, init))
+	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, head, init))
 	layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, activation.NewReLU())
