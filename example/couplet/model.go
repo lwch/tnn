@@ -99,6 +99,12 @@ func showProgress(cnt *atomic.Uint64, total int) {
 	}
 }
 
+func dup(x []int) []int {
+	ret := make([]int, len(x))
+	copy(ret, x)
+	return ret
+}
+
 func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 	vocabs []string, embedding [][]float64, ch chan []int, cnt *atomic.Uint64) {
 	for {
@@ -108,19 +114,10 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 		}
 		xIn := make([][]int, 0, batchSize)
 		xOut := make([][]int, 0, batchSize)
-		dup := func(x []int) []int {
-			ret := make([]int, len(x))
-			copy(ret, x)
-			return ret
-		}
 		for _, i := range idx {
 			xIn = append(xIn, dup(trainX[i]))
 			xOut = append(xOut, dup(trainY[i]))
 		}
-		rand.Shuffle(len(xIn), func(i, j int) {
-			xIn[i], xIn[j] = xIn[j], xIn[i]
-			xOut[i], xOut[j] = xOut[j], xOut[i]
-		})
 		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
 		pred := forward(x, y, true)
 		grad := loss.Loss(pred, z)
@@ -180,8 +177,8 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 		xIn := make([][]int, 0, batchSize)
 		xOut := make([][]int, 0, batchSize)
 		for _, i := range idx {
-			xIn = append(xIn, trainX[i])
-			xOut = append(xOut, trainY[i])
+			xIn = append(xIn, dup(trainX[i]))
+			xOut = append(xOut, dup(trainY[i]))
 		}
 		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
 		pred := forward(x, y, false)
