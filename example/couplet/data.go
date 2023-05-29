@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -122,6 +121,9 @@ func zerohot(size int) []float64 {
 func encode(vocabs []string, idx []int) string {
 	var ret string
 	for _, idx := range idx {
+		if idx == paddingIdx {
+			break
+		}
 		ret += vocabs[idx]
 	}
 	return ret
@@ -161,24 +163,24 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 			for j := 1; j < len(y); j++ {
 				add(x[i], y[:j], y[j])
 			}
-			for j := len(y); j < paddingSize; j++ {
-				add(x[i], y, paddingIdx)
-			}
+			// for j := len(y); j < paddingSize; j++ {
+			// 	add(x[i], y, paddingIdx)
+			// }
 		}
-		dxa := make([]float64, unitSize)
-		dya := make([]float64, unitSize)
-		dza := make([]float64, len(embedding))
-		rand.Shuffle(rows, func(i, j int) {
-			copy(dxa, dx[i*unitSize:(i+1)*unitSize])
-			copy(dya, dy[i*unitSize:(i+1)*unitSize])
-			copy(dza, dz[i*len(embedding):(i+1)*len(embedding)])
-			copy(dx[i*unitSize:(i+1)*unitSize], dx[j*unitSize:(j+1)*unitSize])
-			copy(dy[i*unitSize:(i+1)*unitSize], dy[j*unitSize:(j+1)*unitSize])
-			copy(dz[i*len(embedding):(i+1)*len(embedding)], dz[j*len(embedding):(j+1)*len(embedding)])
-			copy(dx[j*unitSize:(j+1)*unitSize], dxa)
-			copy(dy[j*unitSize:(j+1)*unitSize], dya)
-			copy(dz[j*len(embedding):(j+1)*len(embedding)], dza)
-		})
+		// dxa := make([]float64, unitSize)
+		// dya := make([]float64, unitSize)
+		// dza := make([]float64, len(embedding))
+		// rand.Shuffle(rows, func(i, j int) {
+		// 	copy(dxa, dx[i*unitSize:(i+1)*unitSize])
+		// 	copy(dya, dy[i*unitSize:(i+1)*unitSize])
+		// 	copy(dza, dz[i*len(embedding):(i+1)*len(embedding)])
+		// 	copy(dx[i*unitSize:(i+1)*unitSize], dx[j*unitSize:(j+1)*unitSize])
+		// 	copy(dy[i*unitSize:(i+1)*unitSize], dy[j*unitSize:(j+1)*unitSize])
+		// 	copy(dz[i*len(embedding):(i+1)*len(embedding)], dz[j*len(embedding):(j+1)*len(embedding)])
+		// 	copy(dx[j*unitSize:(j+1)*unitSize], dxa)
+		// 	copy(dy[j*unitSize:(j+1)*unitSize], dya)
+		// 	copy(dz[j*len(embedding):(j+1)*len(embedding)], dza)
+		// })
 	} else {
 		y[0] = append([]int{0}, y[0]...) // <s>
 		add(x[0], y[0], 1)
