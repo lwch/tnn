@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	rt "runtime"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
@@ -25,13 +28,13 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 8 // 8个float64表示一个字向量
+const embeddingDim = 16 // 16个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
-const head = 2
+const head = 1
 const batchSize = 2
 const epoch = 1000
 const lr = 0.01
-const transformerSize = 1
+const transformerSize = 2
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
@@ -62,6 +65,9 @@ func loadEmbedding(vocabSize int) [][]float64 {
 }
 
 func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
+	go func() { // for pprof
+		http.ListenAndServe(":8888", nil)
+	}()
 	initModel(len(embedding))
 	loss := loss.NewSoftmax()
 	// loss := loss.NewMSE()
