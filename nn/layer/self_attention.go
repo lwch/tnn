@@ -49,7 +49,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 	}
 	// batchSize, _ := q.Dims()
 	// var ret *tensor.Tensor
-	// for i := 0; i < layer.nseq; i++ {
+	// for i := 0; i < 1; i++ {
 	// 	start := i * layer.dims
 	// 	q := q.Slice(0, batchSize, start, start+layer.dims)
 	// 	k := k.Slice(0, batchSize, start, start+layer.dims)
@@ -79,7 +79,8 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 		a = a.MulElem(tensor.New(data, rows, cols))
 	}
 	a = m.Softmax(a, 1)
-	return a.Mul(v)
+	a = a.Mul(v)
+	return a
 	// 	if ret == nil {
 	// 		ret = a
 	// 	} else {
