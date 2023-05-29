@@ -129,7 +129,7 @@ func encode(vocabs []string, idx []int) string {
 	return ret
 }
 
-const paddingIdx = -1
+const paddingIdx = 1000000
 
 func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	dx := make([]float64, 0, len(x)*unitSize)
@@ -151,11 +151,9 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 			dy = append(dy, paddingEmbedding...)
 		}
 		if z == paddingIdx {
-			// dz = append(dz, zerohot(len(embedding))...)
-			dz = append(dz, paddingIdx)
+			dz = append(dz, zerohot(len(embedding))...)
 		} else {
-			// dz = append(dz, onehot(z, len(embedding))...)
-			dz = append(dz, float64(z))
+			dz = append(dz, onehot(z, len(embedding))...)
 		}
 		rows++
 	}
@@ -189,5 +187,5 @@ func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training 
 	}
 	return tensor.New(dx, rows, unitSize),
 		tensor.New(dy, rows, unitSize),
-		tensor.New(dz, rows, 1)
+		tensor.New(dz, rows, len(embedding))
 }

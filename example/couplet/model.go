@@ -28,7 +28,7 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 2 // 2个float64表示一个字向量
+const embeddingDim = 2 // 16个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
 const head = 1
 const batchSize = 2
@@ -69,8 +69,8 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 		http.ListenAndServe(":8888", nil)
 	}()
 	initModel(len(embedding))
-	// loss := loss.NewSoftmax()
-	loss := loss.NewMSE()
+	loss := loss.NewSoftmax()
+	// loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	// optimizer := optimizer.NewSGD(lr, 0)
 
@@ -265,15 +265,13 @@ func initModel(vocabSize int) {
 		addTransformer(init)
 	}
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(embeddingDim, init))
-	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(1, init))
+	layers = append(layers, layer.NewDense(vocabSize, init))
 }
 
 var dropout = layer.NewDropout(0.5)
 
 func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
+	y = layers[i].(*layer.SelfAttention).ForwardQKV(y, x, x, true, train)
 	y = y.Add(x)
 	// if train {
 	// 	y = dropout.Forward(y, true)
@@ -296,9 +294,7 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 		y, i = forwardTransformer(i, x, y, train)
 	}
 	y = layers[i].Forward(y, train)   // relu
-	y = layers[i+1].Forward(y, train) // dense
-	y = layers[i+2].Forward(y, train) // relu
-	y = layers[i+3].Forward(y, train) // output
+	y = layers[i+1].Forward(y, train) // output
 	return y
 }
 
