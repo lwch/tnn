@@ -32,8 +32,8 @@ func New(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *Model {
 	}
 }
 
-func (m *Model) Predict(input *tensor.Tensor) *tensor.Tensor {
-	return m.net.Forward(input, false)
+func (m *Model) Forward(input *tensor.Tensor, train bool) *tensor.Tensor {
+	return m.net.Forward(input, train)
 }
 
 func filterEmptyParams(arr []*params.Params) []*params.Params {
@@ -47,18 +47,19 @@ func filterEmptyParams(arr []*params.Params) []*params.Params {
 	return ret
 }
 
-func (m *Model) Train(input, targets *tensor.Tensor) {
-	pred := m.net.Forward(input, true)
+func (m *Model) Backward(pred, targets *tensor.Tensor) {
 	loss := m.loss.Loss(pred, targets)
-	loss.ZeroGrad()
 	loss.Backward(loss)
-	m.optimizer.Update(filterEmptyParams(m.net.Params()))
-	m.trainCount++
 }
 
 func (m *Model) Loss(input, targets *tensor.Tensor) float64 {
-	pred := m.Predict(input)
+	pred := m.Forward(input, false)
 	return m.loss.Loss(pred, targets).Value().At(0, 0)
+}
+
+func (m *Model) Apply() {
+	m.optimizer.Update(filterEmptyParams(m.net.Params()))
+	m.trainCount++
 }
 
 func (m *Model) ParamCount() uint64 {

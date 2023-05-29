@@ -122,8 +122,32 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 }
 
 func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask bool) *tensor.Tensor {
-	// TODO
-	return nil
+	Wq := layer.params.Get("WqH0")
+	Wk := layer.params.Get("WkH0")
+	Wv := layer.params.Get("WvH0")
+	Bq := layer.params.Get("BqH0")
+	Bk := layer.params.Get("BkH0")
+	Bv := layer.params.Get("BvH0")
+	dq := q.Mul(Wq).Add(Bq)
+	dk := k.Mul(Wk).Add(Bk)
+	dv := v.Mul(Wv).Add(Bv)
+	a := dq.Mul(dk.T())
+	a = a.Scale(layer.scale)
+	if mask {
+		rows, cols := a.Dims()
+		data := make([]float64, rows*cols)
+		for i := 0; i < rows; i++ {
+			for j := 0; j <= i; j++ {
+				data[i*cols+j] = 1
+			}
+			for j := i + 1; j < cols; j++ {
+				data[i*cols+j] = -1e9
+			}
+		}
+		a = a.MulElem(tensor.New(data, rows, cols))
+	}
+	a = m.Softmax(a, 1)
+	return a.Mul(dv)
 }
 
 func (layer *SelfAttention) Args() map[string]*mat.VecDense {
