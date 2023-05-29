@@ -147,3 +147,19 @@ func (t *Tensor) Stack(t2 *Tensor) *Tensor {
 	}
 	return &Tensor{op: op, data: op.f()}
 }
+
+func (t *Tensor) MeanAxis(axis int) *Tensor {
+	op := &meanAxis{
+		a:    t,
+		axis: axis,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
+
+func (t *Tensor) VarianceAxis(axis int) *Tensor {
+	op := &varianceAxis{
+		a:    t,
+		axis: axis,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
