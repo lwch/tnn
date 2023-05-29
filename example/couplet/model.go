@@ -16,6 +16,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/lwch/runtime"
+	m "github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
@@ -28,13 +29,13 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 2 // 16个float64表示一个字向量
+const embeddingDim = 8 // 16个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
-const head = 1
+const head = 4
 const batchSize = 2
 const epoch = 1000
 const lr = 0.01
-const transformerSize = 2
+const transformerSize = 1
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
@@ -295,6 +296,7 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
+	y = m.Softmax(y, 1)
 	return y
 }
 
