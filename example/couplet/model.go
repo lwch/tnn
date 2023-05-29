@@ -265,7 +265,9 @@ func initModel(vocabSize int) {
 		addTransformer(init)
 	}
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(vocabSize, init))
+	layers = append(layers, layer.NewDense(embeddingDim, init))
+	layers = append(layers, activation.NewReLU())
+	layers = append(layers, layer.NewDense(1, init))
 }
 
 var dropout = layer.NewDropout(0.5)
@@ -294,7 +296,9 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 		y, i = forwardTransformer(i, x, y, train)
 	}
 	y = layers[i].Forward(y, train)   // relu
-	y = layers[i+1].Forward(y, train) // output
+	y = layers[i+1].Forward(y, train) // dense
+	y = layers[i+2].Forward(y, train) // relu
+	y = layers[i+3].Forward(y, train) // output
 	return y
 }
 
