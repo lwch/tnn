@@ -23,9 +23,9 @@ func (op *sqrt) f() *mat.Dense {
 }
 
 func (op *sqrt) df(grad *Tensor) {
-	sqrt := sqrtDense(grad.Value())
+	sqrt := sqrtDense(op.a.Value())
 	sqrt.Scale(2, sqrt)
-	delta := FromDense(sqrt).Inv()
+	delta := grad.DivElem(FromDense(sqrt))
 	op.a.AddGrad(delta.Value())
 	op.a.Backward(delta)
 }

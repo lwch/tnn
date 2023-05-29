@@ -8,7 +8,8 @@ import (
 )
 
 func TestSqrt(t *testing.T) {
-	x := New([]float64{1, 2, 3, 4}, 2, 2)
+	x := New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
+	x.requireGrad = true
 	y := x.Sqrt()
 	fmt.Println(mat.Formatted(y.Value()))
 	y.Backward(Ones(y.Dims()))
