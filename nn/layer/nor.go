@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/tensor"
 )
@@ -24,18 +23,12 @@ func LoadNor(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) L
 }
 
 func (layer *Nor) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
-	mean := math.Mean(input)
-	std := math.Var(input)
-	rows, cols := input.Dims()
-	means := tensor.New(nil, rows, cols)
-	stds := tensor.New(nil, rows, cols)
-	eps := tensor.New(nil, rows, cols)
+	mean := input.MeanAxis(1)
+	std := input.VarianceAxis(1)
+	rows, _ := input.Dims()
+	eps := tensor.New(nil, rows, 1)
 	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			means.Set(i, j, mean[i])
-			stds.Set(i, j, std[i])
-			eps.Set(i, j, 1e-9)
-		}
+		eps.Set(i, 0, 1e-9)
 	}
-	return input.Sub(means).DivElem(stds.Add(eps).Sqrt())
+	return input.Sub(mean).DivElem(std.Add(eps).Sqrt())
 }

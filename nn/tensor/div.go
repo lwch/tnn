@@ -64,6 +64,7 @@ func (op *divElem) df(grad *Tensor) {
 	}
 	op.a.AddGrad(da)
 	op.a.Backward(FromDense(da))
+
 	db := new(mat.Dense)
 	db.Scale(-1, grad.Value())
 	db.MulElem(db, op.a.Value())
