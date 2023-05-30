@@ -14,8 +14,7 @@ func Sigmoid(x *tensor.Tensor) *tensor.Tensor {
 func Softmax(x *tensor.Tensor, axis int) *tensor.Tensor {
 	max := x.MaxAxis(axis)
 	exp := x.Sub(max).Exp()
-	expValue := tensor.FromDense(exp.Value()) // 截断反向传播
-	return expValue.DivElem(expValue.SumAxis(axis))
+	return exp.DivElem(exp.SumAxis(axis))
 }
 
 // LogSoftmax x - max(x) - log(sum(exp(x - max(x))))
