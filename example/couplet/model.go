@@ -270,8 +270,8 @@ func addTransformer(init initializer.Initializer) {
 
 func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
-	layers = append(layers, layer.NewDense(paddingIdx, init)) // x降维
-	layers = append(layers, layer.NewDense(paddingIdx, init)) // y降维
+	layers = append(layers, layer.NewDense(paddingSize, init)) // x降维
+	layers = append(layers, layer.NewDense(paddingSize, init)) // y降维
 	for i := 0; i < transformerSize; i++ {
 		addTransformer(init)
 	}
