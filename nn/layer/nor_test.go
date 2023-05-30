@@ -14,6 +14,6 @@ func TestNor(t *testing.T) {
 	layer := NewNor()
 	y := layer.Forward(x, false)
 	fmt.Println(mat.Formatted(y.Value()))
-	y.Backward(tensor.Ones(y.Dims()))
+	y.Backward(tensor.New([]float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6}, 2, 3))
 	fmt.Println(mat.Formatted(x.Grad().Value()))
 }

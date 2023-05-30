@@ -23,12 +23,12 @@ func LoadNor(name string, params map[string]*pb.Dense, _ map[string]*pb.Dense) L
 }
 
 func (layer *Nor) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
-	mean := input.MeanAxis(1)
-	std := input.VarianceAxis(1, false)
-	rows, _ := input.Dims()
-	eps := tensor.New(nil, rows, 1)
-	for i := 0; i < rows; i++ {
-		eps.Set(i, 0, 1e-9)
+	mean := input.MeanAxis(0)
+	std := input.VarianceAxis(0, false)
+	_, cols := input.Dims()
+	eps := tensor.New(nil, 1, cols)
+	for i := 0; i < cols; i++ {
+		eps.Set(0, i, 1e-9)
 	}
 	return input.Sub(mean).DivElem(std.Add(eps).Sqrt())
 }
