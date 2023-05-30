@@ -257,19 +257,19 @@ func zeroGrads(paramList []*params.Params) {
 }
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize/2, 1, 1, init))
+	layers = append(layers, layer.NewSelfAttention(paddingSize/4, 1, 1, init))
 	layers = append(layers, layer.NewNor())
-	layers = append(layers, layer.NewDense(paddingSize, init))
-	layers = append(layers, activation.NewReLU())
 	layers = append(layers, layer.NewDense(paddingSize/2, init))
+	layers = append(layers, activation.NewReLU())
+	layers = append(layers, layer.NewDense(paddingSize/4, init))
 	layers = append(layers, layer.NewNor())
 }
 
 func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
-	layers = append(layers, layer.NewDense(paddingSize/2, init)) // x降维
+	layers = append(layers, layer.NewDense(paddingSize/4, init)) // x降维
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(paddingSize/2, init)) // y降维
+	layers = append(layers, layer.NewDense(paddingSize/4, init)) // y降维
 	layers = append(layers, activation.NewReLU())
 	for i := 0; i < transformerSize; i++ {
 		addTransformer(init)
