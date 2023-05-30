@@ -7,26 +7,22 @@ import (
 )
 
 type exp struct {
-	a *Tensor
-}
-
-func (op *exp) expValue() *mat.Dense {
-	var value mat.Dense
-	value.Apply(func(i, j int, v float64) float64 {
-		return math.Exp(v)
-	}, op.a.Value())
-	return &value
+	a     *Tensor
+	value mat.Dense
 }
 
 func (op *exp) f() *mat.Dense {
-	return op.expValue()
+	op.value.Apply(func(i, j int, v float64) float64 {
+		return math.Exp(v)
+	}, op.a.Value())
+	return &op.value
 }
 
 func (op *exp) df(grad *Tensor) {
-	delta := op.expValue()
-	delta.MulElem(grad.Value(), delta)
-	op.a.AddGrad(delta)
-	op.a.Backward(FromDense(delta))
+	var delta mat.Dense
+	delta.MulElem(grad.Value(), &op.value)
+	op.a.AddGrad(&delta)
+	op.a.Backward(FromDense(&delta))
 }
 
 func (op *exp) ZeroGrad() {
