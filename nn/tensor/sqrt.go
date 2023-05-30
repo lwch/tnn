@@ -7,27 +7,24 @@ import (
 )
 
 type sqrt struct {
-	a *Tensor
-}
-
-func sqrtDense(x *mat.Dense) *mat.Dense {
-	var value mat.Dense
-	value.Apply(func(i, j int, v float64) float64 {
-		return math.Sqrt(v)
-	}, x)
-	return &value
+	a      *Tensor
+	value  mat.Dense
+	value2 mat.Dense
 }
 
 func (op *sqrt) f() *mat.Dense {
-	return sqrtDense(op.a.Value())
+	op.value.Apply(func(i, j int, v float64) float64 {
+		return math.Sqrt(v)
+	}, op.a.Value())
+	op.value2.Scale(2, &op.value)
+	return &op.value
 }
 
 func (op *sqrt) df(grad *Tensor) {
-	sqrt := sqrtDense(op.a.Value())
-	sqrt.Scale(2, sqrt)
-	delta := grad.DivElem(FromDense(sqrt))
-	op.a.AddGrad(delta.Value())
-	op.a.Backward(delta)
+	var delta mat.Dense
+	delta.DivElem(grad.Value(), &op.value2)
+	op.a.AddGrad(&delta)
+	op.a.Backward(FromDense(&delta))
 }
 
 func (op *sqrt) ZeroGrad() {
