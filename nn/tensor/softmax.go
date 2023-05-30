@@ -52,3 +52,7 @@ func (op *softmax) df(grad *Tensor) {
 func (op *softmax) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *softmax) needGrad() bool {
+	return op.a.needGrad()
+}

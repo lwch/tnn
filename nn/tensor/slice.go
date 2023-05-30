@@ -28,3 +28,7 @@ func (op *slice) df(grad *Tensor) {
 func (op *slice) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *slice) needGrad() bool {
+	return op.a.needGrad()
+}

@@ -5,7 +5,6 @@ import (
 	"math"
 	"testing"
 
-	m "github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
 	"gonum.org/v1/gonum/mat"
@@ -70,7 +69,7 @@ func TestSelfAttentionRun(t *testing.T) {
 	score1.SetRequireGrad(true)
 	score2 := score1.Scale(1 / math.Sqrt(float64(3)))
 	score2.SetRequireGrad(true)
-	score3 := m.Softmax(score2, 1)
+	score3 := score2.Softmax(1)
 	score3.SetRequireGrad(true)
 	z := score3.Mul(v)
 	z.Backward(tensor.Ones(z.Dims()))

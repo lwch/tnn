@@ -24,3 +24,7 @@ func (op *transpose) df(grad *Tensor) {
 func (op *transpose) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *transpose) needGrad() bool {
+	return op.a.needGrad()
+}

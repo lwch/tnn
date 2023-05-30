@@ -57,3 +57,7 @@ func (op *meanAxis) df(grad *Tensor) {
 func (op *meanAxis) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *meanAxis) needGrad() bool {
+	return op.a.needGrad()
+}

@@ -30,3 +30,7 @@ func (op *sqrt) df(grad *Tensor) {
 func (op *sqrt) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *sqrt) needGrad() bool {
+	return op.a.needGrad()
+}

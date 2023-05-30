@@ -41,29 +41,40 @@ func (op *add) f() *mat.Dense {
 }
 
 func (op *add) df(grad *Tensor) {
-	op.a.AddGrad(grad.Value())
-	op.a.Backward(grad)
-	gRows, gCols := grad.Dims()
-	bRows, bCols := op.b.Dims()
-	db := grad.Value()
-	if gRows != bRows {
-		sum := mat.NewVecDense(gCols, nil)
-		for i := 0; i < gRows; i++ {
-			sum.AddVec(sum, grad.Value().RowView(i))
-		}
-		db = mat.NewDense(bRows, bCols, dupVec(sum))
-	} else if gCols != bCols {
-		sum := mat.NewVecDense(gRows, nil)
-		for i := 0; i < gCols; i++ {
-			sum.AddVec(sum, grad.Value().ColView(i))
-		}
-		db = mat.NewDense(bRows, bCols, dupVec(sum))
+	if op.a.needGrad() {
+		op.a.AddGrad(grad.Value())
+		op.a.Backward(grad)
 	}
-	op.b.AddGrad(db)
-	op.b.Backward(FromDense(db))
+	if op.b.needGrad() {
+		gRows, gCols := grad.Dims()
+		bRows, bCols := op.b.Dims()
+		db := grad.Value()
+		if gRows != bRows {
+			sum := mat.NewVecDense(gCols, nil)
+			for i := 0; i < gRows; i++ {
+				sum.AddVec(sum, grad.Value().RowView(i))
+			}
+			db = mat.NewDense(bRows, bCols, dupVec(sum))
+		} else if gCols != bCols {
+			sum := mat.NewVecDense(gRows, nil)
+			for i := 0; i < gCols; i++ {
+				sum.AddVec(sum, grad.Value().ColView(i))
+			}
+			db = mat.NewDense(bRows, bCols, dupVec(sum))
+		}
+		op.b.AddGrad(db)
+		op.b.Backward(FromDense(db))
+	}
 }
 
 func (op *add) ZeroGrad() {
 	op.a.ZeroGrad()
 	op.b.ZeroGrad()
+}
+
+func (op *add) needGrad() bool {
+	if op.a.needGrad() {
+		return true
+	}
+	return op.b.needGrad()
 }

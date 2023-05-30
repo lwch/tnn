@@ -29,6 +29,13 @@ func (op *mul) ZeroGrad() {
 	op.b.ZeroGrad()
 }
 
+func (op *mul) needGrad() bool {
+	if op.a.needGrad() {
+		return true
+	}
+	return op.b.needGrad()
+}
+
 type mulElem struct {
 	a, b *Tensor
 }
@@ -52,4 +59,11 @@ func (op *mulElem) df(grad *Tensor) {
 func (op *mulElem) ZeroGrad() {
 	op.a.ZeroGrad()
 	op.b.ZeroGrad()
+}
+
+func (op *mulElem) needGrad() bool {
+	if op.a.needGrad() {
+		return true
+	}
+	return op.b.needGrad()
 }

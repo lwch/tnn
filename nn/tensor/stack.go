@@ -31,3 +31,10 @@ func (op *stack) df(grad *Tensor) {
 func (op *stack) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *stack) needGrad() bool {
+	if op.a.needGrad() {
+		return true
+	}
+	return op.b.needGrad()
+}

@@ -28,3 +28,7 @@ func (op *exp) df(grad *Tensor) {
 func (op *exp) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *exp) needGrad() bool {
+	return op.a.needGrad()
+}

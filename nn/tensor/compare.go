@@ -53,3 +53,7 @@ func (op *maxAxis) df(grad *Tensor) {
 func (op *maxAxis) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *maxAxis) needGrad() bool {
+	return op.a.needGrad()
+}

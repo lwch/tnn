@@ -36,3 +36,7 @@ func (op *varianceAxis) df(grad *Tensor) {
 func (op *varianceAxis) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *varianceAxis) needGrad() bool {
+	return op.a.needGrad()
+}

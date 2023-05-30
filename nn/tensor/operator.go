@@ -5,6 +5,7 @@ import "gonum.org/v1/gonum/mat"
 type Operator interface {
 	f() *mat.Dense
 	df(grad *Tensor)
+	needGrad() bool
 	ZeroGrad()
 }
 

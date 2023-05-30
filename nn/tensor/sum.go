@@ -24,6 +24,10 @@ func (op *sum) ZeroGrad() {
 	op.a.ZeroGrad()
 }
 
+func (op *sum) needGrad() bool {
+	return op.a.needGrad()
+}
+
 type sumAxis struct {
 	a    *Tensor
 	axis int
@@ -72,4 +76,8 @@ func (op *sumAxis) df(grad *Tensor) {
 
 func (op *sumAxis) ZeroGrad() {
 	op.a.ZeroGrad()
+}
+
+func (op *sumAxis) needGrad() bool {
+	return op.a.needGrad()
 }

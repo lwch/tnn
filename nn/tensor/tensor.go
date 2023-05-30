@@ -78,25 +78,6 @@ func (t *Tensor) ZeroGrad() {
 	}
 }
 
-func (t *Tensor) CutGrad(min, max float64) {
-	t.gradM.Lock()
-	defer t.gradM.Unlock()
-	if t.grad == nil {
-		return
-	}
-	var grad mat.Dense
-	grad.Apply(func(i, j int, v float64) float64 {
-		if v < min {
-			return min
-		}
-		if v > max {
-			return max
-		}
-		return v
-	}, t.grad.Value())
-	t.grad.data = &grad
-}
-
 func (t *Tensor) Grad() *Tensor {
 	if t.grad == nil {
 		rows, cols := t.data.Dims()
@@ -131,4 +112,11 @@ func (t *Tensor) Zero() {
 
 func (t *Tensor) Set(i, j int, v float64) {
 	t.data.Set(i, j, v)
+}
+
+func (t *Tensor) needGrad() bool {
+	if t.op == nil {
+		return t.requireGrad
+	}
+	return t.op.needGrad()
 }

@@ -94,3 +94,10 @@ func (op *divElem) ZeroGrad() {
 	op.a.ZeroGrad()
 	op.b.ZeroGrad()
 }
+
+func (op *divElem) needGrad() bool {
+	if op.a.needGrad() {
+		return true
+	}
+	return op.b.needGrad()
+}

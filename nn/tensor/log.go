@@ -40,3 +40,7 @@ func (op *log) df(grad *Tensor) {
 func (op *log) ZeroGrad() {
 	op.a.ZeroGrad()
 }
+
+func (op *log) needGrad() bool {
+	return op.a.needGrad()
+}

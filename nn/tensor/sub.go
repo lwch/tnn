@@ -74,3 +74,10 @@ func (op *sub) ZeroGrad() {
 	op.a.ZeroGrad()
 	op.b.ZeroGrad()
 }
+
+func (op *sub) needGrad() bool {
+	if op.a.needGrad() {
+		return true
+	}
+	return op.b.needGrad()
+}
