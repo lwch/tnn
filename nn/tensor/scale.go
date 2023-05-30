@@ -16,6 +16,9 @@ func (op *scale) f() *mat.Dense {
 }
 
 func (op *scale) df(grad *Tensor) {
+	if !op.b.needGrad() {
+		return
+	}
 	var delta mat.Dense
 	delta.Scale(op.a, grad.Value())
 	op.b.AddGrad(&delta)

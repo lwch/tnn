@@ -14,6 +14,9 @@ func (op *sum) f() *mat.Dense {
 }
 
 func (op *sum) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	rows, cols := op.a.Value().Dims()
 	delta := Numbers(rows, cols, grad.Value().At(0, 0))
 	op.a.AddGrad(delta.Value())
@@ -54,6 +57,9 @@ func (op *sumAxis) f() *mat.Dense {
 }
 
 func (op *sumAxis) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	rows, cols := op.a.Value().Dims()
 	delta := mat.NewDense(rows, cols, nil)
 	switch op.axis {
