@@ -7,7 +7,9 @@ import (
 )
 
 type log struct {
-	a *Tensor
+	a   *Tensor
+	log mat.Dense
+	inv mat.Dense
 }
 
 func (op *log) logValue() *mat.Dense {
@@ -19,15 +21,18 @@ func (op *log) logValue() *mat.Dense {
 }
 
 func (op *log) f() *mat.Dense {
-	return op.logValue()
+	op.log.Apply(func(i, j int, v float64) float64 {
+		return math.Log(v)
+	}, op.a.Value())
+	op.inv.Apply(func(i, j int, v float64) float64 {
+		return 1 / v
+	}, op.a.Value())
+	return &op.log
 }
 
 func (op *log) df(grad *Tensor) {
 	var delta mat.Dense
-	delta.Apply(func(i, j int, v float64) float64 {
-		return 1 / v
-	}, op.a.Value())
-	delta.MulElem(grad.Value(), &delta)
+	delta.MulElem(grad.Value(), &op.inv)
 	op.a.AddGrad(&delta)
 	op.a.Backward(FromDense(&delta))
 }
