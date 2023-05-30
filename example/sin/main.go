@@ -50,7 +50,8 @@ func main() {
 			for {
 				i := <-ch
 				input, output := getBatch(i * batchSize * times)
-				m.Train(input, output)
+				pred := m.Forward(input, true)
+				m.Backward(pred, output)
 				trained <- struct{}{}
 			}
 		}()
@@ -66,7 +67,9 @@ func main() {
 	for i := 0; i < epoch; i++ {
 		input, output := getBatch(i * batchSize * times)
 		<-trained
-		pred := m.Predict(input)
+		pred := m.Forward(input, false)
+		m.Apply()
+		pred.ZeroGrad()
 		real = append(real, plotter.XY{X: float64(i), Y: output.Value().At(0, 0)})
 		predict = append(predict, plotter.XY{X: float64(i), Y: pred.Value().At(0, 0)})
 		if i%10 == 0 {
@@ -114,7 +117,7 @@ func getBatch(i int) (*tensor.Tensor, *tensor.Tensor) {
 }
 
 func accuracy(m *model.Model, input, output *tensor.Tensor) float64 {
-	predict := m.Predict(input)
+	predict := m.Forward(input, false)
 	var correct float64
 	for i := 0; i < batchSize; i++ {
 		diff := 1 - math.Abs(output.Value().At(i, 0)-predict.Value().At(i, 0))
