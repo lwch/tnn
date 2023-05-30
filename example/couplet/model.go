@@ -244,6 +244,11 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 func avgLoss(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embedding [][]float64) float64 {
 	sumLoss = 0
 
+	idx := make([]int, len(trainY)*paddingSize)
+	for i := 0; i < len(idx); i++ {
+		idx[i] = i
+	}
+
 	ch := make(chan []int)
 	var wg sync.WaitGroup
 	wg.Add(rt.NumCPU())
@@ -256,7 +261,7 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embedding 
 
 	var size float64
 	var list []int
-	for i := range trainX {
+	for _, i := range idx {
 		list = append(list, i)
 		if len(list) < batchSize {
 			continue
