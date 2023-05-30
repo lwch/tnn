@@ -296,7 +296,6 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
-	y = y.Softmax(1)
 	return y
 }
 
