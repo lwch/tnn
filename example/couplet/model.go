@@ -33,7 +33,7 @@ const head = 1
 const batchSize = 8
 const epoch = 1000
 const lr = 0.01
-const transformerSize = 1
+const transformerSize = 2
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
