@@ -19,13 +19,13 @@ import (
 )
 
 const lr = 0.001
-const epoch = 4000
+const epoch = 1000
 const batchSize = 16
 const seqSize = 8
 const dims = 8
 const heads = 4
 const unitSize = seqSize * dims
-const transformerSize = 2
+const transformerSize = 1
 
 func main() {
 	// f, err := os.Create("cpu.pprof")
@@ -135,10 +135,10 @@ func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, in
 }
 
 func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
-	var y *tensor.Tensor
+	y := x
 	i := 0
 	for j := 0; j < transformerSize; j++ {
-		y, i = forwardTransformer(i, x, train)
+		y, i = forwardTransformer(i, y, train)
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
