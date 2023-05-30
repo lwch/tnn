@@ -143,7 +143,7 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 			} else {
 				dz = paddingIdx
 			}
-			xTrain, zTrain := build(dx, dy, dz, embedding)
+			xTrain, zTrain := build(dx, dy, dz, vocabs, embedding)
 			x = append(x, xTrain...)
 			y = append(y, zTrain...)
 		}
@@ -166,7 +166,7 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimizer,
 	trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	idx := make([]int, len(trainY)*paddingSize)
-	for i := range trainX {
+	for i := 0; i < len(idx); i++ {
 		idx[i] = i
 	}
 	rand.Shuffle(len(idx), func(i, j int) {
@@ -229,7 +229,7 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 			} else {
 				dz = paddingIdx
 			}
-			xTrain, zTrain := build(dx, dy, dz, embedding)
+			xTrain, zTrain := build(dx, dy, dz, vocabs, embedding)
 			x = append(x, xTrain...)
 			y = append(y, zTrain...)
 		}

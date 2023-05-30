@@ -134,7 +134,8 @@ func encode(vocabs []string, idx []int) string {
 
 const paddingIdx = 1000000
 
-func build(x, y []int, z int, embedding [][]float64) ([]float64, []float64) {
+func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64, []float64) {
+	// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
 	dx := make([]float64, 0, unitSize*2)
 	for _, v := range x {
 		dx = append(dx, embedding[v]...)
