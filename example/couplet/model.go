@@ -281,7 +281,7 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	srcY := y
 	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
 	y = y.Add(srcY)
-	selfOut := y.Scale(1e-8)
+	selfOut := y.Scale(1e-10)
 	fmt.Println(mat.Formatted(selfOut.Value()))
 	// if train {
 	// 	y = dropout.Forward(y, true)
