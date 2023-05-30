@@ -272,8 +272,9 @@ func initModel(vocabSize int) {
 var dropout = layer.NewDropout(0.5)
 
 func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	y = layers[i].(*layer.SelfAttention).ForwardQKV(y, x, x, true, train)
-	y = y.Add(x)
+	srcY := y
+	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
+	y = y.Add(srcY)
 	// if train {
 	// 	y = dropout.Forward(y, true)
 	// }
