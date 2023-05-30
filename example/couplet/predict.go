@@ -52,7 +52,12 @@ func lookup(prob []float64) int {
 		kv[prob[i]] = append(kv[prob[i]], i)
 	}
 	sort.Float64s(prob)
-	fmt.Println(kv[prob[len(prob)-1]], prob[len(prob)-1])
+	left := make(map[float64][]int)
+	for i := 0; i < 3; i++ {
+		idx := len(prob) - i - 1
+		left[prob[idx]] = kv[prob[idx]]
+	}
+	fmt.Println(left)
 	return idx
 }
 
