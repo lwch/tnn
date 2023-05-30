@@ -123,7 +123,7 @@ func init() {
 
 func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
 	// y := layers[i].Forward(x, train) // self attention
-	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, false, train) // self attention
+	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, true, train) // self attention
 	y = y.Add(x)
 	selfOut := layers[i+1].Forward(y, train) // nor
 	y = layers[i+2].Forward(selfOut, train)  // dense

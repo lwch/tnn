@@ -100,14 +100,11 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 			rows, cols := a.Dims()
 			data := make([]float64, rows*cols)
 			for i := 0; i < rows; i++ {
-				for j := 0; j <= i; j++ {
-					data[i*cols+j] = 1
-				}
 				for j := i + 1; j < cols; j++ {
 					data[i*cols+j] = -1e9
 				}
 			}
-			a = a.MulElem(tensor.New(data, rows, cols))
+			a = a.Add(tensor.New(data, rows, cols))
 		}
 		a = a.Softmax(1)
 		a = a.Mul(dv)
@@ -136,14 +133,11 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask bool)
 		rows, cols := a.Dims()
 		data := make([]float64, rows*cols)
 		for i := 0; i < rows; i++ {
-			for j := 0; j <= i; j++ {
-				data[i*cols+j] = 1
-			}
 			for j := i + 1; j < cols; j++ {
 				data[i*cols+j] = -1e9
 			}
 		}
-		a = a.MulElem(tensor.New(data, rows, cols))
+		a = a.Add(tensor.New(data, rows, cols))
 	}
 	a = a.Softmax(1)
 	return a.Mul(dv)
