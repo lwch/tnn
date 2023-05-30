@@ -291,7 +291,7 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	y = layers[i+2].Forward(y, train)       // relu
 	y = layers[i+3].Forward(y, train)       // dense
 	y = y.Add(selfOut)
-	y = y.Scale(1e-8)
+	y = y.Scale(1e-9)
 	fmt.Println(mat.Formatted(y.Value()))
 	// if train {
 	// 	y = dropout.Forward(y, true)
