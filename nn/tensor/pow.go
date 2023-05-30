@@ -17,9 +17,11 @@ func (op *pow) f() *mat.Dense {
 	op.value.Apply(func(i, j int, v float64) float64 {
 		return math.Pow(v, op.b)
 	}, op.a.Value())
-	op.gradValue.Apply(func(i, j int, v float64) float64 {
-		return op.b * math.Pow(v, op.b-1)
+	var delta mat.Dense
+	delta.Apply(func(i, j int, v float64) float64 {
+		return math.Pow(v, op.b-1)
 	}, op.a.Value())
+	op.gradValue.Scale(op.b, &delta)
 	return &op.value
 }
 
