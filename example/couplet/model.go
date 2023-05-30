@@ -132,9 +132,9 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 			xOut = append(xOut, dup(trainY[i]))
 		}
 		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		fmt.Println(mat.Formatted(x.Value()))
-		fmt.Println(mat.Formatted(y.Value()))
-		fmt.Println(mat.Formatted(z.Value()))
+		fmt.Println(mat.Formatted(x.Value(), mat.Squeeze()))
+		fmt.Println(mat.Formatted(y.Value(), mat.Squeeze()))
+		fmt.Println(mat.Formatted(z.Value(), mat.Squeeze()))
 		pred := forward(x, y, true)
 		grad := loss.Loss(pred, z)
 		grad.Backward(grad)
