@@ -1,7 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/lwch/runtime"
 	"github.com/spf13/cobra"
@@ -22,6 +26,15 @@ var predictCmd = cobra.Command{
 	Run:  runPredict,
 }
 
+var cutCmd = cobra.Command{
+	Use:  "cut [size]",
+	Args: cobra.MinimumNArgs(1),
+	Run:  runCut,
+}
+
+const trainXDir = "train/in.txt"
+const trainYDir = "train/out.txt"
+
 func main() {
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		download()
@@ -29,6 +42,7 @@ func main() {
 
 	rootCmd.AddCommand(&trainCmd)
 	rootCmd.AddCommand(&predictCmd)
+	rootCmd.AddCommand(&cutCmd)
 
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	runtime.Assert(rootCmd.Execute())
@@ -40,8 +54,8 @@ func runTrain(*cobra.Command, []string) {
 		buildEmbedding(len(idx2vocab))
 	}
 	embedding := loadEmbedding(len(idx2vocab))
-	trainX := loadData("train/in2.txt", vocab2idx)
-	trainY := loadData("train/out2.txt", vocab2idx)
+	trainX := loadData(trainXDir, vocab2idx, -1)
+	trainY := loadData(trainYDir, vocab2idx, -1)
 	train(trainX, trainY, idx2vocab, embedding)
 }
 
@@ -49,4 +63,43 @@ func runPredict(_ *cobra.Command, args []string) {
 	idx2vocab, vocab2idx := loadVocab()
 	embedding := loadEmbedding(len(idx2vocab))
 	predict(args[0], idx2vocab, vocab2idx, embedding)
+}
+
+func runCut(_ *cobra.Command, args []string) {
+	size, err := strconv.ParseInt(args[0], 10, 64)
+	runtime.Assert(err)
+	idx2Vocab, vocab2idx := loadVocab()
+	xData := loadData(trainXDir, vocab2idx, int(size))
+	yData := loadData(trainYDir, vocab2idx, int(size))
+	// 重建词汇表
+	rebuild := make([]string, 0, size*10)
+	uniq := make(map[string]struct{})
+	build := func(data [][]int, dir string) {
+		f, err := os.Create(filepath.Join(dataDir, dir))
+		runtime.Assert(err)
+		defer f.Close()
+		for _, tks := range data {
+			tokens := make([]string, 0, len(tks))
+			for _, i := range tks {
+				tk := idx2Vocab[i]
+				if tk == "<s>" {
+					continue
+				}
+				if tk == "</s>" {
+					continue
+				}
+				if _, ok := uniq[tk]; !ok {
+					uniq[tk] = struct{}{}
+					rebuild = append(rebuild, tk)
+				}
+				tokens = append(tokens, tk)
+			}
+			fmt.Fprintln(f, strings.Join(tokens, " "))
+		}
+	}
+	build(xData, trainXDir)
+	build(yData, trainYDir)
+	rebuild = append([]string{"<s>", "</s>"}, rebuild...)
+	err = os.WriteFile(filepath.Join(dataDir, "vocabs"), []byte(strings.Join(rebuild, "\n")), 0644)
+	runtime.Assert(err)
 }

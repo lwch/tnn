@@ -27,7 +27,7 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 2 // 16个float64表示一个字向量
+const embeddingDim = 16 // 16个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
 const head = 1
 const batchSize = 8
@@ -257,20 +257,16 @@ func zeroGrads(paramList []*params.Params) {
 }
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize/4, 1, 1, init))
+	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, head, init))
 	layers = append(layers, layer.NewNor())
-	layers = append(layers, layer.NewDense(paddingSize/2, init))
+	layers = append(layers, layer.NewDense(unitSize*4, init))
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(paddingSize/4, init))
+	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, layer.NewNor())
 }
 
 func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
-	layers = append(layers, layer.NewDense(paddingSize/4, init)) // x降维
-	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(paddingSize/4, init)) // y降维
-	layers = append(layers, activation.NewReLU())
 	for i := 0; i < transformerSize; i++ {
 		addTransformer(init)
 	}
@@ -302,11 +298,6 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 
 func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	i := 0
-	x = layers[i].Forward(x, train)   // x降维
-	x = layers[i+1].Forward(x, train) // relu
-	y = layers[i+2].Forward(y, train) // y降维
-	y = layers[i+3].Forward(y, train) // relu
-	i += 4
 	for j := 0; j < transformerSize; j++ {
 		y, i = forwardTransformer(i, x, y, train)
 	}

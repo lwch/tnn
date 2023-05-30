@@ -81,7 +81,7 @@ func loadVocab() ([]string, map[string]int) {
 	return idx2vocab, vocab2idx
 }
 
-func loadData(dir string, idx map[string]int) [][]int {
+func loadData(dir string, idx map[string]int, limit int) [][]int {
 	f, err := os.Open(filepath.Join(dataDir, dir))
 	runtime.Assert(err)
 	defer f.Close()
@@ -101,6 +101,9 @@ func loadData(dir string, idx map[string]int) [][]int {
 		data = append(data, row)
 		if len(row) > max {
 			max = len(row)
+		}
+		if limit > 0 && len(data) >= limit {
+			break
 		}
 	}
 	fmt.Printf("max token size in %s: %d\n", dir, max)
