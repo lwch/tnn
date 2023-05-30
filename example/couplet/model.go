@@ -263,9 +263,9 @@ func zeroGrads(paramList []*params.Params) {
 func addTransformer(init initializer.Initializer) {
 	layers = append(layers, layer.NewSelfAttention(paddingSize/2, 1, 1, init))
 	layers = append(layers, layer.NewNor())
-	layers = append(layers, layer.NewDense(unitSize*2, init))
+	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(unitSize/2, init))
+	layers = append(layers, layer.NewDense(unitSize/4, init))
 	layers = append(layers, layer.NewNor())
 }
 
