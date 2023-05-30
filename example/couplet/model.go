@@ -149,7 +149,7 @@ func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimize
 	})
 
 	workerCount := rt.NumCPU()
-	workerCount = 1
+	// workerCount = 1
 
 	ch := make(chan []int)
 	var wg sync.WaitGroup
