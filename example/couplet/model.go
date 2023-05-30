@@ -258,11 +258,11 @@ func zeroGrads(paramList []*params.Params) {
 
 func addTransformer(init initializer.Initializer) {
 	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, head, init))
-	layers = append(layers, layer.NewNor())
+	// layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize*4, init))
 	layers = append(layers, activation.NewReLU())
 	layers = append(layers, layer.NewDense(unitSize, init))
-	layers = append(layers, layer.NewNor())
+	// layers = append(layers, layer.NewNor())
 }
 
 func initModel(vocabSize int) {
@@ -283,17 +283,17 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	// if train {
 	// 	y = dropout.Forward(y, true)
 	// }
-	selfOut := layers[i+1].Forward(y, train) // nor
+	// selfOut := layers[i+1].Forward(y, train) // nor
 	// y = layers[i+1].Forward(y, train) // nor
-	y = layers[i+2].Forward(selfOut, train) // dense
-	y = layers[i+3].Forward(y, train)       // relu
-	y = layers[i+4].Forward(y, train)       // dense
-	y = y.Add(selfOut)
+	y = layers[i+1].Forward(y, train) // dense
+	y = layers[i+2].Forward(y, train) // relu
+	y = layers[i+3].Forward(y, train) // dense
+	// y = y.Add(selfOut)
 	// if train {
 	// 	y = dropout.Forward(y, true)
 	// }
-	y = layers[i+5].Forward(y, train) // nor
-	return y, i + 6
+	// y = layers[i+5].Forward(y, train) // nor
+	return y, i + 4
 }
 
 func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
