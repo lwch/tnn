@@ -8,6 +8,7 @@ type softmax struct {
 	a     *Tensor
 	axis  int
 	value mat.Dense
+	diff  *mat.Dense
 }
 
 // exp(x) / sum(exp(max(x)))
@@ -15,10 +16,6 @@ func (op *softmax) f() *mat.Dense {
 	max := op.a.MaxAxis(op.axis)
 	exp := op.a.Sub(max).Exp()
 	op.value.CloneFrom(exp.DivElem(exp.SumAxis(op.axis)).Value())
-	return &op.value
-}
-
-func (op *softmax) df(grad *Tensor) {
 	var v mat.Vector
 	switch op.axis {
 	case 0:
@@ -28,23 +25,25 @@ func (op *softmax) df(grad *Tensor) {
 	default:
 		panic("invalid axis")
 	}
-	diff := mat.NewDense(v.Len(), v.Len(), nil)
+	op.diff = mat.NewDense(v.Len(), v.Len(), nil)
 	for i := 0; i < v.Len(); i++ {
 		for j := 0; j < v.Len(); j++ {
 			if i == j {
-				diff.Set(i, j, v.AtVec(i)-v.AtVec(i)*v.AtVec(j))
+				op.diff.Set(i, j, v.AtVec(i)-v.AtVec(i)*v.AtVec(j))
 			} else {
-				diff.Set(i, j, -v.AtVec(i)*v.AtVec(j))
+				op.diff.Set(i, j, -v.AtVec(i)*v.AtVec(j))
 			}
 		}
 	}
+	return &op.value
+}
+
+func (op *softmax) df(grad *Tensor) {
 	var delta mat.Dense
-	// fmt.Println(grad.Dims())
-	// fmt.Println(diff.Dims())
 	if op.axis == 0 {
-		delta.Mul(diff, grad.Value())
+		delta.Mul(op.diff, grad.Value())
 	} else {
-		delta.Mul(grad.Value(), diff)
+		delta.Mul(grad.Value(), op.diff)
 	}
 	op.a.AddGrad(&delta)
 	op.a.Backward(FromDense(&delta))
