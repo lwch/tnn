@@ -24,7 +24,6 @@ import (
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 const modelDir = "./model"
@@ -285,10 +284,9 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	// 	y = dropout.Forward(y, true)
 	// }
 	selfOut := layers[i+1].Forward(y, train) // nor
-	fmt.Println(mat.Formatted(selfOut.Value()))
-	y = layers[i+2].Forward(selfOut, train) // dense
-	y = layers[i+3].Forward(y, train)       // relu
-	y = layers[i+4].Forward(y, train)       // dense
+	y = layers[i+2].Forward(selfOut, train)  // dense
+	y = layers[i+3].Forward(y, train)        // relu
+	y = layers[i+4].Forward(y, train)        // dense
 	y = y.Add(selfOut)
 	// if train {
 	// 	y = dropout.Forward(y, true)
