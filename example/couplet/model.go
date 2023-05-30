@@ -84,15 +84,16 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 		trainEpoch(&cnt, loss, optimizer, trainX, trainY, vocabs, embedding)
 		if i%10 == 0 {
 			list := getParams()
-			var cnt int
-			for _, params := range list {
+			for i, params := range list {
+				var cnt int
 				params.Range(func(_ string, p *tensor.Tensor) {
 					rows, cols := p.Dims()
 					cnt += rows * cols
 				})
+				fmt.Printf("layer %d params: %d\n", i, cnt)
 			}
-			fmt.Printf("param_count=%d, cost=%s, loss=%.05f\n",
-				cnt, time.Since(begin).String(),
+			fmt.Printf("cost=%s, loss=%.05f\n",
+				time.Since(begin).String(),
 				avgLoss(loss, trainX, trainY, vocabs, embedding))
 		}
 		i++
