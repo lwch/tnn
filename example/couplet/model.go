@@ -302,7 +302,7 @@ func addTransformer(init initializer.Initializer) {
 	layers = append(layers, layer.NewSelfAttention(paddingSize*2, embeddingDim, head, init))
 	layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize*4, init))
-	layers = append(layers, activation.NewReLU())
+	layers = append(layers, activation.NewSigmoid())
 	layers = append(layers, layer.NewDense(unitSize, init))
 	layers = append(layers, layer.NewNor())
 }
@@ -312,7 +312,7 @@ func initModel(vocabSize int) {
 	for i := 0; i < transformerSize; i++ {
 		addTransformer(init)
 	}
-	layers = append(layers, activation.NewReLU())
+	layers = append(layers, activation.NewSigmoid())
 	layers = append(layers, layer.NewDense(vocabSize, init))
 }
 
@@ -345,7 +345,6 @@ func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
-	y = y.Softmax(1)
 	return y
 }
 
