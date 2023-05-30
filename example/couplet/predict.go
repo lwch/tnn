@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/model"
@@ -46,12 +47,12 @@ func lookup(prob []float64) int {
 			idx = i
 		}
 	}
-	// kv := make(map[float64][]int)
-	// for i := 0; i < len(prob); i++ {
-	// 	kv[prob[i]] = append(kv[prob[i]], i)
-	// }
-	// sort.Float64s(prob)
-	// fmt.Println(kv[prob[len(prob)-4]])
+	kv := make(map[float64][]int)
+	for i := 0; i < len(prob); i++ {
+		kv[prob[i]] = append(kv[prob[i]], i)
+	}
+	sort.Float64s(prob)
+	fmt.Println(kv[prob[len(prob)-1]], prob[len(prob)-1])
 	return idx
 }
 
