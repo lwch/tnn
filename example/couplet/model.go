@@ -306,9 +306,9 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	i := 0
 	x = layers[i].Forward(x, train)   // x降维
-	x = layers[i].Forward(x, train)   // relu
-	y = layers[i+1].Forward(y, train) // y降维
-	y = layers[i+1].Forward(y, train) // relu
+	x = layers[i+1].Forward(x, train) // relu
+	y = layers[i+2].Forward(y, train) // y降维
+	y = layers[i+3].Forward(y, train) // relu
 	i += 4
 	for j := 0; j < transformerSize; j++ {
 		y, i = forwardTransformer(i, x, y, train)
