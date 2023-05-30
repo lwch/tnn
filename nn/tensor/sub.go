@@ -51,6 +51,7 @@ func (op *sub) df(grad *Tensor) {
 	op.a.Backward(grad)
 	gRows, gCols := grad.Dims()
 	bRows, bCols := op.b.Dims()
+	// TODO: 优化
 	db := grad.Scale(-1)
 	if gRows != bRows {
 		v := mat.NewVecDense(gCols, nil)
