@@ -128,8 +128,8 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 		x := make([]float64, 0, len(idx)*unitSize)
 		y := make([]float64, 0, len(idx)*embeddingDim)
 		for _, idx := range idx {
-			i := math.Floor(float64(idx) / float64(len(trainY)))
-			j := idx % len(trainY)
+			i := math.Floor(float64(idx) / float64(paddingSize))
+			j := idx % paddingSize
 			dx := trainX[int(i)]
 			dy := trainY[int(i)]
 			if j < len(trainY[int(i)]) {
@@ -214,8 +214,8 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 		x := make([]float64, 0, len(idx)*unitSize)
 		y := make([]float64, 0, len(idx)*embeddingDim)
 		for _, idx := range idx {
-			i := math.Floor(float64(idx) / float64(len(trainY)))
-			j := idx % len(trainY)
+			i := math.Floor(float64(idx) / float64(paddingSize))
+			j := idx % paddingSize
 			dx := trainX[int(i)]
 			dy := trainY[int(i)]
 			if j < len(trainY[int(i)]) {
