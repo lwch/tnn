@@ -54,12 +54,14 @@ func (op *sumAxis) df(grad *Tensor) {
 	delta := mat.NewDense(rows, cols, nil)
 	switch op.axis {
 	case 0:
+		row := dupVec(grad.Value().RowView(0).(*mat.VecDense))
 		for i := 0; i < rows; i++ {
-			delta.SetRow(i, dupVec(grad.Value().RowView(0).(*mat.VecDense)))
+			delta.SetRow(i, row)
 		}
 	case 1:
+		col := dupVec(grad.Value().ColView(0).(*mat.VecDense))
 		for i := 0; i < cols; i++ {
-			delta.SetCol(i, dupVec(grad.Value().ColView(0).(*mat.VecDense)))
+			delta.SetCol(i, col)
 		}
 	default:
 		panic("invalid axis")
