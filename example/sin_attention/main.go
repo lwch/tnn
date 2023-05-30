@@ -3,19 +3,14 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
-	rt "runtime"
-	"runtime/pprof"
-	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
-	"github.com/lwch/tnn/nn/model"
-	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
+	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -24,88 +19,62 @@ import (
 )
 
 const lr = 0.001
-const epoch = 300
-const batchSize = 10
+const epoch = 4000
+const batchSize = 16
 const seqSize = 8
 const dims = 8
 const heads = 4
 const unitSize = seqSize * dims
-const transformerSize = 1
+const transformerSize = 2
 
 func main() {
-	init := initializer.NewXavierUniform(1)
-	f, err := os.Create("cpu.pprof")
-	runtime.Assert(err)
-	defer f.Close()
-	runtime.Assert(pprof.StartCPUProfile(f))
-	go func() {
-		time.Sleep(time.Minute)
-		pprof.StopCPUProfile()
-		f.Close()
-		os.Exit(0)
-	}()
-	defer pprof.StopCPUProfile()
+	// f, err := os.Create("cpu.pprof")
+	// runtime.Assert(err)
+	// defer f.Close()
+	// runtime.Assert(pprof.StartCPUProfile(f))
+	// go func() {
+	// 	time.Sleep(time.Minute)
+	// 	pprof.StopCPUProfile()
+	// 	f.Close()
+	// 	os.Exit(0)
+	// }()
+	// defer pprof.StopCPUProfile()
 
-	var net net.Net
-	for i := 0; i < transformerSize; i++ {
-		// self attention
-		net.Add(layer.NewSelfAttention(seqSize, dims, heads, init))
-		net.Add(layer.NewNor())
-		// FNN
-		net.Add(layer.NewDense(unitSize, init))
-		net.Add(activation.NewReLU())
-		net.Add(layer.NewDense(unitSize, init))
-		net.Add(layer.NewNor())
-	}
-	// 回归
-	net.Add(activation.NewReLU())
-	net.Add(layer.NewDense(1, init))
-
-	loss := loss.NewSoftmax()
+	loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
-
-	m := model.New(&net, loss, optimizer)
 
 	p := plot.New()
 	p.Title.Text = "predict sin(x)"
 	p.X.Label.Text = "epoch"
 	p.Y.Label.Text = "value"
 
-	ch := make(chan int)
-	trained := make(chan struct{})
-
-	for i := 0; i < rt.NumCPU(); i++ {
-		go func() {
-			for {
-				i := <-ch
-				input, output := getBatch(i * batchSize * unitSize)
-				pred := m.Forward(input, true)
-				m.Backward(pred, output)
-				trained <- struct{}{}
-			}
-		}()
-	}
-
-	go func() {
-		for i := 0; i < epoch; i++ {
-			ch <- i
-		}
-	}()
-
 	var real, predict plotter.XYs
+	var points []float64
+	i := 0.
+	for {
+		points = append(points, math.Sin(i))
+		i += 0.001
+		if i > 2*math.Pi {
+			break
+		}
+	}
 	for i := 0; i < epoch; i++ {
-		input, output := getBatch(i * batchSize * unitSize)
-		<-trained
-		pred := m.Forward(input, false)
-		real = append(real, plotter.XY{X: float64(i), Y: output.Value().At(0, 0)})
-		predict = append(predict, plotter.XY{X: float64(i), Y: pred.Value().At(0, 0)})
+		input, output := getBatch(points, i+batchSize)
+		pred := forward(input, true)
+		grad := loss.Loss(pred, output)
+		grad.ZeroGrad()
+		grad.Backward(grad)
+		paramList := getParams()
+		optimizer.Update(paramList)
 		if i%10 == 0 {
-			m.Apply()
-			pred.ZeroGrad()
-			pred = m.Forward(input, false)
-			acc := accuracy(m, input, output)
+			pred = forward(input, false)
+			acc := accuracy(pred, output)
+			for j := 0; j < batchSize; j++ {
+				real = append(real, plotter.XY{X: float64(i*batchSize + j), Y: output.Value().At(j, 0)})
+				predict = append(predict, plotter.XY{X: float64(i*batchSize + j), Y: pred.Value().At(j, 0)})
+			}
 			loss := loss.Loss(pred, output)
-			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
+			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n",
 				i, loss.Value().At(0, 0), acc)
 			// fmt.Println(mat.Formatted(output.Value()))
 			// fmt.Println(mat.Formatted(pred.Value()))
@@ -127,31 +96,96 @@ func main() {
 	p.Legend.Add("predict", lPred)
 	p.Legend.Top = true
 	p.Legend.XOffs = -20
-	p.Save(16*vg.Inch, 4*vg.Inch, "sin.png")
+	p.Save(8*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
-func getBatch(i int) (*tensor.Tensor, *tensor.Tensor) {
-	inputs := tensor.New(nil, batchSize, unitSize)
-	outputs := tensor.New(nil, batchSize, 1)
-	max := float64(epoch * batchSize * unitSize)
-	for batch := 0; batch < batchSize; batch++ {
-		var n float64
-		for t := 0; t < unitSize; t++ {
-			n = float64(i) / max * 100
-			inputs.Set(batch, t, math.Sin(n))
-			i++
-		}
-		n = float64(i) / max * 100
-		outputs.Set(batch, 0, math.Sin(n))
+var layers []layer.Layer
+
+func addTransformer(init initializer.Initializer) {
+	layers = append(layers, layer.NewSelfAttention(seqSize, dims, heads, init))
+	layers = append(layers, layer.NewNor())
+	layers = append(layers, layer.NewDense(unitSize*4, init))
+	layers = append(layers, activation.NewSigmoid())
+	layers = append(layers, layer.NewDense(unitSize, init))
+	layers = append(layers, layer.NewNor())
+}
+
+func init() {
+	init := initializer.NewXavierUniform(1)
+	// transformer层
+	for i := 0; i < transformerSize; i++ {
+		addTransformer(init)
 	}
-	return inputs, outputs
+	// 输出层
+	layers = append(layers, activation.NewSigmoid())
+	layers = append(layers, layer.NewDense(1, init))
 }
 
-func accuracy(m *model.Model, input, output *tensor.Tensor) float64 {
-	predict := m.Forward(input, false)
+func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
+	// y := layers[i].Forward(x, train) // self attention
+	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, false, train) // self attention
+	y = y.Add(x)
+	selfOut := layers[i+1].Forward(y, train) // nor
+	y = layers[i+2].Forward(selfOut, train)  // dense
+	y = layers[i+3].Forward(y, train)        // relu
+	y = layers[i+4].Forward(y, train)        // dense
+	y = y.Add(selfOut)
+	y = layers[i+5].Forward(y, train) // nor
+	return y, i + 6
+}
+
+func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+	var y *tensor.Tensor
+	i := 0
+	for j := 0; j < transformerSize; j++ {
+		y, i = forwardTransformer(i, x, train)
+	}
+	y = layers[i].Forward(y, train)   // relu
+	y = layers[i+1].Forward(y, train) // output
+	return y
+}
+
+func getParams() []*params.Params {
+	var ret []*params.Params
+	for _, layer := range layers {
+		params := layer.Params()
+		if params.IsEmpty() {
+			continue
+		}
+		ret = append(ret, params)
+	}
+	return ret
+}
+
+func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor) {
+	x := make([]float64, batchSize*unitSize)
+	y := make([]float64, batchSize)
+	for batch := 0; batch < batchSize; batch++ {
+		j := i + batch
+		for t := 0; t < unitSize; t++ {
+			x[batch*unitSize+t] = points[j%len(points)]
+			j++
+		}
+		y[batch] = points[(i*batchSize+batch)%len(points)]
+	}
+	// rand.Shuffle(batchSize, func(i, j int) {
+	// 	dx := make([]float64, unitSize)
+	// 	dy := make([]float64, 1)
+	// 	copy(dx, x[i*unitSize:(i+1)*unitSize])
+	// 	copy(dy, y[i*1:(i+1)*1])
+	// 	copy(x[i*unitSize:(i+1)*unitSize], x[j*unitSize:(j+1)*unitSize])
+	// 	copy(y[i*1:(i+1)*1], y[j*1:(j+1)*1])
+	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
+	// 	copy(y[j*1:(j+1)*1], dy)
+	// })
+	return tensor.New(x, batchSize, unitSize),
+		tensor.New(y, batchSize, 1)
+}
+
+func accuracy(pred, output *tensor.Tensor) float64 {
 	var correct float64
 	for i := 0; i < batchSize; i++ {
-		diff := 1 - math.Abs(output.Value().At(i, 0)-predict.Value().At(i, 0))
+		diff := 1 - math.Abs(output.Value().At(i, 0)-pred.Value().At(i, 0))
 		if diff > 0 {
 			correct += diff
 		}

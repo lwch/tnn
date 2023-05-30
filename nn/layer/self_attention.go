@@ -27,9 +27,9 @@ func NewSelfAttention(seqSize, dims, headSize int, init initializer.Initializer)
 		shapes["Wq"+suffix] = Shape{size, size}
 		shapes["Wk"+suffix] = Shape{size, size}
 		shapes["Wv"+suffix] = Shape{size, size}
-		// shapes["Bq"+suffix] = Shape{1, size}
-		// shapes["Bk"+suffix] = Shape{1, size}
-		// shapes["Bv"+suffix] = Shape{1, size}
+		shapes["Bq"+suffix] = Shape{1, size}
+		shapes["Bk"+suffix] = Shape{1, size}
+		shapes["Bv"+suffix] = Shape{1, size}
 	}
 	layer.base = new("self_attention", shapes, init)
 	layer.seqSize = seqSize
@@ -88,12 +88,12 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 		Wq := layer.params.Get("Wq" + suffix)
 		Wk := layer.params.Get("Wk" + suffix)
 		Wv := layer.params.Get("Wv" + suffix)
-		// Bq := layer.params.Get("Bq" + suffix)
-		// Bk := layer.params.Get("Bk" + suffix)
-		// Bv := layer.params.Get("Bv" + suffix)
-		dq := inputQ.Mul(Wq)
-		dk := inputK.Mul(Wk)
-		dv := inputV.Mul(Wv)
+		Bq := layer.params.Get("Bq" + suffix)
+		Bk := layer.params.Get("Bk" + suffix)
+		Bv := layer.params.Get("Bv" + suffix)
+		dq := inputQ.Mul(Wq).Add(Bq)
+		dk := inputK.Mul(Wk).Add(Bk)
+		dv := inputV.Mul(Wv).Add(Bv)
 		a := dq.Mul(dk.T())
 		a = a.Scale(layer.scale)
 		if mask {
@@ -124,12 +124,12 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask bool)
 	Wq := layer.params.Get("WqH0")
 	Wk := layer.params.Get("WkH0")
 	Wv := layer.params.Get("WvH0")
-	// Bq := layer.params.Get("BqH0")
-	// Bk := layer.params.Get("BkH0")
-	// Bv := layer.params.Get("BvH0")
-	dq := q.Mul(Wq)
-	dk := k.Mul(Wk)
-	dv := v.Mul(Wv)
+	Bq := layer.params.Get("BqH0")
+	Bk := layer.params.Get("BkH0")
+	Bv := layer.params.Get("BvH0")
+	dq := q.Mul(Wq).Add(Bq)
+	dk := k.Mul(Wk).Add(Bk)
+	dv := v.Mul(Wv).Add(Bv)
 	a := dq.Mul(dk.T())
 	a = a.Scale(layer.scale)
 	if mask {
