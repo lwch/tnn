@@ -28,7 +28,7 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 8 // 16个float64表示一个字向量
+const embeddingDim = 16 // 16个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
 const head = 4
 const batchSize = 2
