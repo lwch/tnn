@@ -24,6 +24,7 @@ import (
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
+	"gonum.org/v1/gonum/mat"
 )
 
 const modelDir = "./model"
@@ -280,6 +281,7 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	srcY := y
 	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
 	y = y.Add(srcY)
+	fmt.Println(mat.Formatted(y.Value()))
 	selfOut := y.Scale(100)
 	// if train {
 	// 	y = dropout.Forward(y, true)
