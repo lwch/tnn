@@ -15,13 +15,18 @@ func (op *mul) f() *mat.Dense {
 }
 
 func (op *mul) df(grad *Tensor) {
-	var da, db mat.Dense
-	da.Mul(grad.Value(), op.b.Value().T())
-	db.Mul(op.a.Value().T(), grad.Value())
-	op.a.AddGrad(&da)
-	op.b.AddGrad(&db)
-	op.a.Backward(FromDense(&da))
-	op.b.Backward(FromDense(&db))
+	if op.a.needGrad() {
+		var da mat.Dense
+		da.Mul(grad.Value(), op.b.Value().T())
+		op.a.AddGrad(&da)
+		op.a.Backward(FromDense(&da))
+	}
+	if op.b.needGrad() {
+		var db mat.Dense
+		db.Mul(op.a.Value().T(), grad.Value())
+		op.b.AddGrad(&db)
+		op.b.Backward(FromDense(&db))
+	}
 }
 
 func (op *mul) ZeroGrad() {
@@ -47,13 +52,18 @@ func (op *mulElem) f() *mat.Dense {
 }
 
 func (op *mulElem) df(grad *Tensor) {
-	var da, db mat.Dense
-	da.MulElem(op.b.Value(), grad.Value())
-	db.MulElem(op.a.Value(), grad.Value())
-	op.a.AddGrad(&da)
-	op.b.AddGrad(&db)
-	op.a.Backward(FromDense(&da))
-	op.b.Backward(FromDense(&db))
+	if op.a.needGrad() {
+		var da mat.Dense
+		da.MulElem(op.b.Value(), grad.Value())
+		op.a.AddGrad(&da)
+		op.a.Backward(FromDense(&da))
+	}
+	if op.b.needGrad() {
+		var db mat.Dense
+		db.MulElem(op.a.Value(), grad.Value())
+		op.b.AddGrad(&db)
+		op.b.Backward(FromDense(&db))
+	}
 }
 
 func (op *mulElem) ZeroGrad() {

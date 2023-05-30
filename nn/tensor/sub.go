@@ -47,27 +47,31 @@ func (op *sub) f() *mat.Dense {
 }
 
 func (op *sub) df(grad *Tensor) {
-	op.a.AddGrad(grad.Value())
-	op.a.Backward(grad)
-	gRows, gCols := grad.Dims()
-	bRows, bCols := op.b.Dims()
-	// TODO: 优化
-	db := grad.Scale(-1)
-	if gRows != bRows {
-		v := mat.NewVecDense(gCols, nil)
-		for i := 0; i < gRows; i++ {
-			v.AddVec(v, grad.Value().RowView(i))
-		}
-		db = FromRowVector(v).Scale(-1)
-	} else if gCols != bCols {
-		v := mat.NewVecDense(gRows, nil)
-		for i := 0; i < gCols; i++ {
-			v.AddVec(v, grad.Value().ColView(i))
-		}
-		db = FromColVector(v).Scale(-1)
+	if op.a.needGrad() {
+		op.a.AddGrad(grad.Value())
+		op.a.Backward(grad)
 	}
-	op.b.AddGrad(db.Value())
-	op.b.Backward(db)
+	if op.b.needGrad() {
+		gRows, gCols := grad.Dims()
+		bRows, bCols := op.b.Dims()
+		// TODO: 优化
+		db := grad.Scale(-1)
+		if gRows != bRows {
+			v := mat.NewVecDense(gCols, nil)
+			for i := 0; i < gRows; i++ {
+				v.AddVec(v, grad.Value().RowView(i))
+			}
+			db = FromRowVector(v).Scale(-1)
+		} else if gCols != bCols {
+			v := mat.NewVecDense(gRows, nil)
+			for i := 0; i < gCols; i++ {
+				v.AddVec(v, grad.Value().ColView(i))
+			}
+			db = FromColVector(v).Scale(-1)
+		}
+		op.b.AddGrad(db.Value())
+		op.b.Backward(db)
+	}
 }
 
 func (op *sub) ZeroGrad() {
