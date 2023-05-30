@@ -28,10 +28,10 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 4 // 16个float64表示一个字向量
+const embeddingDim = 16 // 16个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim * 2
 const head = 2
-const batchSize = 8
+const batchSize = 16
 const epoch = 1000
 const lr = 0.01
 const transformerSize = 1
