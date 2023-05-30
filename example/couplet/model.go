@@ -260,7 +260,7 @@ func zeroGrads(paramList []*params.Params) {
 }
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize, 1, 1, init))
+	layers = append(layers, layer.NewSelfAttention(paddingSize/2, 1, 1, init))
 	layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize*4, init))
 	layers = append(layers, activation.NewReLU())
@@ -270,8 +270,10 @@ func addTransformer(init initializer.Initializer) {
 
 func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
-	layers = append(layers, layer.NewDense(paddingSize, init)) // x降维
-	layers = append(layers, layer.NewDense(paddingSize, init)) // y降维
+	layers = append(layers, layer.NewDense(paddingSize/2, init)) // x降维
+	layers = append(layers, activation.NewReLU())
+	layers = append(layers, layer.NewDense(paddingSize/2, init)) // y降维
+	layers = append(layers, activation.NewReLU())
 	for i := 0; i < transformerSize; i++ {
 		addTransformer(init)
 	}
@@ -304,8 +306,10 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	i := 0
 	x = layers[i].Forward(x, train)   // x降维
+	x = layers[i].Forward(x, train)   // relu
 	y = layers[i+1].Forward(y, train) // y降维
-	i += 2
+	y = layers[i+1].Forward(y, train) // relu
+	i += 4
 	for j := 0; j < transformerSize; j++ {
 		y, i = forwardTransformer(i, x, y, train)
 	}
