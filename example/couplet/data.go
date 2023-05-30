@@ -134,6 +134,31 @@ func encode(vocabs []string, idx []int) string {
 
 const paddingIdx = 1000000
 
+func build(x, y []int, z int, embedding [][]float64) ([]float64, []float64) {
+	dx := make([]float64, 0, unitSize*2)
+	for _, v := range x {
+		dx = append(dx, embedding[v]...)
+	}
+	dx = append(dx, embedding[1]...) // </s>
+	for i := len(x) + 1; i < paddingSize; i++ {
+		dx = append(dx, paddingEmbedding...)
+	}
+	dx = append(dx, embedding[0]...) // <s>
+	for _, v := range y {
+		dx = append(dx, embedding[v]...)
+	}
+	for i := len(y) + 1; i < paddingSize; i++ {
+		dx = append(dx, paddingEmbedding...)
+	}
+	dz := make([]float64, 0, len(embedding))
+	if z == paddingIdx {
+		dz = append(dz, zerohot(len(embedding))...)
+	} else {
+		dz = append(dz, onehot(z, len(embedding))...)
+	}
+	return dx, dz
+}
+
 func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	dx := make([]float64, 0, len(x)*unitSize)
 	dy := make([]float64, 0, len(y)*unitSize)

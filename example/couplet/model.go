@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
@@ -27,9 +28,9 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 32 // 16个float64表示一个字向量
-const unitSize = paddingSize * embeddingDim
-const head = 8
+const embeddingDim = 4 // 16个float64表示一个字向量
+const unitSize = paddingSize * embeddingDim * 2
+const head = 2
 const batchSize = 1
 const epoch = 1000
 const lr = 0.01
@@ -71,7 +72,7 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	// optimizer := optimizer.NewSGD(lr, 0)
 
 	var cnt atomic.Uint64
-	go showProgress(&cnt, len(trainX))
+	go showProgress(&cnt, len(trainY)*paddingSize)
 
 	begin := time.Now()
 	i := 0
@@ -124,15 +125,39 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 		if !ok {
 			return
 		}
-		xIn := make([][]int, 0, batchSize)
-		xOut := make([][]int, 0, batchSize)
-		for _, i := range idx {
-			xIn = append(xIn, dup(trainX[i]))
-			xOut = append(xOut, dup(trainY[i]))
+		x := make([]float64, 0, len(idx)*unitSize)
+		y := make([]float64, 0, len(idx)*embeddingDim)
+		for _, idx := range idx {
+			i := math.Floor(float64(idx) / float64(len(trainY)))
+			j := idx % len(trainY)
+			dx := trainX[int(i)]
+			dy := trainY[int(i)]
+			if j < len(trainY[int(i)]) {
+				dy = trainY[int(i)][:j]
+			}
+			var dz int
+			if j == 0 {
+				dz = 0 // <s>
+			} else if j < len(trainY[int(i)]) {
+				dz = trainY[int(i)][j-1]
+			} else {
+				dz = paddingIdx
+			}
+			xTrain, zTrain := build(dx, dy, dz, embedding)
+			x = append(x, xTrain...)
+			y = append(y, zTrain...)
 		}
-		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		pred := forward(x, y, true)
-		grad := loss.Loss(pred, z)
+		// xIn := make([][]int, 0, batchSize)
+		// xOut := make([][]int, 0, batchSize)
+		// for _, i := range idx {
+		// 	xIn = append(xIn, dup(trainX[i]))
+		// 	xOut = append(xOut, dup(trainY[i]))
+		// }
+		// x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
+		xIn := tensor.New(x, len(idx), unitSize)
+		zOut := tensor.New(y, len(idx), len(embedding))
+		pred := forward(xIn, true)
+		grad := loss.Loss(pred, zOut)
 		grad.Backward(grad)
 		cnt.Add(uint64(len(idx)))
 	}
@@ -140,7 +165,7 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 
 func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimizer,
 	trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
-	idx := make([]int, len(trainX))
+	idx := make([]int, len(trainY)*paddingSize)
 	for i := range trainX {
 		idx[i] = i
 	}
@@ -161,10 +186,10 @@ func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimize
 		}()
 	}
 
-	for i := 0; i < len(trainX); i += batchSize {
+	for i := 0; i < len(idx); i += batchSize {
 		list := make([]int, 0, batchSize)
 		for j := 0; j < batchSize; j++ {
-			if i+j >= len(trainX) {
+			if i+j >= len(idx) {
 				break
 			}
 			list = append(list, idx[i+j])
@@ -186,15 +211,32 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 		if !ok {
 			return
 		}
-		xIn := make([][]int, 0, batchSize)
-		xOut := make([][]int, 0, batchSize)
-		for _, i := range idx {
-			xIn = append(xIn, dup(trainX[i]))
-			xOut = append(xOut, dup(trainY[i]))
+		x := make([]float64, 0, len(idx)*unitSize)
+		y := make([]float64, 0, len(idx)*embeddingDim)
+		for _, idx := range idx {
+			i := math.Floor(float64(idx) / float64(len(trainY)))
+			j := idx % len(trainY)
+			dx := trainX[int(i)]
+			dy := trainY[int(i)]
+			if j < len(trainY[int(i)]) {
+				dy = trainY[int(i)][:j]
+			}
+			var dz int
+			if j == 0 {
+				dz = 0 // <s>
+			} else if j < len(trainY[int(i)]) {
+				dz = trainY[int(i)][j-1]
+			} else {
+				dz = paddingIdx
+			}
+			xTrain, zTrain := build(dx, dy, dz, embedding)
+			x = append(x, xTrain...)
+			y = append(y, zTrain...)
 		}
-		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		pred := forward(x, y, false)
-		loss := loss.Loss(pred, z).Value()
+		xIn := tensor.New(x, len(idx), unitSize)
+		zOut := tensor.New(y, len(idx), len(embedding))
+		pred := forward(xIn, false)
+		loss := loss.Loss(pred, zOut).Value()
 		sumLoss += loss.At(0, 0)
 	}
 }
@@ -257,7 +299,7 @@ func zeroGrads(paramList []*params.Params) {
 }
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, head, init))
+	layers = append(layers, layer.NewSelfAttention(paddingSize*2, embeddingDim, head, init))
 	layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize*4, init))
 	layers = append(layers, activation.NewReLU())
@@ -276,10 +318,10 @@ func initModel(vocabSize int) {
 
 var dropout = layer.NewDropout(0.5)
 
-func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	srcY := y
-	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
-	y = y.Add(srcY)
+func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
+	srcX := x
+	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, true, train)
+	y = y.Add(srcX)
 	// if train {
 	// 	y = dropout.Forward(y, true)
 	// }
@@ -295,10 +337,11 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	return y, i + 6
 }
 
-func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
+func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	i := 0
+	var y *tensor.Tensor
 	for j := 0; j < transformerSize; j++ {
-		y, i = forwardTransformer(i, x, y, train)
+		y, i = forwardTransformer(i, x, train)
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output

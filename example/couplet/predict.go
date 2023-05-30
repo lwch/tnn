@@ -7,6 +7,7 @@ import (
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/model"
+	"github.com/lwch/tnn/nn/tensor"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -26,8 +27,9 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	}
 	dy := make([]int, 0, len(str))
 	for i := 0; i < size; i++ {
-		x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
-		pred := forward(x, y, false)
+		// x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
+		x, _ := build(dx, dy, 0, embedding)
+		pred := forward(tensor.New(x, 1, unitSize), false)
 		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
 		label := lookup(predProb)
 		dy = append(dy, label)
