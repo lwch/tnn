@@ -16,7 +16,6 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/lwch/runtime"
-	m "github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
@@ -297,7 +296,7 @@ func forward(x, y *tensor.Tensor, train bool) *tensor.Tensor {
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
-	y = m.Softmax(y, 1)
+	y = y.Softmax(1)
 	return y
 }
 

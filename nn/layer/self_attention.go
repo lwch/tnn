@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 
-	m "github.com/lwch/tnn/internal/math"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
@@ -110,7 +109,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 			}
 			a = a.MulElem(tensor.New(data, rows, cols))
 		}
-		a = m.Softmax(a, 1)
+		a = a.Softmax(1)
 		a = a.Mul(dv)
 		if ret == nil {
 			ret = a
@@ -146,7 +145,7 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask bool)
 		}
 		a = a.MulElem(tensor.New(data, rows, cols))
 	}
-	a = m.Softmax(a, 1)
+	a = a.Softmax(1)
 	return a.Mul(dv)
 }
 

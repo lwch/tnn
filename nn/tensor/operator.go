@@ -164,3 +164,11 @@ func (t *Tensor) VarianceAxis(axis int, unbiased bool) *Tensor {
 	}
 	return &Tensor{op: op, data: op.f()}
 }
+
+func (t *Tensor) Softmax(axis int) *Tensor {
+	op := &softmax{
+		a:    t,
+		axis: axis,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
