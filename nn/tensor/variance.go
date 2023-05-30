@@ -38,5 +38,5 @@ func (op *varianceAxis) ZeroGrad() {
 }
 
 func (op *varianceAxis) needGrad() bool {
-	return op.a.needGrad()
+	return op.value.needGrad()
 }

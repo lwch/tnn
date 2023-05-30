@@ -24,7 +24,6 @@ import (
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 const modelDir = "./model"
@@ -132,9 +131,6 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 			xOut = append(xOut, dup(trainY[i]))
 		}
 		x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
-		fmt.Println(mat.Formatted(x.Value(), mat.Squeeze()))
-		fmt.Println(mat.Formatted(y.Value(), mat.Squeeze()))
-		fmt.Println(mat.Formatted(z.Value(), mat.Squeeze()))
 		pred := forward(x, y, true)
 		grad := loss.Loss(pred, z)
 		grad.Backward(grad)
@@ -153,7 +149,7 @@ func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimize
 	})
 
 	workerCount := rt.NumCPU()
-	// workerCount = 1
+	workerCount = 1
 
 	ch := make(chan []int)
 	var wg sync.WaitGroup
