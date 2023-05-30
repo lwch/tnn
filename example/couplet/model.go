@@ -281,18 +281,18 @@ func forwardTransformer(i int, x, y *tensor.Tensor, train bool) (*tensor.Tensor,
 	srcY := y
 	y = layers[i].(*layer.SelfAttention).ForwardQKV(x, y, y, true, train)
 	y = y.Add(srcY)
-	fmt.Println(mat.Formatted(y.Value()))
-	selfOut := y.Scale(100)
+	selfOut := y.Scale(1e-8)
+	fmt.Println(mat.Formatted(selfOut.Value()))
 	// if train {
 	// 	y = dropout.Forward(y, true)
 	// }
 	// selfOut := layers[i+1].Forward(y, train) // nor
 	// y = layers[i+1].Forward(y, train) // nor
-	y = layers[i+1].Forward(y, train) // dense
-	y = layers[i+2].Forward(y, train) // relu
-	y = layers[i+3].Forward(y, train) // dense
+	y = layers[i+1].Forward(selfOut, train) // dense
+	y = layers[i+2].Forward(y, train)       // relu
+	y = layers[i+3].Forward(y, train)       // dense
 	y = y.Add(selfOut)
-	y = y.Scale(100)
+	y = y.Scale(1e-8)
 	// if train {
 	// 	y = dropout.Forward(y, true)
 	// }
