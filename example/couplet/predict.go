@@ -38,7 +38,7 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		label := lookup(predProb)
 		dy = append(dy, label)
 	}
-	fmt.Println(values(vocabs, dy))
+	fmt.Println(values(vocabs, dy[1:]))
 }
 
 func lookup(prob []float64) int {
