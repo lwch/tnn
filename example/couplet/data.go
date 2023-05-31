@@ -16,7 +16,7 @@ import (
 
 const dataDir = "./data"
 const downloadUrl = "https://github.com/wb14123/couplet-dataset/releases/latest/download/couplet.tar.gz"
-const paddingSize = 80 // 最长为34*2
+const paddingSize = 75 // 最长为34*2
 
 var paddingEmbedding []float64
 
