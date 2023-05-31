@@ -35,13 +35,13 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		x, _, paddingMask := build(dx, dy, 0, vocabs, embedding)
 		pred := forward(tensor.New(x, 1, unitSize), buildPaddingMasks([][]bool{paddingMask}), false)
 		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
-		label := lookup(predProb)
+		label := lookup(predProb, vocabs)
 		dy = append(dy, label)
 	}
 	fmt.Println(values(vocabs, dy[1:]))
 }
 
-func lookup(prob []float64) int {
+func lookup(prob []float64, vocabs []string) int {
 	var max float64
 	var idx int
 	for i := 0; i < len(prob); i++ {
@@ -50,12 +50,12 @@ func lookup(prob []float64) int {
 			idx = i
 		}
 	}
-	kv := make(map[float64][]int)
+	kv := make(map[float64][]string)
 	for i := 0; i < len(prob); i++ {
-		kv[prob[i]] = append(kv[prob[i]], i)
+		kv[prob[i]] = append(kv[prob[i]], vocabs[i])
 	}
 	sort.Float64s(prob)
-	left := make(map[float64][]int)
+	left := make(map[float64][]string)
 	for i := 0; i < 3; i++ {
 		idx := len(prob) - i - 1
 		left[prob[idx]] = kv[prob[idx]]
