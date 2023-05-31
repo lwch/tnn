@@ -23,7 +23,7 @@ var paddingEmbedding []float64
 
 func init() {
 	for i := 0; i < embeddingDim; i++ {
-		paddingEmbedding = append(paddingEmbedding, -1e9)
+		paddingEmbedding = append(paddingEmbedding, 0)
 	}
 }
 
@@ -134,22 +134,30 @@ func encode(vocabs []string, idx []int) string {
 
 const paddingIdx = 1000000
 
-func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64, []float64) {
+func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64, []float64, []bool) {
+	// 输出: sentence, next word, padding mask
 	// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
-	dx := make([]float64, 0, unitSize*2)
+	dx := make([]float64, 0, unitSize)
+	paddingMask := make([]bool, 0, paddingSize*2)
 	for _, v := range x {
 		dx = append(dx, embedding[v]...)
+		paddingMask = append(paddingMask, false)
 	}
 	dx = append(dx, embedding[1]...) // </s>
+	paddingMask = append(paddingMask, false)
 	for i := len(x) + 1; i < paddingSize; i++ {
 		dx = append(dx, paddingEmbedding...)
+		paddingMask = append(paddingMask, true)
 	}
 	dx = append(dx, embedding[0]...) // <s>
+	paddingMask = append(paddingMask, false)
 	for _, v := range y {
 		dx = append(dx, embedding[v]...)
+		paddingMask = append(paddingMask, false)
 	}
 	for i := len(y) + 1; i < paddingSize; i++ {
 		dx = append(dx, paddingEmbedding...)
+		paddingMask = append(paddingMask, true)
 	}
 	dz := make([]float64, 0, len(embedding))
 	if z == paddingIdx {
@@ -157,7 +165,7 @@ func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64
 	} else {
 		dz = append(dz, onehot(z, len(embedding))...)
 	}
-	return dx, dz
+	return dx, dz, paddingMask
 }
 
 func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {

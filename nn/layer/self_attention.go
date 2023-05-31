@@ -56,12 +56,12 @@ func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tens
 	return layer.ForwardQKV(input, input, input, nil, isTraining)
 }
 
-func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining bool) *tensor.Tensor {
+func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, masks []*tensor.Tensor, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
 		layer.initParams()
 	}
 	if layer.headSize == 1 {
-		return layer.forwardSingleHead(q, k, v, mask)
+		return layer.forwardSingleHead(q, k, v, masks)
 	}
 	batchSize, _ := q.Dims()
 	var ret *tensor.Tensor
@@ -84,8 +84,8 @@ func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining 
 			dv := Wv.Mul(inputV).Add(Bv) // (seq, dims)
 			a := dq.Mul(dk.T())          // (seq, seq)
 			a = a.Scale(layer.scale)     // (seq, seq)
-			if mask != nil {
-				a = a.Add(mask) // (seq, seq)
+			if batch < len(masks) {
+				a = a.Add(masks[batch]) // (seq, seq)
 			}
 			a = a.Softmax(1) // (seq, seq)
 			a = a.Mul(dv)    // (seq, dims)
@@ -105,7 +105,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining 
 	return ret
 }
 
-func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask *tensor.Tensor) *tensor.Tensor {
+func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, masks []*tensor.Tensor) *tensor.Tensor {
 	batchSize, _ := q.Dims()
 	Wq := layer.params.Get("WqH0")
 	Wk := layer.params.Get("WkH0")
@@ -123,8 +123,8 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask *tens
 		dv := Wv.Mul(inputV).Add(Bv)
 		a := dq.Mul(dk.T())
 		a = a.Scale(layer.scale)
-		if mask != nil {
-			a = a.Add(mask)
+		if batch < len(masks) {
+			a = a.Add(masks[batch])
 		}
 		a = a.Softmax(1)
 		row := a.Mul(dv).RowVector()

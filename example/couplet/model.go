@@ -121,6 +121,7 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 		}
 		x := make([]float64, 0, len(idx)*unitSize)
 		y := make([]float64, 0, len(idx)*embeddingDim)
+		paddingMask := make([][]bool, 0, batchSize)
 		for _, idx := range idx {
 			i := math.Floor(float64(idx) / float64(paddingSize))
 			j := idx % paddingSize
@@ -137,9 +138,10 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 			} else {
 				dz = paddingIdx
 			}
-			xTrain, zTrain := build(dx, dy, dz, vocabs, embedding)
+			xTrain, zTrain, pm := build(dx, dy, dz, vocabs, embedding)
 			x = append(x, xTrain...)
 			y = append(y, zTrain...)
+			paddingMask = append(paddingMask, pm)
 		}
 		// xIn := make([][]int, 0, batchSize)
 		// xOut := make([][]int, 0, batchSize)
@@ -150,7 +152,7 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 		// x, y, z := buildTensor(xIn, xOut, vocabs, embedding, true)
 		xIn := tensor.New(x, len(idx), unitSize)
 		zOut := tensor.New(y, len(idx), len(embedding))
-		pred := forward(xIn, true)
+		pred := forward(xIn, buildPaddingMasks(paddingMask), true)
 		grad := loss.Loss(pred, zOut)
 		grad.Backward(grad)
 		cnt.Add(uint64(len(idx)))
@@ -207,6 +209,7 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 		}
 		x := make([]float64, 0, len(idx)*unitSize)
 		y := make([]float64, 0, len(idx)*embeddingDim)
+		paddingMask := make([][]bool, 0, batchSize)
 		for _, idx := range idx {
 			i := math.Floor(float64(idx) / float64(paddingSize))
 			j := idx % paddingSize
@@ -223,13 +226,14 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 			} else {
 				dz = paddingIdx
 			}
-			xTrain, zTrain := build(dx, dy, dz, vocabs, embedding)
+			xTrain, zTrain, pm := build(dx, dy, dz, vocabs, embedding)
 			x = append(x, xTrain...)
 			y = append(y, zTrain...)
+			paddingMask = append(paddingMask, pm)
 		}
 		xIn := tensor.New(x, len(idx), unitSize)
 		zOut := tensor.New(y, len(idx), len(embedding))
-		pred := forward(xIn, false)
+		pred := forward(xIn, buildPaddingMasks(paddingMask), false)
 		loss := loss.Loss(pred, zOut).Value()
 		sumLoss += loss.At(0, 0)
 	}
@@ -316,22 +320,43 @@ func initModel(vocabSize int) {
 }
 
 var dropout = layer.NewDropout(0.5)
-var mask *tensor.Tensor
+var featureMask *tensor.Tensor
 
 func init() {
-	size := unitSize / head
-	mask := tensor.New(nil, size, size)
-	for i := 0; i < size; i++ {
-		for j := i; j < size; j++ {
-			if i >= j {
-				mask.Set(i, j, -1e9)
-			}
+	featureMask = tensor.New(nil, paddingSize*2, paddingSize*2)
+	for i := 0; i < paddingSize*2; i++ {
+		for j := i; j < paddingSize*2; j++ {
+			featureMask.Set(i, j, -1e9)
 		}
 	}
 }
 
-func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, mask, train)
+func buildPaddingMasks(masks [][]bool) []*tensor.Tensor {
+	ret := make([]*tensor.Tensor, 0, len(masks))
+	for batch := 0; batch < len(masks); batch++ {
+		size := len(masks[batch])
+		mask := tensor.New(nil, size, size)
+		for i, b := range masks[batch] {
+			if !b {
+				continue
+			}
+			// 十字mask，别的词跟他，他跟别的词都需要mask掉
+			for j := 0; j < size; j++ {
+				mask.Set(i, j, -1e9)
+				mask.Set(j, j, -1e9)
+			}
+		}
+		ret = append(ret, mask)
+	}
+	return ret
+}
+
+func forwardTransformer(i int, x *tensor.Tensor, paddingMasks []*tensor.Tensor, train bool) (*tensor.Tensor, int) {
+	masks := make([]*tensor.Tensor, len(paddingMasks))
+	for i, m := range paddingMasks {
+		masks[i] = m.Add(featureMask)
+	}
+	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, masks, train)
 	y = y.Add(x)
 	// if train {
 	// 	y = dropout.Forward(y, true)
@@ -348,11 +373,11 @@ func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, in
 	return y, i + 6
 }
 
-func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+func forward(x *tensor.Tensor, paddingMasks []*tensor.Tensor, train bool) *tensor.Tensor {
 	i := 0
 	var y *tensor.Tensor
 	for j := 0; j < transformerSize; j++ {
-		y, i = forwardTransformer(i, x, train)
+		y, i = forwardTransformer(i, x, paddingMasks, train)
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output

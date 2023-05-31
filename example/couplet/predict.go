@@ -30,8 +30,8 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 	for i := 0; i < size; i++ {
 		// x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
 		fmt.Println(dx, dy)
-		x, _ := build(dx, dy, 0, vocabs, embedding)
-		pred := forward(tensor.New(x, 1, unitSize), false)
+		x, _, paddingMask := build(dx, dy, 0, vocabs, embedding)
+		pred := forward(tensor.New(x, 1, unitSize), buildPaddingMasks([][]bool{paddingMask}), false)
 		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
 		label := lookup(predProb)
 		dy = append(dy, label)
