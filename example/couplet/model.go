@@ -28,13 +28,13 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 8 // 8个float64表示一个字向量
+const embeddingDim = 2 // 8个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim
-const head = 8
+const head = 2
 const batchSize = 16
 const epoch = 1000
 const lr = 0.001
-const transformerSize = 1
+const transformerSize = 2
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
