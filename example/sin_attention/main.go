@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	rt "runtime"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
@@ -21,11 +22,11 @@ import (
 const lr = 0.001
 const epoch = 1000
 const batchSize = 16
-const seqSize = 8
+const seqSize = 4
 const dims = 8
-const heads = 4
+const heads = 8
 const unitSize = seqSize * dims
-const transformerSize = 1
+const transformerSize = 2
 
 func main() {
 	// f, err := os.Create("cpu.pprof")
@@ -58,16 +59,17 @@ func main() {
 			break
 		}
 	}
+
+	ch := make(chan int)
+	for i := 0; i < rt.NumCPU(); i++ {
+		go trainWorker(points, loss, optimizer, ch)
+	}
+
 	for i := 0; i < epoch; i++ {
-		input, output := getBatch(points, i+batchSize)
-		pred := forward(input, true)
-		grad := loss.Loss(pred, output)
-		grad.ZeroGrad()
-		grad.Backward(grad)
-		paramList := getParams()
-		optimizer.Update(paramList)
+		ch <- i + batchSize
 		if i%10 == 0 {
-			pred = forward(input, false)
+			input, output := getBatch(points, i+batchSize)
+			pred := forward(input, false)
 			acc := accuracy(pred, output)
 			for j := 0; j < batchSize; j++ {
 				real = append(real, plotter.XY{X: float64(i*batchSize + j), Y: output.Value().At(j, 0)})
@@ -99,6 +101,19 @@ func main() {
 	p.Save(8*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
+func trainWorker(points []float64, loss loss.Loss, optimizer optimizer.Optimizer, ch chan int) {
+	for {
+		i := <-ch
+		input, output := getBatch(points, i+batchSize)
+		pred := forward(input, true)
+		grad := loss.Loss(pred, output)
+		grad.ZeroGrad()
+		grad.Backward(grad)
+		paramList := getParams()
+		optimizer.Update(paramList)
+	}
+}
+
 var layers []layer.Layer
 
 func addTransformer(init initializer.Initializer) {
@@ -122,12 +137,11 @@ func init() {
 }
 
 func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	// y := layers[i].Forward(x, train) // self attention
-	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, nil, train) // self attention
+	y := layers[i].Forward(x, train) // self attention
 	y = y.Add(x)
 	selfOut := layers[i+1].Forward(y, train) // nor
 	y = layers[i+2].Forward(selfOut, train)  // dense
-	y = layers[i+3].Forward(y, train)        // relu
+	y = layers[i+3].Forward(y, train)        // sigmoid
 	y = layers[i+4].Forward(y, train)        // dense
 	y = y.Add(selfOut)
 	y = layers[i+5].Forward(y, train) // nor
@@ -135,12 +149,12 @@ func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, in
 }
 
 func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
-	y := x
+	var y *tensor.Tensor
 	i := 0
 	for j := 0; j < transformerSize; j++ {
-		y, i = forwardTransformer(i, y, train)
+		y, i = forwardTransformer(i, x, train)
 	}
-	y = layers[i].Forward(y, train)   // relu
+	y = layers[i].Forward(y, train)   // sigmoid
 	y = layers[i+1].Forward(y, train) // output
 	return y
 }

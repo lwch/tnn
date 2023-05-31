@@ -24,9 +24,9 @@ func NewSelfAttention(seqSize, dims, headSize int, init initializer.Initializer)
 	size := dims / headSize * seqSize
 	for i := 0; i < headSize; i++ {
 		suffix := fmt.Sprintf("H%d", i)
-		shapes["Wq"+suffix] = Shape{size, size}
-		shapes["Wk"+suffix] = Shape{size, size}
-		shapes["Wv"+suffix] = Shape{size, size}
+		shapes["Wq"+suffix] = Shape{size, seqSize * dims}
+		shapes["Wk"+suffix] = Shape{size, seqSize * dims}
+		shapes["Wv"+suffix] = Shape{size, seqSize * dims}
 		shapes["Bq"+suffix] = Shape{size, 1}
 		shapes["Bk"+suffix] = Shape{size, 1}
 		shapes["Bv"+suffix] = Shape{size, 1}
@@ -63,27 +63,8 @@ func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining 
 	if layer.headSize == 1 {
 		return layer.forwardSingleHead(q, k, v, mask)
 	}
-	batchSize, _ := q.Dims()
 	var ret *tensor.Tensor
-	sizePreHead := layer.dims / layer.headSize
 	for head := 0; head < layer.headSize; head++ {
-		var inputQ, inputK, inputV *tensor.Tensor
-		for seq := 0; seq < layer.seqSize; seq++ {
-			start := seq * layer.dims
-			start += head * sizePreHead
-			qHead := q.Slice(0, batchSize, start, start+sizePreHead)
-			kHead := k.Slice(0, batchSize, start, start+sizePreHead)
-			vHead := v.Slice(0, batchSize, start, start+sizePreHead)
-			if inputQ == nil {
-				inputQ = qHead
-				inputK = kHead
-				inputV = vHead
-			} else {
-				inputQ = inputQ.Stack(qHead)
-				inputK = inputK.Stack(kHead)
-				inputV = inputV.Stack(vHead)
-			}
-		}
 		suffix := fmt.Sprintf("H%d", head)
 		Wq := layer.params.Get("Wq" + suffix)
 		Wk := layer.params.Get("Wk" + suffix)
@@ -91,9 +72,9 @@ func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining 
 		Bq := layer.params.Get("Bq" + suffix)
 		Bk := layer.params.Get("Bk" + suffix)
 		Bv := layer.params.Get("Bv" + suffix)
-		dq := Wq.Mul(inputQ.T()).Add(Bq)
-		dk := Wk.Mul(inputK.T()).Add(Bk)
-		dv := Wv.Mul(inputV.T()).Add(Bv)
+		dq := Wq.Mul(q.T()).Add(Bq)
+		dk := Wk.Mul(k.T()).Add(Bk)
+		dv := Wv.Mul(v.T()).Add(Bv)
 		a := dq.Mul(dk.T())
 		a = a.Scale(layer.scale)
 		if mask != nil {
