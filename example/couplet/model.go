@@ -112,6 +112,7 @@ func update(optimizer optimizer.Optimizer, ch chan struct{}) {
 		params, _ := getParams()
 		optimizer.Update(params)
 		zeroGrads(params)
+		fmt.Println("params updated")
 	}
 }
 
