@@ -80,14 +80,14 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 		cnt.Store(0)
 		trainEpoch(&cnt, loss, optimizer, trainX, trainY, vocabs, embedding)
 		if i%10 == 0 {
-			list := getParams()
+			list, names := getParams()
 			for i, params := range list {
 				var cnt int
 				params.Range(func(_ string, p *tensor.Tensor) {
 					rows, cols := p.Dims()
 					cnt += rows * cols
 				})
-				fmt.Printf("layer %d params: %d\n", i, cnt)
+				fmt.Printf("%s: %d\n", names[i], cnt)
 			}
 			fmt.Printf("cost=%s, loss=%.05f\n",
 				time.Since(begin).String(),
@@ -194,7 +194,7 @@ func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimize
 	}
 	close(ch)
 	wg.Wait()
-	params := getParams()
+	params, _ := getParams()
 	optimizer.Update(params)
 	zeroGrads(params)
 }
@@ -281,16 +281,18 @@ func avgLoss(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embedding 
 
 var layers []layer.Layer
 
-func getParams() []*params.Params {
+func getParams() ([]*params.Params, []string) {
 	var ret []*params.Params
+	var names []string
 	for _, layer := range layers {
 		params := layer.Params()
 		if params.IsEmpty() {
 			continue
 		}
 		ret = append(ret, params)
+		names = append(names, layer.Name())
 	}
-	return ret
+	return ret, names
 }
 
 func zeroGrads(paramList []*params.Params) {
@@ -301,19 +303,25 @@ func zeroGrads(paramList []*params.Params) {
 	}
 }
 
-func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, head, init))
+func addTransformer(init initializer.Initializer, i int) {
+	attention := layer.NewSelfAttention(paddingSize, embeddingDim, head, init)
+	attention.SetName(fmt.Sprintf("transformer%d_attention", i))
+	layers = append(layers, attention)
 	layers = append(layers, layer.NewNor())
-	layers = append(layers, layer.NewDense(unitSize*4, init))
+	dense1 := layer.NewDense(unitSize*4, init)
+	dense1.SetName(fmt.Sprintf("transformer%d_dense1", i))
+	layers = append(layers, dense1)
 	layers = append(layers, activation.NewSigmoid())
-	layers = append(layers, layer.NewDense(unitSize, init))
+	dense2 := layer.NewDense(unitSize, init)
+	dense2.SetName(fmt.Sprintf("transformer%d_dense2", i))
+	layers = append(layers, dense2)
 	layers = append(layers, layer.NewNor())
 }
 
 func initModel(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
 	for i := 0; i < transformerSize; i++ {
-		addTransformer(init)
+		addTransformer(init, i)
 	}
 	layers = append(layers, activation.NewSigmoid())
 	layers = append(layers, layer.NewDense(vocabSize, init))
