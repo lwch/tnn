@@ -324,7 +324,9 @@ func initModel(vocabSize int) {
 		addTransformer(init, i)
 	}
 	layers = append(layers, activation.NewReLU())
-	layers = append(layers, layer.NewDense(vocabSize, init))
+	output := layer.NewDense(vocabSize, init)
+	output.SetName("output")
+	layers = append(layers, output)
 }
 
 var dropout = layer.NewDropout(0.1)
