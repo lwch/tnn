@@ -135,7 +135,7 @@ const paddingIdx = 1000000
 
 func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64, []float64, []bool) {
 	// 输出: sentence, next word, padding mask
-	fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
+	// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
 	dx := make([]float64, 0, unitSize)
 	paddingMask := make([]bool, 0, paddingSize)
 	for _, v := range x {
