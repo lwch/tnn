@@ -322,9 +322,23 @@ func initModel(vocabSize int) {
 }
 
 var dropout = layer.NewDropout(0.5)
+var mask *tensor.Tensor
+
+func init() {
+	// 构造mask矩阵
+	size := batchSize
+	mask = tensor.New(nil, size, size)
+	for i := 0; i < size; i++ {
+		for j := i; j < size; j++ {
+			if i >= j {
+				mask.Set(i, j, -1e9)
+			}
+		}
+	}
+}
 
 func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, true, train)
+	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, mask, train)
 	y = y.Add(x)
 	// if train {
 	// 	y = dropout.Forward(y, true)

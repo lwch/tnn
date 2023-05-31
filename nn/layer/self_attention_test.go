@@ -34,7 +34,7 @@ func TestSelfAttentionCustom(t *testing.T) {
 	}, 2, 4)
 	y.SetRequireGrad(true)
 	layer := NewSelfAttention(2, 2, 2, initializer.NewNumber(1))
-	output := layer.(*SelfAttention).ForwardQKV(x, y, y, false, false)
+	output := layer.(*SelfAttention).ForwardQKV(x, y, y, nil, false)
 	fmt.Println(mat.Formatted(output.Value(), mat.Squeeze()))
 	output.Backward(tensor.Ones(output.Dims()))
 	// layer.Params().Range(func(name string, value *tensor.Tensor) {

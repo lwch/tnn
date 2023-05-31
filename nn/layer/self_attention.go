@@ -53,10 +53,10 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 }
 
 func (layer *SelfAttention) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor {
-	return layer.ForwardQKV(input, input, input, false, isTraining)
+	return layer.ForwardQKV(input, input, input, nil, isTraining)
 }
 
-func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining bool) *tensor.Tensor {
+func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining bool) *tensor.Tensor {
 	if !layer.hasInit {
 		layer.initParams()
 	}
@@ -96,15 +96,8 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 		dv := inputV.Mul(Wv).Add(Bv)
 		a := dq.Mul(dk.T())
 		a = a.Scale(layer.scale)
-		if mask {
-			rows, cols := a.Dims()
-			data := make([]float64, rows*cols)
-			for i := 0; i < rows; i++ {
-				for j := i + 1; j < cols; j++ {
-					data[i*cols+j] = -1e9
-				}
-			}
-			a = a.Add(tensor.New(data, rows, cols))
+		if mask != nil {
+			a = a.Add(mask)
 		}
 		a = a.Softmax(1)
 		a = a.Mul(dv)
@@ -117,7 +110,7 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, mask, isTraining 
 	return ret
 }
 
-func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask bool) *tensor.Tensor {
+func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask *tensor.Tensor) *tensor.Tensor {
 	Wq := layer.params.Get("WqH0")
 	Wk := layer.params.Get("WkH0")
 	Wv := layer.params.Get("WvH0")
@@ -129,15 +122,8 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask bool)
 	dv := v.Mul(Wv).Add(Bv)
 	a := dq.Mul(dk.T())
 	a = a.Scale(layer.scale)
-	if mask {
-		rows, cols := a.Dims()
-		data := make([]float64, rows*cols)
-		for i := 0; i < rows; i++ {
-			for j := i + 1; j < cols; j++ {
-				data[i*cols+j] = -1e9
-			}
-		}
-		a = a.Add(tensor.New(data, rows, cols))
+	if mask != nil {
+		a = a.Add(mask)
 	}
 	a = a.Softmax(1)
 	return a.Mul(dv)
