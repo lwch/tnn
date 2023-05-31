@@ -34,7 +34,7 @@ const head = 4
 const batchSize = 16
 const epoch = 1000
 const lr = 0.001
-const transformerSize = 1
+const transformerSize = 2
 
 func buildEmbedding(vocabSize int) {
 	init := initializer.NewXavierUniform(1)
@@ -356,9 +356,9 @@ func forwardTransformer(i int, x *tensor.Tensor, train bool) (*tensor.Tensor, in
 
 func forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	i := 0
-	y := x
+	var y *tensor.Tensor
 	for j := 0; j < transformerSize; j++ {
-		y, i = forwardTransformer(i, y, train)
+		y, i = forwardTransformer(i, x, train)
 	}
 	y = layers[i].Forward(y, train)   // relu
 	y = layers[i+1].Forward(y, train) // output
