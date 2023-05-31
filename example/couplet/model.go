@@ -382,7 +382,32 @@ func forwardTransformer(i int, x *tensor.Tensor, paddingMasks []*tensor.Tensor, 
 	return y, i + 6
 }
 
+var positionEmbedding []float64
+
+func init() {
+	positionEmbedding = make([]float64, unitSize)
+	for k := 0; k < paddingSize; k++ {
+		start := k * embeddingDim
+		for i := 0; i < embeddingDim/2; i++ {
+			n := float64(k) / math.Pow(10000, 2*float64(i)/float64(embeddingDim))
+			positionEmbedding[start+i*2] = math.Sin(n)
+			positionEmbedding[start+i*2+1] = math.Cos(n)
+		}
+	}
+}
+
+func buildPositionEmbedding(batchSize int) *tensor.Tensor {
+	data := make([]float64, batchSize*unitSize)
+	for i := 0; i < batchSize; i++ {
+		start := i * unitSize
+		copy(data[start:start+unitSize], positionEmbedding)
+	}
+	return tensor.New(data, batchSize, unitSize)
+}
+
 func forward(x *tensor.Tensor, paddingMasks []*tensor.Tensor, train bool) *tensor.Tensor {
+	batchSize, _ := x.Dims()
+	x = x.Add(buildPositionEmbedding(batchSize))
 	i := 0
 	var y *tensor.Tensor
 	for j := 0; j < transformerSize; j++ {
