@@ -198,11 +198,3 @@ func (t *Tensor) AppendRow(t2 *Tensor) *Tensor {
 	}
 	return &Tensor{op: op, data: op.f()}
 }
-
-func (t *Tensor) AppendCol(t2 *Tensor) *Tensor {
-	op := &appendCol{
-		a: t,
-		b: t2,
-	}
-	return &Tensor{op: op, data: op.f()}
-}
