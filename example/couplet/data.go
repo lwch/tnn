@@ -12,12 +12,11 @@ import (
 	"strings"
 
 	"github.com/lwch/runtime"
-	"github.com/lwch/tnn/nn/tensor"
 )
 
 const dataDir = "./data"
 const downloadUrl = "https://github.com/wb14123/couplet-dataset/releases/latest/download/couplet.tar.gz"
-const paddingSize = 40
+const paddingSize = 74 // 最长为34*2
 
 var paddingEmbedding []float64
 
@@ -138,16 +137,10 @@ func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64
 	// 输出: sentence, next word, padding mask
 	// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
 	dx := make([]float64, 0, unitSize)
-	paddingMask := make([]bool, 0, paddingSize*2)
+	paddingMask := make([]bool, 0, paddingSize)
 	for _, v := range x {
 		dx = append(dx, embedding[v]...)
 		paddingMask = append(paddingMask, false)
-	}
-	dx = append(dx, embedding[1]...) // </s>
-	paddingMask = append(paddingMask, false)
-	for i := len(x) + 1; i < paddingSize; i++ {
-		dx = append(dx, paddingEmbedding...)
-		paddingMask = append(paddingMask, true)
 	}
 	dx = append(dx, embedding[0]...) // <s>
 	paddingMask = append(paddingMask, false)
@@ -155,7 +148,9 @@ func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64
 		dx = append(dx, embedding[v]...)
 		paddingMask = append(paddingMask, false)
 	}
-	for i := len(y) + 1; i < paddingSize; i++ {
+	dx = append(dx, embedding[1]...) // </s>
+	paddingMask = append(paddingMask, false)
+	for i := len(x) + len(y) + 2; i < paddingSize; i++ {
 		dx = append(dx, paddingEmbedding...)
 		paddingMask = append(paddingMask, true)
 	}
@@ -166,63 +161,4 @@ func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64
 		dz = append(dz, onehot(z, len(embedding))...)
 	}
 	return dx, dz, paddingMask
-}
-
-func buildTensor(x, y [][]int, vocabs []string, embedding [][]float64, training bool) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
-	dx := make([]float64, 0, len(x)*unitSize)
-	dy := make([]float64, 0, len(y)*unitSize)
-	dz := make([]float64, 0, len(y)*len(embedding))
-	rows := 0
-	add := func(x, y []int, z int) {
-		// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
-		for _, v := range x {
-			dx = append(dx, embedding[v]...)
-		}
-		for i := len(x); i < paddingSize; i++ {
-			dx = append(dx, paddingEmbedding...)
-		}
-		for _, v := range y {
-			dy = append(dy, embedding[v]...)
-		}
-		for i := len(y); i < paddingSize; i++ {
-			dy = append(dy, paddingEmbedding...)
-		}
-		if z == paddingIdx {
-			dz = append(dz, zerohot(len(embedding))...)
-		} else {
-			dz = append(dz, onehot(z, len(embedding))...)
-		}
-		rows++
-	}
-	if training {
-		for i := range y {
-			y := append([]int{0}, y[i]...)
-			for j := 1; j < len(y); j++ {
-				add(x[i], y[:j], y[j])
-			}
-			// for j := len(y); j < paddingSize; j++ {
-			// 	add(x[i], y, paddingIdx)
-			// }
-		}
-		// dxa := make([]float64, unitSize)
-		// dya := make([]float64, unitSize)
-		// dza := make([]float64, len(embedding))
-		// rand.Shuffle(rows, func(i, j int) {
-		// 	copy(dxa, dx[i*unitSize:(i+1)*unitSize])
-		// 	copy(dya, dy[i*unitSize:(i+1)*unitSize])
-		// 	copy(dza, dz[i*len(embedding):(i+1)*len(embedding)])
-		// 	copy(dx[i*unitSize:(i+1)*unitSize], dx[j*unitSize:(j+1)*unitSize])
-		// 	copy(dy[i*unitSize:(i+1)*unitSize], dy[j*unitSize:(j+1)*unitSize])
-		// 	copy(dz[i*len(embedding):(i+1)*len(embedding)], dz[j*len(embedding):(j+1)*len(embedding)])
-		// 	copy(dx[j*unitSize:(j+1)*unitSize], dxa)
-		// 	copy(dy[j*unitSize:(j+1)*unitSize], dya)
-		// 	copy(dz[j*len(embedding):(j+1)*len(embedding)], dza)
-		// })
-	} else {
-		y[0] = append([]int{0}, y[0]...) // <s>
-		add(x[0], y[0], 1)
-	}
-	return tensor.New(dx, rows, unitSize),
-		tensor.New(dy, rows, unitSize),
-		tensor.New(dz, rows, len(embedding))
 }

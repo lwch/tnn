@@ -29,7 +29,7 @@ import (
 
 const modelDir = "./model"
 const embeddingDim = 8 // 16个float64表示一个字向量
-const unitSize = paddingSize * embeddingDim * 2
+const unitSize = paddingSize * embeddingDim
 const head = 2
 const batchSize = 16
 const epoch = 1000
@@ -302,7 +302,7 @@ func zeroGrads(paramList []*params.Params) {
 }
 
 func addTransformer(init initializer.Initializer) {
-	layers = append(layers, layer.NewSelfAttention(paddingSize*2, embeddingDim, head, init))
+	layers = append(layers, layer.NewSelfAttention(paddingSize, embeddingDim, head, init))
 	layers = append(layers, layer.NewNor())
 	layers = append(layers, layer.NewDense(unitSize*4, init))
 	layers = append(layers, activation.NewSigmoid())
@@ -323,9 +323,9 @@ var dropout = layer.NewDropout(0.5)
 var featureMask *tensor.Tensor
 
 func init() {
-	featureMask = tensor.New(nil, paddingSize*2, paddingSize*2)
-	for i := 0; i < paddingSize*2; i++ {
-		for j := i; j < paddingSize*2; j++ {
+	featureMask = tensor.New(nil, paddingSize, paddingSize)
+	for i := 0; i < paddingSize; i++ {
+		for j := i; j < paddingSize; j++ {
 			featureMask.Set(i, j, -1e9)
 		}
 	}
