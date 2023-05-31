@@ -16,7 +16,7 @@ import (
 
 const dataDir = "./data"
 const downloadUrl = "https://github.com/wb14123/couplet-dataset/releases/latest/download/couplet.tar.gz"
-const paddingSize = 74 // 最长为34*2
+const paddingSize = 80 // 最长为34*2
 
 var paddingEmbedding []float64
 
@@ -135,22 +135,18 @@ const paddingIdx = 1000000
 
 func build(x, y []int, z int, vocabs []string, embedding [][]float64) ([]float64, []float64, []bool) {
 	// 输出: sentence, next word, padding mask
-	// fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
+	fmt.Println(encode(vocabs, x), "!!!", encode(vocabs, y), "!!!", encode(vocabs, []int{z}))
 	dx := make([]float64, 0, unitSize)
 	paddingMask := make([]bool, 0, paddingSize)
 	for _, v := range x {
 		dx = append(dx, embedding[v]...)
 		paddingMask = append(paddingMask, false)
 	}
-	dx = append(dx, embedding[0]...) // <s>
-	paddingMask = append(paddingMask, false)
 	for _, v := range y {
 		dx = append(dx, embedding[v]...)
 		paddingMask = append(paddingMask, false)
 	}
-	dx = append(dx, embedding[1]...) // </s>
-	paddingMask = append(paddingMask, false)
-	for i := len(x) + len(y) + 2; i < paddingSize; i++ {
+	for i := len(x) + len(y); i < paddingSize; i++ {
 		dx = append(dx, paddingEmbedding...)
 		paddingMask = append(paddingMask, true)
 	}

@@ -127,14 +127,11 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 			j := idx % paddingSize
 			dx := trainX[int(i)]
 			dy := trainY[int(i)]
-			if j < len(trainY[int(i)]) {
-				dy = trainY[int(i)][:j]
-			}
+			dy = append([]int{0}, dy...) // <s> ...
 			var dz int
-			if j == 0 {
-				dz = 0 // <s>
-			} else if j < len(trainY[int(i)]) {
-				dz = trainY[int(i)][j-1]
+			if j < len(dy) {
+				dz = dy[j]
+				dy = dy[:j]
 			} else {
 				dz = paddingIdx
 			}
@@ -215,14 +212,11 @@ func lossWorker(loss loss.Loss, trainX, trainY [][]int, vocabs []string, embeddi
 			j := idx % paddingSize
 			dx := trainX[int(i)]
 			dy := trainY[int(i)]
-			if j < len(trainY[int(i)]) {
-				dy = trainY[int(i)][:j]
-			}
+			dy = append([]int{0}, dy...) // <s> ...
 			var dz int
-			if j == 0 {
-				dz = 0 // <s>
-			} else if j < len(trainY[int(i)]) {
-				dz = trainY[int(i)][j-1]
+			if j < len(dy) {
+				dz = dy[j]
+				dy = dy[:j]
 			} else {
 				dz = paddingIdx
 			}

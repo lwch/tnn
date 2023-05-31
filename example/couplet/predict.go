@@ -27,8 +27,8 @@ func predict(str string, vocabs []string, vocab2idx map[string]int, embedding []
 		size++
 	}
 	dx = append(dx, 1) // </s>
-	dx = append(dx, 0) // <s>
 	dy := make([]int, 0, len(str))
+	dy = append(dy, 0) // <s>
 	for i := 0; i < size; i++ {
 		// x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
 		// fmt.Println(dx, dy)
