@@ -92,14 +92,14 @@ func (layer *SelfAttention) ForwardQKV(q, k, v *tensor.Tensor, masks []*tensor.T
 			if row == nil {
 				row = a
 			} else {
-				row = row.Stack(a)
+				row = row.Conact(a)
 			}
 		}
 		row = row.Mul(Wo).RowVector()
 		if ret == nil {
 			ret = row
 		} else {
-			ret = ret.AppendRow(row)
+			ret = ret.Stack(row)
 		}
 	}
 	return ret
@@ -131,7 +131,7 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, masks []*t
 		if ret == nil {
 			ret = row
 		} else {
-			ret = ret.AppendRow(row)
+			ret = ret.Stack(row)
 		}
 	}
 	return ret

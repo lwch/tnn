@@ -141,6 +141,14 @@ func (t *Tensor) MaxAxis(axis int) *Tensor {
 	return &Tensor{op: op, data: op.f()}
 }
 
+func (t *Tensor) Conact(t2 *Tensor) *Tensor {
+	op := &conact{
+		a: t,
+		b: t2,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
+
 func (t *Tensor) Stack(t2 *Tensor) *Tensor {
 	op := &stack{
 		a: t,
@@ -187,14 +195,6 @@ func (t *Tensor) Row2Matrix(n, rows, cols int) *Tensor {
 func (t *Tensor) RowVector() *Tensor {
 	op := &rowVector{
 		a: t,
-	}
-	return &Tensor{op: op, data: op.f()}
-}
-
-func (t *Tensor) AppendRow(t2 *Tensor) *Tensor {
-	op := &appendRow{
-		a: t,
-		b: t2,
 	}
 	return &Tensor{op: op, data: op.f()}
 }

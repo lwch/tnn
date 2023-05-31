@@ -12,14 +12,6 @@ type log struct {
 	inv mat.Dense
 }
 
-func (op *log) logValue() *mat.Dense {
-	var value mat.Dense
-	value.Apply(func(i, j int, v float64) float64 {
-		return math.Log(v)
-	}, op.a.Value())
-	return &value
-}
-
 func (op *log) f() *mat.Dense {
 	op.log.Apply(func(i, j int, v float64) float64 {
 		return math.Log(v)

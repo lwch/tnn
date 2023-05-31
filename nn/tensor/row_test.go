@@ -24,13 +24,3 @@ func TestRowVector(t *testing.T) {
 	y.Backward(Ones(y.Dims()))
 	fmt.Println(mat.Formatted(x.grad.Value()))
 }
-
-func TestAppendRow(t *testing.T) {
-	x := New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
-	x.requireGrad = true
-	var y Tensor
-	z := y.AppendRow(x)
-	fmt.Println(mat.Formatted(z.Value()))
-	z.Backward(Ones(z.Dims()))
-	fmt.Println(mat.Formatted(x.grad.Value()))
-}
