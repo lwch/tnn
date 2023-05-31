@@ -33,7 +33,7 @@ const unitSize = paddingSize * embeddingDim * 2
 const head = 2
 const batchSize = 64
 const epoch = 1000
-const lr = 0.001
+const lr = 0.01
 const transformerSize = 2
 
 func buildEmbedding(vocabSize int) {
