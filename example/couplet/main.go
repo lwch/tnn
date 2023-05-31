@@ -71,9 +71,6 @@ func runCut(_ *cobra.Command, args []string) {
 	idx2Vocab, vocab2idx := loadVocab()
 	xData := loadData(trainXDir, vocab2idx, int(size))
 	yData := loadData(trainYDir, vocab2idx, int(size))
-	// 重建词汇表
-	rebuild := make([]string, 0, size*10)
-	uniq := make(map[string]struct{})
 	build := func(data [][]int, dir string) {
 		f, err := os.Create(filepath.Join(dataDir, dir))
 		runtime.Assert(err)
@@ -88,10 +85,6 @@ func runCut(_ *cobra.Command, args []string) {
 				if tk == "</s>" {
 					continue
 				}
-				if _, ok := uniq[tk]; !ok {
-					uniq[tk] = struct{}{}
-					rebuild = append(rebuild, tk)
-				}
 				tokens = append(tokens, tk)
 			}
 			fmt.Fprintln(f, strings.Join(tokens, " "))
@@ -99,7 +92,5 @@ func runCut(_ *cobra.Command, args []string) {
 	}
 	build(xData, trainXDir)
 	build(yData, trainYDir)
-	rebuild = append([]string{"<s>", "</s>"}, rebuild...)
-	err = os.WriteFile(filepath.Join(dataDir, "vocabs"), []byte(strings.Join(rebuild, "\n")), 0644)
 	runtime.Assert(err)
 }
