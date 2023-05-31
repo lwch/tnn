@@ -71,14 +71,17 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	// optimizer := optimizer.NewSGD(lr, 0)
 
+	chUpdate := make(chan struct{})
+
 	var cnt atomic.Uint64
 	go showProgress(&cnt, len(trainY)*paddingSize)
+	go update(optimizer, chUpdate)
 
 	begin := time.Now()
 	i := 0
 	for {
 		cnt.Store(0)
-		trainEpoch(&cnt, loss, optimizer, trainX, trainY, vocabs, embedding)
+		trainEpoch(&cnt, loss, chUpdate, trainX, trainY, vocabs, embedding)
 		if i%10 == 0 {
 			list, names := getParams()
 			for i, params := range list {
@@ -96,6 +99,20 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 		i++
 	}
 	save()
+}
+
+func update(optimizer optimizer.Optimizer, ch chan struct{}) {
+	tk := time.NewTicker(time.Minute)
+	defer tk.Stop()
+	for {
+		select {
+		case <-tk.C:
+		case <-ch:
+		}
+		params, _ := getParams()
+		optimizer.Update(params)
+		zeroGrads(params)
+	}
 }
 
 func showProgress(cnt *atomic.Uint64, total int) {
@@ -156,7 +173,7 @@ func trainWorker(loss loss.Loss, trainX, trainY [][]int,
 	}
 }
 
-func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimizer,
+func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, chUpdate chan struct{},
 	trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 	idx := make([]int, len(trainY)*paddingSize)
 	for i := 0; i < len(idx); i++ {
@@ -191,9 +208,7 @@ func trainEpoch(cnt *atomic.Uint64, loss loss.Loss, optimizer optimizer.Optimize
 	}
 	close(ch)
 	wg.Wait()
-	params, _ := getParams()
-	optimizer.Update(params)
-	zeroGrads(params)
+	chUpdate <- struct{}{}
 }
 
 var sumLoss float64
