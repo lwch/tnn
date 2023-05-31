@@ -21,16 +21,16 @@ type SelfAttention struct {
 func NewSelfAttention(seqSize, dims, headSize int, init initializer.Initializer) Layer {
 	var layer SelfAttention
 	shapes := make(map[string]Shape)
-	size := dims / headSize * seqSize
 	for i := 0; i < headSize; i++ {
 		suffix := fmt.Sprintf("H%d", i)
-		shapes["Wq"+suffix] = Shape{size, seqSize * dims}
-		shapes["Wk"+suffix] = Shape{size, seqSize * dims}
-		shapes["Wv"+suffix] = Shape{size, seqSize * dims}
-		shapes["Bq"+suffix] = Shape{size, 1}
-		shapes["Bk"+suffix] = Shape{size, 1}
-		shapes["Bv"+suffix] = Shape{size, 1}
+		shapes["Wq"+suffix] = Shape{seqSize, seqSize}
+		shapes["Wk"+suffix] = Shape{seqSize, seqSize}
+		shapes["Wv"+suffix] = Shape{seqSize, seqSize}
+		shapes["Bq"+suffix] = Shape{seqSize, 1}
+		shapes["Bk"+suffix] = Shape{seqSize, 1}
+		shapes["Bv"+suffix] = Shape{seqSize, 1}
 	}
+	shapes["Wo"] = Shape{dims * headSize, dims}
 	layer.base = new("self_attention", shapes, init)
 	layer.seqSize = seqSize
 	layer.dims = dims
@@ -63,51 +63,78 @@ func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining 
 	if layer.headSize == 1 {
 		return layer.forwardSingleHead(q, k, v, mask)
 	}
+	batchSize, _ := q.Dims()
 	var ret *tensor.Tensor
-	for head := 0; head < layer.headSize; head++ {
-		suffix := fmt.Sprintf("H%d", head)
-		Wq := layer.params.Get("Wq" + suffix)
-		Wk := layer.params.Get("Wk" + suffix)
-		Wv := layer.params.Get("Wv" + suffix)
-		Bq := layer.params.Get("Bq" + suffix)
-		Bk := layer.params.Get("Bk" + suffix)
-		Bv := layer.params.Get("Bv" + suffix)
-		dq := Wq.Mul(q.T()).Add(Bq)
-		dk := Wk.Mul(k.T()).Add(Bk)
-		dv := Wv.Mul(v.T()).Add(Bv)
-		a := dq.Mul(dk.T())
-		a = a.Scale(layer.scale)
-		if mask != nil {
-			a = a.Add(mask)
+	Wo := layer.params.Get("Wo")
+	for batch := 0; batch < batchSize; batch++ {
+		var row *tensor.Tensor
+		for head := 0; head < layer.headSize; head++ {
+			inputQ := q.Row2Matrix(batch, layer.seqSize, layer.dims)
+			inputK := k.Row2Matrix(batch, layer.seqSize, layer.dims)
+			inputV := v.Row2Matrix(batch, layer.seqSize, layer.dims)
+			suffix := fmt.Sprintf("H%d", head)
+			Wq := layer.params.Get("Wq" + suffix)
+			Wk := layer.params.Get("Wk" + suffix)
+			Wv := layer.params.Get("Wv" + suffix)
+			Bq := layer.params.Get("Bq" + suffix)
+			Bk := layer.params.Get("Bk" + suffix)
+			Bv := layer.params.Get("Bv" + suffix)
+			dq := Wq.Mul(inputQ).Add(Bq) // (seq, dims)
+			dk := Wk.Mul(inputK).Add(Bk) // (seq, dims)
+			dv := Wv.Mul(inputV).Add(Bv) // (seq, dims)
+			a := dq.Mul(dk.T())          // (seq, seq)
+			a = a.Scale(layer.scale)     // (seq, seq)
+			if mask != nil {
+				a = a.Add(mask) // (seq, seq)
+			}
+			a = a.Softmax(1) // (seq, seq)
+			a = a.Mul(dv)    // (seq, dims)
+			if row == nil {
+				row = a
+			} else {
+				row = row.Stack(a)
+			}
 		}
-		a = a.Softmax(1)
-		a = a.Mul(dv)
+		row = row.Mul(Wo).RowVector()
 		if ret == nil {
-			ret = a.T()
+			ret = row
 		} else {
-			ret = ret.Stack(a.T())
+			ret = ret.AppendRow(row)
 		}
 	}
 	return ret
 }
 
 func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask *tensor.Tensor) *tensor.Tensor {
+	batchSize, _ := q.Dims()
 	Wq := layer.params.Get("WqH0")
 	Wk := layer.params.Get("WkH0")
 	Wv := layer.params.Get("WvH0")
 	Bq := layer.params.Get("BqH0")
 	Bk := layer.params.Get("BkH0")
 	Bv := layer.params.Get("BvH0")
-	dq := Wq.Mul(q.T()).Add(Bq)
-	dk := Wk.Mul(k.T()).Add(Bk)
-	dv := Wv.Mul(v.T()).Add(Bv)
-	a := dq.Mul(dk.T())
-	a = a.Scale(layer.scale)
-	if mask != nil {
-		a = a.Add(mask)
+	var ret *tensor.Tensor
+	for batch := 0; batch < batchSize; batch++ {
+		inputQ := q.Row2Matrix(batch, layer.seqSize, layer.dims)
+		inputK := k.Row2Matrix(batch, layer.seqSize, layer.dims)
+		inputV := v.Row2Matrix(batch, layer.seqSize, layer.dims)
+		dq := Wq.Mul(inputQ).Add(Bq)
+		dk := Wk.Mul(inputK).Add(Bk)
+		dv := Wv.Mul(inputV).Add(Bv)
+		a := dq.Mul(dk.T())
+		a = a.Scale(layer.scale)
+		if mask != nil {
+			a = a.Add(mask)
+		}
+		a = a.Softmax(1)
+		row := a.Mul(dv).RowVector()
+		if ret == nil {
+			ret = row
+		} else {
+			ret = ret.AppendRow(row)
+		}
 	}
-	a = a.Softmax(1)
-	return a.Mul(dv).T()
+	return ret
 }
 
 func (layer *SelfAttention) Args() map[string]*mat.VecDense {

@@ -87,6 +87,9 @@ func (t *Tensor) Grad() *Tensor {
 }
 
 func (t *Tensor) Dims() (int, int) {
+	if t.data == nil {
+		return 0, 0
+	}
 	return t.data.Dims()
 }
 

@@ -173,3 +173,36 @@ func (t *Tensor) Softmax(axis int) *Tensor {
 	}
 	return &Tensor{op: op, data: op.f()}
 }
+
+func (t *Tensor) Row2Matrix(n, rows, cols int) *Tensor {
+	op := &row2Matrix{
+		a:    t,
+		n:    n,
+		rows: rows,
+		cols: cols,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
+
+func (t *Tensor) RowVector() *Tensor {
+	op := &rowVector{
+		a: t,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
+
+func (t *Tensor) AppendRow(t2 *Tensor) *Tensor {
+	op := &appendRow{
+		a: t,
+		b: t2,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
+
+func (t *Tensor) AppendCol(t2 *Tensor) *Tensor {
+	op := &appendCol{
+		a: t,
+		b: t2,
+	}
+	return &Tensor{op: op, data: op.f()}
+}
