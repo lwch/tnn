@@ -22,9 +22,9 @@ import (
 const lr = 0.001
 const epoch = 1000
 const batchSize = 16
-const seqSize = 4
+const seqSize = 8
 const dims = 8
-const heads = 8
+const heads = 2
 const unitSize = seqSize * dims
 const transformerSize = 2
 
