@@ -311,7 +311,7 @@ func addTransformer(init initializer.Initializer, i int) {
 	dense1 := layer.NewDense(unitSize*4, init)
 	dense1.SetName(fmt.Sprintf("transformer%d_dense1", i))
 	layers = append(layers, dense1)
-	layers = append(layers, activation.NewSigmoid())
+	layers = append(layers, activation.NewReLU())
 	dense2 := layer.NewDense(unitSize, init)
 	dense2.SetName(fmt.Sprintf("transformer%d_dense2", i))
 	layers = append(layers, dense2)
@@ -323,7 +323,7 @@ func initModel(vocabSize int) {
 	for i := 0; i < transformerSize; i++ {
 		addTransformer(init, i)
 	}
-	layers = append(layers, activation.NewSigmoid())
+	layers = append(layers, activation.NewReLU())
 	layers = append(layers, layer.NewDense(vocabSize, init))
 }
 
