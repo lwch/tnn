@@ -27,9 +27,9 @@ func NewSelfAttention(seqSize, dims, headSize int, init initializer.Initializer)
 		shapes["Wq"+suffix] = Shape{size, size}
 		shapes["Wk"+suffix] = Shape{size, size}
 		shapes["Wv"+suffix] = Shape{size, size}
-		shapes["Bq"+suffix] = Shape{1, size}
-		shapes["Bk"+suffix] = Shape{1, size}
-		shapes["Bv"+suffix] = Shape{1, size}
+		shapes["Bq"+suffix] = Shape{size, 1}
+		shapes["Bk"+suffix] = Shape{size, 1}
+		shapes["Bv"+suffix] = Shape{size, 1}
 	}
 	layer.base = new("self_attention", shapes, init)
 	layer.seqSize = seqSize
@@ -91,9 +91,9 @@ func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining 
 		Bq := layer.params.Get("Bq" + suffix)
 		Bk := layer.params.Get("Bk" + suffix)
 		Bv := layer.params.Get("Bv" + suffix)
-		dq := inputQ.Mul(Wq).Add(Bq)
-		dk := inputK.Mul(Wk).Add(Bk)
-		dv := inputV.Mul(Wv).Add(Bv)
+		dq := Wq.Mul(inputQ.T()).Add(Bq)
+		dk := Wk.Mul(inputK.T()).Add(Bk)
+		dv := Wv.Mul(inputV.T()).Add(Bv)
 		a := dq.Mul(dk.T())
 		a = a.Scale(layer.scale)
 		if mask != nil {
@@ -102,9 +102,9 @@ func (layer *SelfAttention) ForwardQKV(q, k, v, mask *tensor.Tensor, isTraining 
 		a = a.Softmax(1)
 		a = a.Mul(dv)
 		if ret == nil {
-			ret = a
+			ret = a.T()
 		} else {
-			ret = ret.Stack(a)
+			ret = ret.Stack(a.T())
 		}
 	}
 	return ret
@@ -117,16 +117,16 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, mask *tens
 	Bq := layer.params.Get("BqH0")
 	Bk := layer.params.Get("BkH0")
 	Bv := layer.params.Get("BvH0")
-	dq := q.Mul(Wq).Add(Bq)
-	dk := k.Mul(Wk).Add(Bk)
-	dv := v.Mul(Wv).Add(Bv)
+	dq := Wq.Mul(q.T()).Add(Bq)
+	dk := Wk.Mul(k.T()).Add(Bk)
+	dv := Wv.Mul(v.T()).Add(Bv)
 	a := dq.Mul(dk.T())
 	a = a.Scale(layer.scale)
 	if mask != nil {
 		a = a.Add(mask)
 	}
 	a = a.Softmax(1)
-	return a.Mul(dv)
+	return a.Mul(dv).T()
 }
 
 func (layer *SelfAttention) Args() map[string]*mat.VecDense {
