@@ -28,10 +28,10 @@ import (
 )
 
 const modelDir = "./model"
-const embeddingDim = 8 // 16个float64表示一个字向量
+const embeddingDim = 2 // 16个float64表示一个字向量
 const unitSize = paddingSize * embeddingDim * 2
-const head = 4
-const batchSize = 16
+const head = 2
+const batchSize = 64
 const epoch = 1000
 const lr = 0.1
 const transformerSize = 2
@@ -110,12 +110,6 @@ func showProgress(cnt *atomic.Uint64, total int) {
 			upd = time.Now()
 		}
 	}
-}
-
-func dup(x []int) []int {
-	ret := make([]int, len(x))
-	copy(ret, x)
-	return ret
 }
 
 func trainWorker(loss loss.Loss, trainX, trainY [][]int,
