@@ -30,6 +30,9 @@ func (op *varianceAxis) f() *mat.Dense {
 }
 
 func (op *varianceAxis) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	op.value.op.df(grad)
 }
 

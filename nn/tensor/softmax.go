@@ -39,6 +39,9 @@ func (op *softmax) f() *mat.Dense {
 }
 
 func (op *softmax) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	var delta mat.Dense
 	if op.axis == 0 {
 		delta.Mul(op.diff, grad.Value())

@@ -20,12 +20,16 @@ func (op *stack) f() *mat.Dense {
 func (op *stack) df(grad *Tensor) {
 	aRows, aCols := op.a.Dims()
 	bRows, bCols := op.b.Dims()
-	da := grad.Value().Slice(0, aRows, 0, aCols)
-	db := grad.Value().Slice(0, bRows, aCols, aCols+bCols)
-	op.a.AddGrad(da.(*mat.Dense))
-	op.b.AddGrad(db.(*mat.Dense))
-	op.a.Backward(FromDense(da.(*mat.Dense)))
-	op.b.Backward(FromDense(db.(*mat.Dense)))
+	if op.a.needGrad() {
+		da := grad.Value().Slice(0, aRows, 0, aCols)
+		op.a.AddGrad(da.(*mat.Dense))
+		op.a.Backward(FromDense(da.(*mat.Dense)))
+	}
+	if op.b.needGrad() {
+		db := grad.Value().Slice(0, bRows, aCols, aCols+bCols)
+		op.b.AddGrad(db.(*mat.Dense))
+		op.b.Backward(FromDense(db.(*mat.Dense)))
+	}
 }
 
 func (op *stack) ZeroGrad() {

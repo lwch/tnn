@@ -30,6 +30,9 @@ func (op *maxAxis) f() *mat.Dense {
 }
 
 func (op *maxAxis) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	rows, cols := op.a.Dims()
 	delta := mat.NewDense(rows, cols, nil)
 	switch op.axis {

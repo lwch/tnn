@@ -21,6 +21,9 @@ func (op *sqrt) f() *mat.Dense {
 }
 
 func (op *sqrt) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	var delta mat.Dense
 	delta.DivElem(grad.Value(), &op.value2)
 	op.a.AddGrad(&delta)

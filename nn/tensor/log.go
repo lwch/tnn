@@ -31,6 +31,9 @@ func (op *log) f() *mat.Dense {
 }
 
 func (op *log) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	var delta mat.Dense
 	delta.MulElem(grad.Value(), &op.inv)
 	op.a.AddGrad(&delta)

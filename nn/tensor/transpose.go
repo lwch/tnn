@@ -15,6 +15,9 @@ func (op *transpose) f() *mat.Dense {
 }
 
 func (op *transpose) df(grad *Tensor) {
+	if !op.a.needGrad() {
+		return
+	}
 	var delta mat.Dense
 	delta.CloneFrom(grad.Value().T())
 	op.a.AddGrad(&delta)
