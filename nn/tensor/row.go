@@ -131,13 +131,8 @@ func (op *appendRow) op(grad *Tensor, a bool) {
 	if rows == 0 {
 		return
 	}
-	delta := mat.NewDense(rows, cols, nil)
-	for i := 0; i < rows; i++ {
-		src := gradDense.RowView(i).(*mat.VecDense)
-		delta.RowView(i).(*mat.VecDense).CopyVec(src)
-	}
-	target.AddGrad(delta)
-	target.Backward(FromDense(delta))
+	target.AddGrad(gradDense)
+	target.Backward(FromDense(gradDense))
 }
 
 func (op *appendRow) df(grad *Tensor) {
