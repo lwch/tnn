@@ -327,7 +327,7 @@ func initModel(vocabSize int) {
 	layers = append(layers, layer.NewDense(vocabSize, init))
 }
 
-var dropout = layer.NewDropout(0.5)
+var dropout = layer.NewDropout(0.1)
 var featureMask *tensor.Tensor
 
 func init() {
@@ -366,17 +366,17 @@ func forwardTransformer(i int, x *tensor.Tensor, paddingMasks []*tensor.Tensor, 
 	}
 	y := layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, masks, train)
 	y = y.Add(x)
-	// if train {
-	// 	y = dropout.Forward(y, true)
-	// }
+	if train {
+		y = dropout.Forward(y, true)
+	}
 	selfOut := layers[i+1].Forward(y, train) // nor
 	y = layers[i+2].Forward(selfOut, train)  // dense
 	y = layers[i+3].Forward(y, train)        // relu
 	y = layers[i+4].Forward(y, train)        // dense
 	y = y.Add(selfOut)
-	// if train {
-	// 	y = dropout.Forward(y, true)
-	// }
+	if train {
+		y = dropout.Forward(y, true)
+	}
 	y = layers[i+5].Forward(y, train) // nor
 	return y, i + 6
 }
