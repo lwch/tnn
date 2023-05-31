@@ -66,8 +66,8 @@ func train(trainX, trainY [][]int, vocabs []string, embedding [][]float64) {
 		http.ListenAndServe(":8888", nil)
 	}()
 	initModel(len(embedding))
-	loss := loss.NewSoftmax()
-	// loss := loss.NewMSE()
+	// loss := loss.NewSoftmax()
+	loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 	// optimizer := optimizer.NewSGD(lr, 0)
 
@@ -352,8 +352,7 @@ func buildPaddingMasks(masks [][]bool) []*tensor.Tensor {
 			}
 			// 十字mask，别的词跟他，他跟别的词都需要mask掉
 			for j := 0; j < size; j++ {
-				mask.Set(i, j, -1e9)
-				mask.Set(j, j, -1e9)
+				mask.Set(j, i, -1e9)
 			}
 		}
 		ret = append(ret, mask)
