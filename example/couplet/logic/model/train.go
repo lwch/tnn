@@ -38,11 +38,11 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	if _, err := os.Stat(filepath.Join(modelDir, "embedding")); os.IsNotExist(err) {
 		m.buildEmbedding(filepath.Join(modelDir, "embedding"))
 	}
-	m.embedding = m.loadEmbedding(filepath.Join(modelDir, "embedding"))
 
 	if _, err := os.Stat(filepath.Join(modelDir, "couplet.model")); !os.IsNotExist(err) {
 		m.Load(m.modelDir)
 	} else {
+		m.embedding = m.loadEmbedding(filepath.Join(modelDir, "embedding"))
 		m.build()
 	}
 
