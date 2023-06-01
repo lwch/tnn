@@ -2,12 +2,20 @@ package model
 
 import (
 	"fmt"
+	"io"
+	_ "net/http/pprof"
+	"os"
+	"path/filepath"
 	"sync/atomic"
+	"time"
 
+	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/loss"
+	pkgmodel "github.com/lwch/tnn/nn/model"
+	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
@@ -93,4 +101,41 @@ func (m *Model) zeroGrads(paramList []*params.Params) {
 			p.ZeroGrad()
 		})
 	}
+}
+
+// showProgress 显示进度
+func (m *Model) showProgress() {
+	tk := time.NewTicker(time.Second)
+	defer tk.Stop()
+	for {
+		<-tk.C
+		status := "train"
+		if m.status == statusEvaluate {
+			status = "evaluate"
+		}
+		fmt.Printf("%s: %d/%d\r", status, m.current.Load(), m.total)
+	}
+}
+
+// save 保存模型
+func (m *Model) save() {
+	var net net.Net
+	net.Set(m.layers...)
+	err := pkgmodel.New(&net, m.loss,
+		optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)).
+		Save(filepath.Join(m.modelDir, "couplet.model"))
+	runtime.Assert(err)
+	fmt.Println("model saved")
+}
+
+// copyVocabs 拷贝vocabs文件到model下
+func (m *Model) copyVocabs(dir string) {
+	src, err := os.Open(dir)
+	runtime.Assert(err)
+	defer src.Close()
+	dst, err := os.Create(filepath.Join(m.modelDir, "vocabs"))
+	runtime.Assert(err)
+	defer dst.Close()
+	_, err = io.Copy(dst, src)
+	runtime.Assert(err)
 }

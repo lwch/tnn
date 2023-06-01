@@ -2,27 +2,27 @@ package model
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	_ "net/http/pprof"
+	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
+	rt "runtime"
+	"sync"
 	"time"
 
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/example/couplet/logic/feature"
+	"github.com/lwch/tnn/example/couplet/logic/sample"
 	"github.com/lwch/tnn/nn/loss"
-	pkgmodel "github.com/lwch/tnn/nn/model"
-	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/tensor"
 )
 
 // Train 训练模型
 func (m *Model) Train(sampleDir, modelDir string) {
-	go func() { // for pprof
-		http.ListenAndServe(":8888", nil)
-	}()
+	// go func() { // for pprof
+	// 	http.ListenAndServe(":8888", nil)
+	// }()
 
 	m.modelDir = modelDir
 	runtime.Assert(os.MkdirAll(modelDir, 0755))
@@ -41,7 +41,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 
 	m.build()
 
-	m.total = len(m.trainX) * paddingSize
+	m.total = len(m.trainX) * paddingSize / 2
 
 	// loss := loss.NewSoftmax()
 	m.loss = loss.NewMSE()
@@ -90,39 +90,84 @@ func (m *Model) update() {
 	}
 }
 
-// showProgress 显示进度
-func (m *Model) showProgress() {
-	tk := time.NewTicker(time.Second)
-	defer tk.Stop()
+// trainWorker 训练协程
+func (m *Model) trainWorker(ch chan []int) {
 	for {
-		<-tk.C
-		status := "train"
-		if m.status == statusEvaluate {
-			status = "evaluate"
+		idx, ok := <-ch
+		if !ok {
+			return
 		}
-		fmt.Printf("%s: %d/%d\r", status, m.current.Load(), m.total)
+		x := make([]float64, 0, len(idx)*unitSize)
+		y := make([]float64, 0, len(idx)*embeddingDim)
+		paddingMask := make([][]bool, 0, batchSize)
+		for _, idx := range idx {
+			i := math.Floor(float64(idx) / float64(paddingSize/2))
+			j := idx % (paddingSize / 2)
+			dx := m.trainX[int(i)]
+			dy := m.trainY[int(i)]
+			dy = append([]int{0}, dy...) // <s> ...
+			var dz int
+			if j < len(dy) {
+				dz = dy[j]
+				dy = dy[:j]
+			} else {
+				dz = -1
+			}
+			xTrain, zTrain, pm := sample.Build(append(dx, dy...), dz, paddingSize, m.embedding, m.vocabs)
+			x = append(x, xTrain...)
+			y = append(y, zTrain...)
+			paddingMask = append(paddingMask, pm)
+		}
+		xIn := tensor.New(x, len(idx), unitSize)
+		zOut := tensor.New(y, len(idx), len(m.vocabs))
+		pred := m.forward(xIn, buildPaddingMasks(paddingMask), true)
+		grad := m.loss.Loss(pred, zOut)
+		grad.Backward(grad)
+		m.current.Add(uint64(len(idx)))
 	}
 }
 
-// save 保存模型
-func (m *Model) save() {
-	var net net.Net
-	net.Set(m.layers...)
-	err := pkgmodel.New(&net, m.loss,
-		optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)).
-		Save(filepath.Join(m.modelDir, "couplet.model"))
-	runtime.Assert(err)
-	fmt.Println("model saved")
-}
+// trainEpoch 运行一个批次
+func (m *Model) trainEpoch() {
+	m.status = statusTrain
+	m.current.Store(0)
 
-// copyVocabs 拷贝vocabs文件到model下
-func (m *Model) copyVocabs(dir string) {
-	src, err := os.Open(dir)
-	runtime.Assert(err)
-	defer src.Close()
-	dst, err := os.Create(filepath.Join(m.modelDir, "vocabs"))
-	runtime.Assert(err)
-	defer dst.Close()
-	_, err = io.Copy(dst, src)
-	runtime.Assert(err)
+	// 生成索引序列
+	idx := make([]int, len(m.trainX)*paddingSize/2)
+	for i := 0; i < len(idx); i++ {
+		idx[i] = i
+	}
+	rand.Shuffle(len(idx), func(i, j int) {
+		idx[i], idx[j] = idx[j], idx[i]
+	})
+
+	// 创建训练协程并行训练
+	workerCount := rt.NumCPU()
+	// workerCount = 1
+
+	ch := make(chan []int)
+	var wg sync.WaitGroup
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			defer wg.Done()
+			m.trainWorker(ch)
+		}()
+	}
+
+	for i := 0; i < len(idx); i += batchSize {
+		list := make([]int, 0, batchSize)
+		for j := 0; j < batchSize; j++ {
+			if i+j >= len(idx) {
+				break
+			}
+			list = append(list, idx[i+j])
+		}
+		ch <- list
+	}
+	close(ch)
+	wg.Wait()
+
+	// 触发梯度更新
+	m.chUpdate <- struct{}{}
 }
