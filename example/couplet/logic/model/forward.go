@@ -22,11 +22,11 @@ func (m *Model) forward(x *tensor.Tensor, paddingMasks []*tensor.Tensor, train b
 
 // forwardTransformer 运行transformer层
 func (m *Model) forwardTransformer(i int, x *tensor.Tensor, paddingMasks []*tensor.Tensor, train bool) (*tensor.Tensor, int) {
-	masks := make([]*tensor.Tensor, len(paddingMasks))
+	// masks := make([]*tensor.Tensor, len(paddingMasks))
 	// for i, m := range paddingMasks {
 	// 	masks[i] = m.Add(featureMask) // 添加掩码隐藏未来信息
 	// }
-	y := m.layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, masks, train)
+	y := m.layers[i].(*layer.SelfAttention).ForwardQKV(x, x, x, paddingMasks, train)
 	y = y.Add(x)
 	selfOut := m.layers[i+1].Forward(y, train) // nor
 	y = m.layers[i+2].Forward(selfOut, train)  // dense
