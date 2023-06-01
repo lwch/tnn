@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/lwch/runtime"
+	"github.com/lwch/tnn/example/couplet/logic/feature"
+	"github.com/lwch/tnn/example/couplet/logic/model"
 	"github.com/spf13/cobra"
 )
 
@@ -15,15 +18,20 @@ var rootCmd = cobra.Command{
 	Use: "couplet",
 }
 
+var downloadCmd = cobra.Command{
+	Use: "download",
+	Run: runDownload,
+}
+
 var trainCmd = cobra.Command{
 	Use: "train",
 	Run: runTrain,
 }
 
-var predictCmd = cobra.Command{
-	Use:  "predict [content]",
+var evaluateCmd = cobra.Command{
+	Use:  "evaluate	[content]",
 	Args: cobra.MinimumNArgs(1),
-	Run:  runPredict,
+	Run:  runEvaluate,
 }
 
 var cutCmd = cobra.Command{
@@ -32,65 +40,58 @@ var cutCmd = cobra.Command{
 	Run:  runCut,
 }
 
-const trainXDir = "train/in.txt"
-const trainYDir = "train/out.txt"
+const dataDir = "./data"
+const trainDir = "./train"
+const modelDir = "./model"
 
 func main() {
-	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
-		download()
-	}
-
+	rootCmd.AddCommand(&downloadCmd)
 	rootCmd.AddCommand(&trainCmd)
-	rootCmd.AddCommand(&predictCmd)
+	rootCmd.AddCommand(&evaluateCmd)
 	rootCmd.AddCommand(&cutCmd)
 
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	runtime.Assert(rootCmd.Execute())
 }
 
-func runTrain(*cobra.Command, []string) {
-	idx2vocab, vocab2idx := loadVocab()
-	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
-		buildEmbedding(len(idx2vocab))
-	}
-	embedding := loadEmbedding(len(idx2vocab))
-	trainX := loadData(trainXDir, vocab2idx, -1)
-	trainY := loadData(trainYDir, vocab2idx, -1)
-	train(trainX, trainY, idx2vocab, embedding)
-}
-
-func runPredict(_ *cobra.Command, args []string) {
-	idx2vocab, vocab2idx := loadVocab()
-	embedding := loadEmbedding(len(idx2vocab))
-	predict(args[0], idx2vocab, vocab2idx, embedding)
+func runDownload(*cobra.Command, []string) {
+	feature.Download(dataDir)
 }
 
 func runCut(_ *cobra.Command, args []string) {
 	size, err := strconv.ParseInt(args[0], 10, 64)
 	runtime.Assert(err)
-	idx2Vocab, vocab2idx := loadVocab()
-	xData := loadData(trainXDir, vocab2idx, int(size))
-	yData := loadData(trainYDir, vocab2idx, int(size))
-	build := func(data [][]int, dir string) {
-		f, err := os.Create(filepath.Join(dataDir, dir))
-		runtime.Assert(err)
-		defer f.Close()
-		for _, tks := range data {
-			tokens := make([]string, 0, len(tks))
-			for _, i := range tks {
-				tk := idx2Vocab[i]
-				if tk == "<s>" {
-					continue
-				}
-				if tk == "</s>" {
-					continue
-				}
-				tokens = append(tokens, tk)
-			}
-			fmt.Fprintln(f, strings.Join(tokens, " "))
-		}
+	vocabs, vocab2idx := feature.LoadVocab(filepath.Join(dataDir, "vocabs"))
+	xData := feature.LoadData(filepath.Join(dataDir, "train", "in.txt"), vocab2idx, int(size))
+	yData := feature.LoadData(filepath.Join(dataDir, "train", "out.txt"), vocab2idx, int(size))
+	xtokens := feature.Build(xData, vocabs, filepath.Join(trainDir, "in.txt"))
+	ytokens := feature.Build(yData, vocabs, filepath.Join(trainDir, "out.txt"))
+	merge := make(map[string]int)
+	for tk, cnt := range xtokens {
+		merge[tk] += cnt
 	}
-	build(xData, trainXDir)
-	build(yData, trainYDir)
+	for tk, cnt := range ytokens {
+		merge[tk] += cnt
+	}
+	vocabs = vocabs[:0]
+	for tk := range merge {
+		vocabs = append(vocabs, tk)
+	}
+	sort.Slice(vocabs, func(i, j int) bool {
+		return merge[vocabs[i]] > merge[vocabs[j]]
+	})
+	vocabs = append([]string{"<s>", "</s>"}, vocabs...)
+	err = os.WriteFile(filepath.Join(trainDir, "vocabs"), []byte(strings.Join(vocabs, "\n")), 0644)
 	runtime.Assert(err)
+}
+
+func runTrain(*cobra.Command, []string) {
+	m := model.New()
+	m.Train(trainDir, modelDir)
+}
+
+func runEvaluate(_ *cobra.Command, args []string) {
+	var m model.Model
+	m.Load(modelDir)
+	fmt.Println(m.Evaluate(args[0]))
 }

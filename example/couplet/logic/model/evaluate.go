@@ -1,44 +1,33 @@
-package main
+package model
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 
-	"github.com/lwch/runtime"
-	"github.com/lwch/tnn/nn/model"
+	"github.com/lwch/tnn/example/couplet/logic/sample"
 	"github.com/lwch/tnn/nn/tensor"
 	"gonum.org/v1/gonum/mat"
 )
 
-func predict(str string, vocabs []string, vocab2idx map[string]int, embedding [][]float64) {
-	dir := filepath.Join(modelDir, "couplet.model")
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		panic("model not found")
-	}
-	var m model.Model
-	runtime.Assert(m.Load(dir))
-	layers = m.Layers()
+// Evaluate 根据输入内容进行推理
+func (m *Model) Evaluate(str string) string {
 	dx := make([]int, 0, len(str))
 	var size int
 	for _, ch := range str {
-		dx = append(dx, vocab2idx[string(ch)])
+		dx = append(dx, m.vocabsIdx[string(ch)])
 		size++
 	}
 	dx = append(dx, 1) // </s>
 	dy := make([]int, 0, len(str))
 	dy = append(dy, 0) // <s>
 	for i := 0; i < size; i++ {
-		// x, y, _ := buildTensor([][]int{dx}, [][]int{dy}, vocabs, embedding, false)
-		// fmt.Println(dx, dy)
-		x, _, paddingMask := build(dx, dy, 0, vocabs, embedding)
-		pred := forward(tensor.New(x, 1, unitSize), buildPaddingMasks([][]bool{paddingMask}), false)
+		x, _, paddingMask := sample.Build(append(dx, dy...), 0, paddingSize, m.embedding, m.vocabs)
+		pred := m.forward(tensor.New(x, 1, unitSize), buildPaddingMasks([][]bool{paddingMask}), false)
 		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
-		label := lookup(predProb, vocabs)
+		label := lookup(predProb, m.vocabs)
 		dy = append(dy, label)
 	}
-	fmt.Println(values(vocabs, dy[1:]))
+	return values(m.vocabs, dy[1:])
 }
 
 func lookup(prob []float64, vocabs []string) int {
