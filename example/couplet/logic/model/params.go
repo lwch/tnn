@@ -6,5 +6,5 @@ const unitSize = paddingSize * embeddingDim
 const head = 1
 const batchSize = 8
 const epoch = 1000
-const lr = 0.01
-const transformerSize = 1
+const lr = 0.001
+const transformerSize = 4
