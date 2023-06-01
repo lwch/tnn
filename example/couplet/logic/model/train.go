@@ -94,8 +94,8 @@ func (m *Model) trainWorker(ch chan []int) {
 		if !ok {
 			return
 		}
-		x := make([]float64, 0, len(idx)*unitSize)
-		y := make([]float64, 0, len(idx)*embeddingDim)
+		x := make([]float32, 0, len(idx)*unitSize)
+		y := make([]float32, 0, len(idx)*embeddingDim)
 		paddingMask := make([][]bool, 0, batchSize)
 		for _, idx := range idx {
 			i := math.Floor(float64(idx) / float64(paddingSize/2))

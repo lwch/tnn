@@ -14,5 +14,5 @@ func NewMAE() *MAE {
 
 func (*MAE) Loss(predict, targets *tensor.Tensor) *tensor.Tensor {
 	rows, _ := predict.Dims()
-	return predict.Sub(targets).Sum().Scale(1 / float64(rows))
+	return predict.Sub(targets).Sum().Scale(1 / float32(rows))
 }

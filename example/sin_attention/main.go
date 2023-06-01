@@ -50,7 +50,7 @@ func main() {
 	p.Y.Label.Text = "value"
 
 	var real, predict plotter.XYs
-	var points []float64
+	var points []float32
 	i := 0.
 	for {
 		points = append(points, math.Sin(i))
@@ -72,14 +72,14 @@ func main() {
 			pred := forward(input, false)
 			acc := accuracy(pred, output)
 			for j := 0; j < batchSize; j++ {
-				real = append(real, plotter.XY{X: float64(i*batchSize + j), Y: output.Value().At(j, 0)})
-				predict = append(predict, plotter.XY{X: float64(i*batchSize + j), Y: pred.Value().At(j, 0)})
+				real = append(real, plotter.XY{X: float32(i*batchSize + j), Y: output.Value().At(j, 0)})
+				predict = append(predict, plotter.XY{X: float32(i*batchSize + j), Y: pred.Value().At(j, 0)})
 			}
 			loss := loss.Loss(pred, output)
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n",
 				i, loss.Value().At(0, 0), acc)
-			// fmt.Println(mat.Formatted(output.Value()))
-			// fmt.Println(mat.Formatted(pred.Value()))
+			// fmt.Println(mat32.Formatted(output.Value()))
+			// fmt.Println(mat32.Formatted(pred.Value()))
 		}
 	}
 
@@ -101,7 +101,7 @@ func main() {
 	p.Save(8*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
-func trainWorker(points []float64, loss loss.Loss, optimizer optimizer.Optimizer, ch chan int) {
+func trainWorker(points []float32, loss loss.Loss, optimizer optimizer.Optimizer, ch chan int) {
 	for {
 		i := <-ch
 		input, output := getBatch(points, i+batchSize)
@@ -171,9 +171,9 @@ func getParams() []*params.Params {
 	return ret
 }
 
-func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor) {
-	x := make([]float64, batchSize*unitSize)
-	y := make([]float64, batchSize)
+func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor) {
+	x := make([]float32, batchSize*unitSize)
+	y := make([]float32, batchSize)
 	for batch := 0; batch < batchSize; batch++ {
 		j := i + batch
 		for t := 0; t < unitSize; t++ {
@@ -183,8 +183,8 @@ func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor) {
 		y[batch] = points[(i*batchSize+batch)%len(points)]
 	}
 	// rand.Shuffle(batchSize, func(i, j int) {
-	// 	dx := make([]float64, unitSize)
-	// 	dy := make([]float64, 1)
+	// 	dx := make([]float32, unitSize)
+	// 	dy := make([]float32, 1)
 	// 	copy(dx, x[i*unitSize:(i+1)*unitSize])
 	// 	copy(dy, y[i*1:(i+1)*1])
 	// 	copy(x[i*unitSize:(i+1)*unitSize], x[j*unitSize:(j+1)*unitSize])
@@ -196,8 +196,8 @@ func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor) {
 		tensor.New(y, batchSize, 1)
 }
 
-func accuracy(pred, output *tensor.Tensor) float64 {
-	var correct float64
+func accuracy(pred, output *tensor.Tensor) float32 {
+	var correct float32
 	for i := 0; i < batchSize; i++ {
 		diff := 1 - math.Abs(output.Value().At(i, 0)-pred.Value().At(i, 0))
 		if diff > 0 {

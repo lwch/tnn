@@ -12,8 +12,8 @@ import (
 
 type Adam struct {
 	*base
-	beta1, beta2 float64
-	epsilon      float64
+	beta1, beta2 float32
+	epsilon      float32
 
 	mu   sync.Mutex
 	init bool
@@ -21,7 +21,7 @@ type Adam struct {
 	m, v []*params.Params
 }
 
-func NewAdam(lr, weightDecay, beta1, beta2, epsilon float64) *Adam {
+func NewAdam(lr, weightDecay, beta1, beta2, epsilon float32) *Adam {
 	var adam Adam
 	adam.base = new("adam", lr, weightDecay, adam.compute)
 	adam.beta1 = beta1
@@ -55,7 +55,7 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 	if !adam.init {
 		adam.initParams(grads)
 	}
-	t := float64(adam.t.Add(1))
+	t := float32(adam.t.Add(1))
 	ret := make([]*params.Params, len(grads))
 	for i := 0; i < len(grads); i++ {
 		ret[i] = params.New()
@@ -69,8 +69,8 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 			m.AddValue(dm.Value())
 			v.AddValue(dv.Value())
 
-			m = m.Scale(1 / (1 - math.Pow(adam.beta1, t)))
-			v = v.Scale(1 / (1 - math.Pow(adam.beta2, t)))
+			m = m.Scale(1 / (1 - float32(math.Pow(float64(adam.beta1), float64(t)))))
+			v = v.Scale(1 / (1 - float32(math.Pow(float64(adam.beta2), float64(t)))))
 
 			rows, cols := v.Dims()
 			a := m.Scale(-adam.lr)
@@ -83,7 +83,7 @@ func (adam *Adam) compute(grads []*params.Params) []*params.Params {
 
 func (adam *Adam) Save() *pb.Optimizer {
 	ret := adam.base.Save()
-	ret.Params = make(map[string]float64)
+	ret.Params = make(map[string]float32)
 	ret.Params["beta1"] = adam.beta1
 	ret.Params["beta2"] = adam.beta2
 	ret.Params["epsilon"] = adam.epsilon

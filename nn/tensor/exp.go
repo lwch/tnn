@@ -3,17 +3,17 @@ package tensor
 import (
 	"math"
 
-	"gonum.org/v1/gonum/mat"
+	"github.com/lwch/gonum/mat32"
 )
 
 type exp struct {
 	a     *Tensor
-	value mat.Dense
+	value mat32.Dense
 }
 
-func (op *exp) f() *mat.Dense {
-	op.value.Apply(func(i, j int, v float64) float64 {
-		return math.Exp(v)
+func (op *exp) f() *mat32.Dense {
+	op.value.Apply(func(i, j int, v float32) float32 {
+		return float32(math.Exp(float64(v)))
 	}, op.a.Value())
 	return &op.value
 }
@@ -22,7 +22,7 @@ func (op *exp) df(grad *Tensor) {
 	if !op.a.needGrad() {
 		return
 	}
-	var delta mat.Dense
+	var delta mat32.Dense
 	delta.MulElem(grad.Value(), &op.value)
 	op.a.AddGrad(&delta)
 	op.a.Backward(FromDense(&delta))

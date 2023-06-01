@@ -9,7 +9,7 @@ type SGD struct {
 	*base
 }
 
-func NewSGD(lr, weightDecay float64) *SGD {
+func NewSGD(lr, weightDecay float32) *SGD {
 	var sgd SGD
 	sgd.base = new("sgd", lr, weightDecay, sgd.compute)
 	return &sgd

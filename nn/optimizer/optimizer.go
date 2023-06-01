@@ -8,7 +8,7 @@ import (
 
 type Optimizer interface {
 	Update([]*params.Params)
-	GetLr() float64
+	GetLr() float32
 	Save() *pb.Optimizer
 }
 
@@ -16,12 +16,12 @@ type computeFunc func(params []*params.Params) []*params.Params
 
 type base struct {
 	name        string
-	lr          float64
-	weightDecay float64
+	lr          float32
+	weightDecay float32
 	computeFunc computeFunc
 }
 
-func new(name string, lr, weightDecay float64, compute computeFunc) *base {
+func new(name string, lr, weightDecay float32, compute computeFunc) *base {
 	return &base{
 		name:        name,
 		lr:          lr,
@@ -66,7 +66,7 @@ func (opt *base) Update(params []*params.Params) {
 	}
 }
 
-func (opt *base) GetLr() float64 {
+func (opt *base) GetLr() float32 {
 	return opt.lr
 }
 

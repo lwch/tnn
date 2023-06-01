@@ -40,7 +40,7 @@ type Model struct {
 	vocabsIdx map[string]int
 	trainX    [][]int
 	trainY    [][]int
-	embedding [][]float64
+	embedding [][]float32
 	loss      loss.Loss
 	optimizer optimizer.Optimizer
 }

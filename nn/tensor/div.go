@@ -1,23 +1,21 @@
 package tensor
 
-import (
-	"gonum.org/v1/gonum/mat"
-)
+import "github.com/lwch/gonum/mat32"
 
 type divElem struct {
 	a, b *Tensor
 }
 
-func (op *divElem) f() *mat.Dense {
+func (op *divElem) f() *mat32.Dense {
 	aRows, aCols := op.a.Dims()
 	bRows, bCols := op.b.Dims()
 	if aRows == bRows && aCols != bCols { // 减去列向量
 		if bCols != 1 {
 			panic("bCols!=1")
 		}
-		ret := mat.NewDense(aRows, aCols, nil)
+		ret := mat32.NewDense(aRows, aCols, nil)
 		for i := 0; i < aCols; i++ {
-			var vec mat.VecDense
+			var vec mat32.VecDense
 			vec.DivElemVec(op.a.Value().ColView(i), op.b.Value().ColView(0))
 			ret.SetCol(i, dupVec(&vec))
 		}
@@ -26,15 +24,15 @@ func (op *divElem) f() *mat.Dense {
 		if bRows != 1 {
 			panic("bRows!=1")
 		}
-		ret := mat.NewDense(aRows, aCols, nil)
+		ret := mat32.NewDense(aRows, aCols, nil)
 		for i := 0; i < aRows; i++ {
-			var vec mat.VecDense
+			var vec mat32.VecDense
 			vec.DivElemVec(op.a.Value().RowView(i), op.b.Value().RowView(0))
 			ret.SetRow(i, dupVec(&vec))
 		}
 		return ret
 	} else {
-		var value mat.Dense
+		var value mat32.Dense
 		value.DivElem(op.a.Value(), op.b.Value())
 		return &value
 	}
@@ -45,18 +43,18 @@ func (op *divElem) df(grad *Tensor) {
 	bRows, bCols := op.b.Dims()
 	if op.a.needGrad() {
 		aRows, aCols := op.a.Dims()
-		da := mat.NewDense(aRows, aCols, nil)
+		da := mat32.NewDense(aRows, aCols, nil)
 		if gRows != bRows {
 			b := op.b.Value().RowView(0)
 			for i := 0; i < aRows; i++ {
-				var v mat.VecDense
+				var v mat32.VecDense
 				v.DivElemVec(grad.Value().RowView(i), b)
 				da.SetRow(i, dupVec(&v))
 			}
 		} else if gCols != bCols {
 			b := op.b.Value().ColView(0)
 			for i := 0; i < aCols; i++ {
-				var v mat.VecDense
+				var v mat32.VecDense
 				v.DivElemVec(grad.Value().ColView(i), b)
 				da.SetCol(i, dupVec(&v))
 			}
@@ -68,24 +66,24 @@ func (op *divElem) df(grad *Tensor) {
 	}
 
 	if op.b.needGrad() {
-		db := new(mat.Dense)
+		db := new(mat32.Dense)
 		db.Scale(-1, grad.Value())
 		db.MulElem(db, op.a.Value())
 		pow := powDense(op.b.Value(), 2)
 		if gRows != bRows {
-			sum := mat.NewVecDense(gCols, nil)
+			sum := mat32.NewVecDense(gCols, nil)
 			for i := 0; i < gRows; i++ {
 				sum.AddVec(sum, db.RowView(i))
 			}
 			sum.DivElemVec(sum, pow.RowView(0))
-			db = mat.NewDense(bRows, gCols, dupVec(sum))
+			db = mat32.NewDense(bRows, gCols, dupVec(sum))
 		} else if gCols != bCols {
-			sum := mat.NewVecDense(gRows, nil)
+			sum := mat32.NewVecDense(gRows, nil)
 			for i := 0; i < gCols; i++ {
 				sum.AddVec(sum, db.ColView(i))
 			}
 			sum.DivElemVec(sum, pow.ColView(0))
-			db = mat.NewDense(gRows, bCols, dupVec(sum))
+			db = mat32.NewDense(gRows, bCols, dupVec(sum))
 		} else {
 			db.DivElem(db, pow)
 		}

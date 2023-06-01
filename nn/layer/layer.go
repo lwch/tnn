@@ -3,11 +3,11 @@ package layer
 import (
 	"sync"
 
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 type Layer interface {
@@ -15,7 +15,7 @@ type Layer interface {
 	Name() string
 	Class() string
 	Params() *params.Params
-	Args() map[string]*mat.VecDense
+	Args() map[string]*mat32.VecDense
 	Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor
 }
 
@@ -97,6 +97,6 @@ func (layer *base) Params() *params.Params {
 	return layer.params
 }
 
-func (layer *base) Args() map[string]*mat.VecDense {
+func (layer *base) Args() map[string]*mat32.VecDense {
 	return nil
 }

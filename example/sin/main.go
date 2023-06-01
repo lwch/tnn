@@ -70,14 +70,14 @@ func main() {
 		pred := m.Forward(input, false)
 		m.Apply()
 		pred.ZeroGrad()
-		real = append(real, plotter.XY{X: float64(i), Y: output.Value().At(0, 0)})
-		predict = append(predict, plotter.XY{X: float64(i), Y: pred.Value().At(0, 0)})
+		real = append(real, plotter.XY{X: float32(i), Y: output.Value().At(0, 0)})
+		predict = append(predict, plotter.XY{X: float32(i), Y: pred.Value().At(0, 0)})
 		if i%10 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, loss, acc)
-			// fmt.Println(mat.Formatted(output.Value()))
-			// fmt.Println(mat.Formatted(pred.Value()))
+			// fmt.Println(mat32.Formatted(output.Value()))
+			// fmt.Println(mat32.Formatted(pred.Value()))
 		}
 	}
 
@@ -102,23 +102,23 @@ func main() {
 func getBatch(i int) (*tensor.Tensor, *tensor.Tensor) {
 	inputs := tensor.New(nil, batchSize, times)
 	outputs := tensor.New(nil, batchSize, 1)
-	max := float64(epoch * batchSize * times)
+	max := float32(epoch * batchSize * times)
 	for batch := 0; batch < batchSize; batch++ {
-		var n float64
+		var n float32
 		for t := 0; t < times; t++ {
-			n = float64(i) / max * 100
+			n = float32(i) / max * 100
 			inputs.Set(batch, t, math.Sin(n))
 			i++
 		}
-		n = float64(i) / max * 100
+		n = float32(i) / max * 100
 		outputs.Set(batch, 0, math.Sin(n))
 	}
 	return inputs, outputs
 }
 
-func accuracy(m *model.Model, input, output *tensor.Tensor) float64 {
+func accuracy(m *model.Model, input, output *tensor.Tensor) float32 {
 	predict := m.Forward(input, false)
-	var correct float64
+	var correct float32
 	for i := 0; i < batchSize; i++ {
 		diff := 1 - math.Abs(output.Value().At(i, 0)-predict.Value().At(i, 0))
 		if diff > 0 {

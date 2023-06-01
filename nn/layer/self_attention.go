@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 type SelfAttention struct {
@@ -15,7 +15,7 @@ type SelfAttention struct {
 	seqSize  int
 	dims     int
 	headSize int
-	scale    float64
+	scale    float32
 }
 
 func NewSelfAttention(seqSize, dims, headSize int, init initializer.Initializer) Layer {
@@ -35,7 +35,7 @@ func NewSelfAttention(seqSize, dims, headSize int, init initializer.Initializer)
 	layer.seqSize = seqSize
 	layer.dims = dims
 	layer.headSize = headSize
-	layer.scale = 1 / math.Sqrt(float64(layer.dims))
+	layer.scale = 1 / float32(math.Sqrt(float64(layer.dims)))
 	return &layer
 }
 
@@ -46,7 +46,7 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 	layer.seqSize = int(p[0])
 	layer.dims = int(p[1])
 	layer.headSize = int(p[2])
-	layer.scale = 1 / math.Sqrt(float64(layer.dims))
+	layer.scale = 1 / float32(math.Sqrt(float64(layer.dims)))
 	layer.name = name
 	layer.base.loadParams(params)
 	return &layer
@@ -137,12 +137,12 @@ func (layer *SelfAttention) forwardSingleHead(q, k, v *tensor.Tensor, masks []*t
 	return ret
 }
 
-func (layer *SelfAttention) Args() map[string]*mat.VecDense {
-	return map[string]*mat.VecDense{
-		"params": mat.NewVecDense(3, []float64{
-			float64(layer.seqSize),
-			float64(layer.dims),
-			float64(layer.headSize),
+func (layer *SelfAttention) Args() map[string]*mat32.VecDense {
+	return map[string]*mat32.VecDense{
+		"params": mat32.NewVecDense(3, []float32{
+			float32(layer.seqSize),
+			float32(layer.dims),
+			float32(layer.headSize),
 		}),
 	}
 }

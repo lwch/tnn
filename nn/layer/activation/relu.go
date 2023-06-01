@@ -1,8 +1,8 @@
 package activation
 
 import (
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 type ReLU struct {
@@ -16,8 +16,8 @@ func NewReLU() Activation {
 }
 
 func (layer *ReLU) Forward(input *tensor.Tensor, _ bool) *tensor.Tensor {
-	var dense mat.Dense
-	dense.Apply(func(i, j int, v float64) float64 {
+	var dense mat32.Dense
+	dense.Apply(func(i, j int, v float32) float32 {
 		if v < 0 {
 			return 0
 		}

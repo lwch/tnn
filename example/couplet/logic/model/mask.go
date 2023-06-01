@@ -7,23 +7,23 @@ import (
 )
 
 // 位置信息编码，由于padding size和embedding size固定，因此每一个样本的位置编码信息固定
-var positionEmbedding []float64
+var positionEmbedding []float32
 
 func init() {
-	positionEmbedding = make([]float64, unitSize)
+	positionEmbedding = make([]float32, unitSize)
 	for k := 0; k < paddingSize; k++ {
 		start := k * embeddingDim
 		for i := 0; i < embeddingDim/2; i++ {
-			n := float64(k) / math.Pow(10000, 2*float64(i)/float64(embeddingDim))
-			positionEmbedding[start+i*2] = math.Sin(n)
-			positionEmbedding[start+i*2+1] = math.Cos(n)
+			n := float32(k) / float32(math.Pow(10000, 2*float64(i)/float64(embeddingDim)))
+			positionEmbedding[start+i*2] = float32(math.Sin(float64(n)))
+			positionEmbedding[start+i*2+1] = float32(math.Cos(float64(n)))
 		}
 	}
 }
 
 // buildPositionEmbedding 为每一个样本生成位置编码
 func buildPositionEmbedding(batchSize int) *tensor.Tensor {
-	data := make([]float64, batchSize*unitSize)
+	data := make([]float32, batchSize*unitSize)
 	for i := 0; i < batchSize; i++ {
 		start := i * unitSize
 		copy(data[start:start+unitSize], positionEmbedding)

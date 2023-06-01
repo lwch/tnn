@@ -1,8 +1,6 @@
 package tensor
 
-import (
-	"gonum.org/v1/gonum/mat"
-)
+import "github.com/lwch/gonum/mat32"
 
 type varianceAxis struct {
 	a        *Tensor
@@ -11,7 +9,7 @@ type varianceAxis struct {
 	value    *Tensor
 }
 
-func (op *varianceAxis) f() *mat.Dense {
+func (op *varianceAxis) f() *mat32.Dense {
 	var size int
 	switch op.axis {
 	case 0:
@@ -25,7 +23,7 @@ func (op *varianceAxis) f() *mat.Dense {
 	if op.unbiased {
 		size--
 	}
-	op.value = op.a.Sub(mean).Pow(2).SumAxis(op.axis).Scale(1 / float64(size))
+	op.value = op.a.Sub(mean).Pow(2).SumAxis(op.axis).Scale(1 / float32(size))
 	return op.value.Value()
 }
 

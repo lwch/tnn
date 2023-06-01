@@ -1,22 +1,20 @@
 package tensor
 
-import (
-	"gonum.org/v1/gonum/mat"
-)
+import "github.com/lwch/gonum/mat32"
 
 type softmax struct {
 	a     *Tensor
 	axis  int
-	value mat.Dense
-	diff  *mat.Dense
+	value mat32.Dense
+	diff  *mat32.Dense
 }
 
 // exp(x) / sum(exp(max(x)))
-func (op *softmax) f() *mat.Dense {
+func (op *softmax) f() *mat32.Dense {
 	max := op.a.MaxAxis(op.axis)
 	exp := op.a.Sub(max).Exp()
 	op.value.CloneFrom(exp.DivElem(exp.SumAxis(op.axis)).Value())
-	var v mat.Vector
+	var v mat32.Vector
 	switch op.axis {
 	case 0:
 		v = op.value.ColView(0)
@@ -25,7 +23,7 @@ func (op *softmax) f() *mat.Dense {
 	default:
 		panic("invalid axis")
 	}
-	op.diff = mat.NewDense(v.Len(), v.Len(), nil)
+	op.diff = mat32.NewDense(v.Len(), v.Len(), nil)
 	for i := 0; i < v.Len(); i++ {
 		for j := 0; j < v.Len(); j++ {
 			if i == j {
@@ -42,7 +40,7 @@ func (op *softmax) df(grad *Tensor) {
 	if !op.a.needGrad() {
 		return
 	}
-	var delta mat.Dense
+	var delta mat32.Dense
 	if op.axis == 0 {
 		delta.Mul(op.diff, grad.Value())
 	} else {
