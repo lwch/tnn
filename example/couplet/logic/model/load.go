@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -27,4 +28,6 @@ func (m *Model) Load(dir string) {
 		panic("embedding not found")
 	}
 	m.embedding = m.loadEmbedding(filepath.Join(dir, "embedding"))
+
+	fmt.Println("model loaded")
 }

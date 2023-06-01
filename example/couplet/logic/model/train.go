@@ -40,7 +40,11 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	}
 	m.embedding = m.loadEmbedding(filepath.Join(modelDir, "embedding"))
 
-	m.build()
+	if _, err := os.Stat(filepath.Join(modelDir, "couplet.model")); !os.IsNotExist(err) {
+		m.Load(m.modelDir)
+	} else {
+		m.build()
+	}
 
 	m.total = len(m.trainX) * paddingSize / 2
 
