@@ -15,7 +15,7 @@ func (m *Model) Load(dir string) {
 		panic("model not found")
 	}
 	var md model.Model
-	runtime.Assert(md.Load(dir))
+	runtime.Assert(md.Load(filepath.Join(dir, "couplet.model")))
 	m.layers = md.Layers()
 
 	if _, err := os.Stat(filepath.Join(dir, "vocabs")); os.IsNotExist(err) {

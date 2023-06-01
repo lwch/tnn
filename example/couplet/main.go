@@ -29,7 +29,7 @@ var trainCmd = cobra.Command{
 }
 
 var evaluateCmd = cobra.Command{
-	Use:  "evaluate	[content]",
+	Use:  "evaluate [content]",
 	Args: cobra.MinimumNArgs(1),
 	Run:  runEvaluate,
 }
