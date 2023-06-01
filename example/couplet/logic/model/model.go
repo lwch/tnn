@@ -58,7 +58,7 @@ func (m *Model) build() {
 	for i := 0; i < transformerSize; i++ {
 		m.addTransformerLayer(init, i)
 	}
-	m.layers = append(m.layers, activation.NewGeLU())
+	m.layers = append(m.layers, activation.NewReLU())
 	output := layer.NewDense(len(m.vocabs), init)
 	output.SetName("output")
 	m.layers = append(m.layers, output)
