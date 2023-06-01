@@ -108,7 +108,7 @@ func (m *Model) trainWorker(ch chan []int) {
 				dz = dy[j]
 				dy = dy[:j]
 			} else {
-				dz = -1
+				dz = -1 // padding
 			}
 			xTrain, zTrain, pm := sample.Build(append(dx, dy...), dz, paddingSize, m.embedding, m.vocabs)
 			x = append(x, xTrain...)
