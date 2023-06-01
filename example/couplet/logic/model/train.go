@@ -119,6 +119,7 @@ func (m *Model) copyVocabs(dir string) {
 	src, err := os.Open(dir)
 	runtime.Assert(err)
 	defer src.Close()
+	runtime.Assert(os.MkdirAll(filepath.Dir(m.modelDir), 0755))
 	dst, err := os.Create(filepath.Join(m.modelDir, "vocabs"))
 	runtime.Assert(err)
 	defer dst.Close()
