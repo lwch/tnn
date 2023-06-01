@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/example/couplet/logic/sample"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 // Evaluate 根据输入内容进行推理
@@ -23,15 +23,15 @@ func (m *Model) Evaluate(str string) string {
 	for i := 0; i < size; i++ {
 		x, _, paddingMask := sample.Build(append(dx, dy...), 0, paddingSize, m.embedding, m.vocabs)
 		pred := m.forward(tensor.New(x, 1, unitSize), buildPaddingMasks([][]bool{paddingMask}), false)
-		predProb := pred.Value().RowView(0).(*mat.VecDense).RawVector().Data
+		predProb := pred.Value().RowView(0).(*mat32.VecDense).RawVector().Data
 		label := lookup(predProb, m.vocabs)
 		dy = append(dy, label)
 	}
 	return values(m.vocabs, dy[1:])
 }
 
-func lookup(prob []float64, vocabs []string) int {
-	var max float64
+func lookup(prob []float32, vocabs []string) int {
+	var max float32
 	var idx int
 	for i := 0; i < len(prob); i++ {
 		if prob[i] > max {
@@ -39,12 +39,14 @@ func lookup(prob []float64, vocabs []string) int {
 			idx = i
 		}
 	}
-	kv := make(map[float64][]string)
+	kv := make(map[float32][]string)
 	for i := 0; i < len(prob); i++ {
 		kv[prob[i]] = append(kv[prob[i]], vocabs[i])
 	}
-	sort.Float64s(prob)
-	left := make(map[float64][]string)
+	sort.Slice(prob, func(i, j int) bool {
+		return prob[i] < prob[j]
+	})
+	left := make(map[float32][]string)
 	for i := 0; i < 3; i++ {
 		idx := len(prob) - i - 1
 		left[prob[idx]] = kv[prob[idx]]

@@ -1,10 +1,10 @@
 package layer
 
 import (
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 type Rnn struct {
@@ -60,11 +60,11 @@ func (layer *Rnn) Forward(input *tensor.Tensor, isTraining bool) *tensor.Tensor 
 	return h
 }
 
-func (layer *Rnn) Args() map[string]*mat.VecDense {
-	return map[string]*mat.VecDense{
-		"params": mat.NewVecDense(3, []float64{
-			float64(layer.featureSize),
-			float64(layer.steps),
-			float64(layer.hidden)}),
+func (layer *Rnn) Args() map[string]*mat32.VecDense {
+	return map[string]*mat32.VecDense{
+		"params": mat32.NewVecDense(3, []float32{
+			float32(layer.featureSize),
+			float32(layer.steps),
+			float32(layer.hidden)}),
 	}
 }

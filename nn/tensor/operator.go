@@ -1,9 +1,9 @@
 package tensor
 
-import "gonum.org/v1/gonum/mat"
+import "github.com/lwch/gonum/mat32"
 
 type Operator interface {
-	f() *mat.Dense
+	f() *mat32.Dense
 	df(grad *Tensor)
 	needGrad() bool
 	ZeroGrad()
@@ -25,7 +25,7 @@ func (t *Tensor) Sub(t2 *Tensor) *Tensor {
 	return &Tensor{op: op, data: op.f()}
 }
 
-func (t *Tensor) Scale(n float64) *Tensor {
+func (t *Tensor) Scale(n float32) *Tensor {
 	op := &scale{
 		a: n,
 		b: t,
@@ -93,7 +93,7 @@ func (t *Tensor) SumAxis(axis int) *Tensor {
 	return &Tensor{op: op, data: op.f()}
 }
 
-func (t *Tensor) Pow(n float64) *Tensor {
+func (t *Tensor) Pow(n float32) *Tensor {
 	op := &pow{
 		a: t,
 		b: n,

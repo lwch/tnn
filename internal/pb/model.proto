@@ -4,9 +4,9 @@ package pb;
 option go_package = ".;pb";
 
 message dense {
-    int32           rows = 1;
-    int32           cols = 2;
-    repeated double data = 3;
+    int32          rows = 1;
+    int32          cols = 2;
+    repeated float data = 3;
 }
 
 message layer {
@@ -17,22 +17,22 @@ message layer {
 }
 
 message loss {
-    string                name = 1;
-    map<string, double> params = 2;
+    string               name = 1;
+    map<string, float> params = 2;
 }
 
 message optimizer {
-    string                name = 1;
-    double                  lr = 2;
-    double        weight_decay = 3;
-    map<string, double> params = 4;
+    string               name = 1;
+    float                  lr = 2;
+    float        weight_decay = 3;
+    map<string, float> params = 4;
 }
 
 message scheduler {
-    string    name = 1;
-    double    init = 2;
-    double current = 3;
-    map<string, double> params = 4;
+    string   name = 1;
+    float    init = 2;
+    float current = 3;
+    map<string, float> params = 4;
 }
 
 message model {

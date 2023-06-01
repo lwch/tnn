@@ -8,10 +8,10 @@ import (
 
 type XavierUniform struct {
 	n    distuv.Uniform
-	gain float64
+	gain float32
 }
 
-func NewXavierUniform(gain float64) *XavierUniform {
+func NewXavierUniform(gain float32) *XavierUniform {
 	return &XavierUniform{
 		n: distuv.Uniform{
 			Min: 0,
@@ -21,31 +21,31 @@ func NewXavierUniform(gain float64) *XavierUniform {
 	}
 }
 
-func (rand *XavierUniform) Rand() float64 {
-	a := rand.gain * math.Sqrt(6/(rand.n.Min+rand.n.Max))
-	rand.n.Min = -a
-	rand.n.Max = a
-	return rand.n.Rand()
+func (rand *XavierUniform) Rand() float32 {
+	a := rand.gain * float32(math.Sqrt(6/(rand.n.Min+rand.n.Max)))
+	rand.n.Min = float64(-a)
+	rand.n.Max = float64(a)
+	return float32(rand.n.Rand())
 }
 
-func (rand *XavierUniform) RandN(n int) []float64 {
-	a := rand.gain * math.Sqrt(6/(rand.n.Min+rand.n.Max))
-	rand.n.Min = -a
-	rand.n.Max = a
-	ret := make([]float64, n)
+func (rand *XavierUniform) RandN(n int) []float32 {
+	a := rand.gain * float32(math.Sqrt(6/(rand.n.Min+rand.n.Max)))
+	rand.n.Min = float64(-a)
+	rand.n.Max = float64(a)
+	ret := make([]float32, n)
 	for i := 0; i < n; i++ {
-		ret[i] = rand.n.Rand()
+		ret[i] = float32(rand.n.Rand())
 	}
 	return ret
 }
 
-func (rand *XavierUniform) RandShape(m, n int) []float64 {
-	a := rand.gain * math.Sqrt(6/float64(m+n))
-	rand.n.Min = -a
-	rand.n.Max = a
-	ret := make([]float64, m*n)
+func (rand *XavierUniform) RandShape(m, n int) []float32 {
+	a := rand.gain * float32(math.Sqrt(6/float64(m+n)))
+	rand.n.Min = float64(-a)
+	rand.n.Max = float64(a)
+	ret := make([]float32, m*n)
 	for i := 0; i < m*n; i++ {
-		ret[i] = rand.n.Rand()
+		ret[i] = float32(rand.n.Rand())
 	}
 	return ret
 }

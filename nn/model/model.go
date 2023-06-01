@@ -52,7 +52,7 @@ func (m *Model) Backward(pred, targets *tensor.Tensor) {
 	loss.Backward(loss)
 }
 
-func (m *Model) Loss(input, targets *tensor.Tensor) float64 {
+func (m *Model) Loss(input, targets *tensor.Tensor) float32 {
 	pred := m.Forward(input, false)
 	return m.loss.Loss(pred, targets).Value().At(0, 0)
 }

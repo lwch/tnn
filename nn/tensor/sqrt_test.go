@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"gonum.org/v1/gonum/mat"
+	"github.com/lwch/gonum/mat32"
 )
 
 func TestSqrt(t *testing.T) {
-	x := New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
+	x := New([]float32{1, 2, 3, 4, 5, 6}, 2, 3)
 	x.requireGrad = true
 	y := x.Sqrt()
-	fmt.Println(mat.Formatted(y.Value()))
+	fmt.Println(mat32.Formatted(y.Value()))
 	y.Backward(Ones(y.Dims()))
-	fmt.Println(mat.Formatted(x.Grad().Value()))
+	fmt.Println(mat32.Formatted(x.Grad().Value()))
 }

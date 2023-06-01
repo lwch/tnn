@@ -1,10 +1,10 @@
 package activation
 
 import (
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/params"
-	"gonum.org/v1/gonum/mat"
 )
 
 type Activation interface {
@@ -60,6 +60,6 @@ func (layer *base) Params() *params.Params {
 	return nil
 }
 
-func (*base) Args() map[string]*mat.VecDense {
+func (*base) Args() map[string]*mat32.VecDense {
 	return nil
 }

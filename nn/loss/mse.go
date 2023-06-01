@@ -16,5 +16,5 @@ func NewMSE() *MSE {
 
 func (*MSE) Loss(predict, targets *tensor.Tensor) *tensor.Tensor {
 	rows, _ := predict.Dims()
-	return predict.Sub(targets).Pow(2).Sum().Scale(1 / float64(rows))
+	return predict.Sub(targets).Pow(2).Sum().Scale(1 / float32(rows))
 }

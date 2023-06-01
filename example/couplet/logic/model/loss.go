@@ -10,14 +10,14 @@ import (
 )
 
 // lossWorker loss计算协程
-func (m *Model) lossWorker(ch chan []int, sum *float64) {
+func (m *Model) lossWorker(ch chan []int, sum *float32) {
 	for {
 		idx, ok := <-ch
 		if !ok {
 			return
 		}
-		x := make([]float64, 0, len(idx)*unitSize)
-		y := make([]float64, 0, len(idx)*embeddingDim)
+		x := make([]float32, 0, len(idx)*unitSize)
+		y := make([]float32, 0, len(idx)*embeddingDim)
 		paddingMask := make([][]bool, 0, batchSize)
 		for _, idx := range idx {
 			i := math.Floor(float64(idx) / float64(paddingSize/2))
@@ -46,10 +46,10 @@ func (m *Model) lossWorker(ch chan []int, sum *float64) {
 	}
 }
 
-func (m *Model) avgLoss() float64 {
+func (m *Model) avgLoss() float32 {
 	m.status = statusEvaluate
 	m.current.Store(0)
-	sum := 0.
+	var sum float32
 
 	idx := make([]int, len(m.trainX)*paddingSize/2)
 	for i := 0; i < len(idx); i++ {
@@ -66,7 +66,7 @@ func (m *Model) avgLoss() float64 {
 		}()
 	}
 
-	var size float64
+	var size float32
 	var list []int
 	for _, i := range idx {
 		list = append(list, i)

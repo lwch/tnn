@@ -3,6 +3,7 @@ module github.com/lwch/tnn
 go 1.20
 
 require (
+	github.com/lwch/gonum v0.0.0-20230601104729-9ce4e2ec7aef
 	github.com/lwch/runtime v1.0.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0

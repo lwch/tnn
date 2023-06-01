@@ -1,7 +1,7 @@
 package tensor
 
 import (
-	"gonum.org/v1/gonum/mat"
+	"github.com/lwch/gonum/mat32"
 )
 
 type conact struct {
@@ -9,8 +9,8 @@ type conact struct {
 	b *Tensor
 }
 
-func (op *conact) f() *mat.Dense {
-	var value mat.Dense
+func (op *conact) f() *mat32.Dense {
+	var value mat32.Dense
 	value.Augment(op.a.Value(), op.b.Value())
 	return &value
 }
@@ -20,13 +20,13 @@ func (op *conact) df(grad *Tensor) {
 	bRows, bCols := op.b.Dims()
 	if op.a.needGrad() {
 		da := grad.Value().Slice(0, aRows, 0, aCols)
-		op.a.AddGrad(da.(*mat.Dense))
-		op.a.Backward(FromDense(da.(*mat.Dense)))
+		op.a.AddGrad(da.(*mat32.Dense))
+		op.a.Backward(FromDense(da.(*mat32.Dense)))
 	}
 	if op.b.needGrad() {
 		db := grad.Value().Slice(0, bRows, aCols, aCols+bCols)
-		op.b.AddGrad(db.(*mat.Dense))
-		op.b.Backward(FromDense(db.(*mat.Dense)))
+		op.b.AddGrad(db.(*mat32.Dense))
+		op.b.Backward(FromDense(db.(*mat32.Dense)))
 	}
 }
 
@@ -46,8 +46,8 @@ type stack struct {
 	b *Tensor
 }
 
-func (op *stack) f() *mat.Dense {
-	var stack mat.Dense
+func (op *stack) f() *mat32.Dense {
+	var stack mat32.Dense
 	stack.Stack(op.a.Value(), op.b.Value())
 	return &stack
 }
@@ -57,13 +57,13 @@ func (op *stack) df(grad *Tensor) {
 	bRows, bCols := op.b.Dims()
 	if op.a.needGrad() {
 		da := grad.Value().Slice(0, aRows, 0, aCols)
-		op.a.AddGrad(da.(*mat.Dense))
-		op.a.Backward(FromDense(da.(*mat.Dense)))
+		op.a.AddGrad(da.(*mat32.Dense))
+		op.a.Backward(FromDense(da.(*mat32.Dense)))
 	}
 	if op.b.needGrad() {
 		db := grad.Value().Slice(aRows, aRows+bRows, 0, bCols)
-		op.b.AddGrad(db.(*mat.Dense))
-		op.b.Backward(FromDense(db.(*mat.Dense)))
+		op.b.AddGrad(db.(*mat32.Dense))
+		op.b.Backward(FromDense(db.(*mat32.Dense)))
 	}
 }
 

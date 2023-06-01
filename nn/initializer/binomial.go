@@ -6,31 +6,31 @@ type Binomial struct {
 	n distuv.Binomial
 }
 
-func NewBinomial(n, p float64) *Binomial {
+func NewBinomial(n, p float32) *Binomial {
 	return &Binomial{
 		n: distuv.Binomial{
-			N: n,
-			P: p,
+			N: float64(n),
+			P: float64(p),
 		},
 	}
 }
 
-func (rand *Binomial) Rand() float64 {
-	return rand.n.Rand()
+func (rand *Binomial) Rand() float32 {
+	return float32(rand.n.Rand())
 }
 
-func (rand *Binomial) RandN(n int) []float64 {
-	ret := make([]float64, n)
+func (rand *Binomial) RandN(n int) []float32 {
+	ret := make([]float32, n)
 	for i := 0; i < n; i++ {
-		ret[i] = rand.n.Rand()
+		ret[i] = float32(rand.n.Rand())
 	}
 	return ret
 }
 
-func (rand *Binomial) RandShape(m, n int) []float64 {
-	ret := make([]float64, m*n)
+func (rand *Binomial) RandShape(m, n int) []float32 {
+	ret := make([]float32, m*n)
 	for i := 0; i < m*n; i++ {
-		ret[i] = rand.n.Rand()
+		ret[i] = float32(rand.n.Rand())
 	}
 	return ret
 }

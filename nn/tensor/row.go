@@ -1,8 +1,6 @@
 package tensor
 
-import (
-	"gonum.org/v1/gonum/mat"
-)
+import "github.com/lwch/gonum/mat32"
 
 // TODO: 优化row2Matrix和rowVector的内存分配
 
@@ -13,17 +11,17 @@ type row2Matrix struct {
 	cols int // 变成多少列的matrix
 }
 
-func (op *row2Matrix) f() *mat.Dense {
+func (op *row2Matrix) f() *mat32.Dense {
 	_, cols := op.a.Dims()
 	if cols%op.cols != 0 {
 		panic("cols %% op.cols != 0")
 	}
-	value := mat.NewDense(op.rows, op.cols, nil)
+	value := mat32.NewDense(op.rows, op.cols, nil)
 	row := op.a.Value().RowView(op.n)
 	for i := 0; i < cols/op.cols; i++ {
 		start := i * op.cols
-		col := row.(*mat.VecDense).SliceVec(start, start+op.cols)
-		value.SetRow(i, dupVec(col.(*mat.VecDense)))
+		col := row.(*mat32.VecDense).SliceVec(start, start+op.cols)
+		value.SetRow(i, dupVec(col.(*mat32.VecDense)))
 	}
 	return value
 }
@@ -33,12 +31,12 @@ func (op *row2Matrix) df(grad *Tensor) {
 		return
 	}
 	rows, cols := op.a.Dims()
-	delta := mat.NewDense(rows, cols, nil)
-	row := delta.RowView(op.n).(*mat.VecDense)
+	delta := mat32.NewDense(rows, cols, nil)
+	row := delta.RowView(op.n).(*mat32.VecDense)
 	rows, _ = grad.Dims()
 	for i := 0; i < rows; i++ {
 		start := i * op.cols
-		to := row.SliceVec(start, start+op.cols).(*mat.VecDense)
+		to := row.SliceVec(start, start+op.cols).(*mat32.VecDense)
 		to.CopyVec(grad.Value().RowView(i))
 	}
 	op.a.AddGrad(delta)
@@ -57,14 +55,14 @@ type rowVector struct {
 	a *Tensor
 }
 
-func (op *rowVector) f() *mat.Dense {
+func (op *rowVector) f() *mat32.Dense {
 	rows, cols := op.a.Dims()
-	value := make([]float64, rows*cols)
+	value := make([]float32, rows*cols)
 	for i := 0; i < rows; i++ {
 		start := i * cols
-		copy(value[start:start+cols], dupVec(op.a.Value().RowView(i).(*mat.VecDense)))
+		copy(value[start:start+cols], dupVec(op.a.Value().RowView(i).(*mat32.VecDense)))
 	}
-	return mat.NewDense(1, rows*cols, value)
+	return mat32.NewDense(1, rows*cols, value)
 }
 
 func (op *rowVector) df(grad *Tensor) {
@@ -72,12 +70,12 @@ func (op *rowVector) df(grad *Tensor) {
 		return
 	}
 	rows, cols := op.a.Dims()
-	delta := mat.NewDense(rows, cols, nil)
-	row := grad.Value().RowView(0).(*mat.VecDense)
+	delta := mat32.NewDense(rows, cols, nil)
+	row := grad.Value().RowView(0).(*mat32.VecDense)
 	for i := 0; i < rows; i++ {
 		start := i * cols
 		src := row.SliceVec(start, start+cols)
-		delta.RowView(i).(*mat.VecDense).CopyVec(src)
+		delta.RowView(i).(*mat32.VecDense).CopyVec(src)
 	}
 	op.a.AddGrad(delta)
 	op.a.Backward(FromDense(delta))

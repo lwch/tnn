@@ -1,19 +1,19 @@
 package layer
 
 import (
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 type Dropout struct {
 	*base
-	rate float64
+	rate float32
 	init *initializer.Binomial
 }
 
-func NewDropout(rate float64) Layer {
+func NewDropout(rate float32) Layer {
 	var layer Dropout
 	layer.base = new("dropout", nil, nil)
 	layer.rate = rate
@@ -44,8 +44,8 @@ func (layer *Dropout) Forward(input *tensor.Tensor, isTraining bool) *tensor.Ten
 	return input
 }
 
-func (layer *Dropout) Args() map[string]*mat.VecDense {
-	return map[string]*mat.VecDense{
-		"rate": mat.NewVecDense(1, []float64{float64(layer.rate)}),
+func (layer *Dropout) Args() map[string]*mat32.VecDense {
+	return map[string]*mat32.VecDense{
+		"rate": mat32.NewVecDense(1, []float32{float32(layer.rate)}),
 	}
 }

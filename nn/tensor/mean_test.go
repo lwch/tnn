@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"testing"
 
-	"gonum.org/v1/gonum/mat"
+	"github.com/lwch/gonum/mat32"
 )
 
 func TestMeanAxisRows(t *testing.T) {
-	x := New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
+	x := New([]float32{1, 2, 3, 4, 5, 6}, 2, 3)
 	x.requireGrad = true
 	m := x.MeanAxis(0)
-	fmt.Println(mat.Formatted(m.Value()))
+	fmt.Println(mat32.Formatted(m.Value()))
 	m.Backward(Ones(m.Dims()))
-	fmt.Println(mat.Formatted(x.Grad().Value()))
+	fmt.Println(mat32.Formatted(x.Grad().Value()))
 }
 
 func TestMeanAxisCols(t *testing.T) {
-	x := New([]float64{1, 2, 3, 4, 5, 6}, 2, 3)
+	x := New([]float32{1, 2, 3, 4, 5, 6}, 2, 3)
 	x.requireGrad = true
 	m := x.MeanAxis(1)
-	fmt.Println(mat.Formatted(m.Value()))
+	fmt.Println(mat32.Formatted(m.Value()))
 	m.Backward(Ones(m.Dims()))
-	fmt.Println(mat.Formatted(x.Grad().Value()))
+	fmt.Println(mat32.Formatted(x.Grad().Value()))
 }

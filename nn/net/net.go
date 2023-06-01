@@ -1,12 +1,12 @@
 package net
 
 import (
+	"github.com/lwch/gonum/mat32"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/params"
 	"github.com/lwch/tnn/nn/tensor"
-	"gonum.org/v1/gonum/mat"
 )
 
 type loadFunc func(name string, params map[string]*pb.Dense, args map[string]*pb.Dense) layer.Layer
@@ -97,7 +97,7 @@ func (n *Net) SaveLayers() []*pb.Layer {
 				var dense pb.Dense
 				rows, cols := v.Dims()
 				dense.Rows, dense.Cols = int32(rows), int32(cols)
-				dense.Data = mat.DenseCopyOf(v).RawMatrix().Data
+				dense.Data = mat32.DenseCopyOf(v).RawMatrix().Data
 				ret[i].Args[k] = &dense
 			}
 		}

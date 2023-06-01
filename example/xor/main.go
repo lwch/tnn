@@ -26,14 +26,14 @@ const lr = 1e-3
 const epoch = 40000
 const modelFile = "xor.model"
 
-var input = [][]float64{
+var input = [][]float32{
 	{0, 0},
 	{0, 1},
 	{1, 0},
 	{1, 1},
 }
 
-var output = []float64{
+var output = []float32{
 	0,
 	1,
 	1,
@@ -83,7 +83,7 @@ func train() {
 			loss := m.Loss(inputs, outputs)
 			fmt.Printf("Epoch: %d, Lr: %.05f, Loss: %e, Accuracy: %.02f%%\n",
 				i, optimizer.GetLr(), loss, acc)
-			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: loss})
+			lossPoints = append(lossPoints, plotter.XY{X: float32(i), Y: loss})
 			if acc >= 100 {
 				break
 			}
@@ -122,8 +122,8 @@ func getBatch() (*tensor.Tensor, *tensor.Tensor) {
 	rand.Shuffle(len(idx), func(i, j int) {
 		idx[i], idx[j] = idx[j], idx[i]
 	})
-	inputs := make([]float64, len(input)*2)
-	outputs := make([]float64, len(output))
+	inputs := make([]float32, len(input)*2)
+	outputs := make([]float32, len(output))
 	for i := 0; i < len(input); i++ {
 		inputs[i*2] = input[idx[i]][0]
 		inputs[i*2+1] = input[idx[i]][1]
@@ -160,14 +160,14 @@ func predict(model *model.Model) {
 	}
 }
 
-func accuracy(m *model.Model, input, output *tensor.Tensor) float64 {
+func accuracy(m *model.Model, input, output *tensor.Tensor) float32 {
 	pred := m.Predict(input)
-	var correct float64
+	var correct float32
 	for i := 0; i < 4; i++ {
 		diff := math.Abs(pred.Value().At(i, 0) - output.Value().At(i, 0))
 		if diff < 1 {
 			correct += 1 - diff
 		}
 	}
-	return float64(correct) * 100 / 4
+	return float32(correct) * 100 / 4
 }

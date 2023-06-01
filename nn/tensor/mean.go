@@ -1,27 +1,25 @@
 package tensor
 
-import (
-	"gonum.org/v1/gonum/mat"
-)
+import "github.com/lwch/gonum/mat32"
 
 type meanAxis struct {
 	a    *Tensor
 	axis int
 }
 
-func (op *meanAxis) f() *mat.Dense {
+func (op *meanAxis) f() *mat32.Dense {
 	rows, cols := op.a.Dims()
 	switch op.axis {
 	case 0:
-		value := mat.NewDense(1, cols, nil)
+		value := mat32.NewDense(1, cols, nil)
 		for i := 0; i < cols; i++ {
-			value.Set(0, i, mat.Sum(op.a.Value().ColView(i))/float64(rows))
+			value.Set(0, i, mat32.Sum(op.a.Value().ColView(i))/float32(rows))
 		}
 		return value
 	case 1:
-		value := mat.NewDense(rows, 1, nil)
+		value := mat32.NewDense(rows, 1, nil)
 		for i := 0; i < rows; i++ {
-			value.Set(i, 0, mat.Sum(op.a.Value().RowView(i))/float64(cols))
+			value.Set(i, 0, mat32.Sum(op.a.Value().RowView(i))/float32(cols))
 		}
 		return value
 	default:
@@ -34,18 +32,18 @@ func (op *meanAxis) df(grad *Tensor) {
 		return
 	}
 	rows, cols := op.a.Dims()
-	delta := mat.NewDense(rows, cols, nil)
+	delta := mat32.NewDense(rows, cols, nil)
 	switch op.axis {
 	case 0:
 		for i := 0; i < cols; i++ {
-			n := grad.Value().At(0, i) / float64(rows)
+			n := grad.Value().At(0, i) / float32(rows)
 			for j := 0; j < rows; j++ {
 				delta.Set(j, i, n)
 			}
 		}
 	case 1:
 		for i := 0; i < rows; i++ {
-			n := grad.Value().At(i, 0) / float64(cols)
+			n := grad.Value().At(i, 0) / float32(cols)
 			for j := 0; j < cols; j++ {
 				delta.Set(i, j, n)
 			}

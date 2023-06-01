@@ -1,29 +1,27 @@
 package tensor
 
-import (
-	"gonum.org/v1/gonum/mat"
-)
+import "github.com/lwch/gonum/mat32"
 
 type maxAxis struct {
 	a    *Tensor
 	axis int
 }
 
-func (op *maxAxis) f() *mat.Dense {
+func (op *maxAxis) f() *mat32.Dense {
 	rows, cols := op.a.Dims()
 	switch op.axis {
 	case 0:
-		v := mat.NewVecDense(cols, nil)
+		v := mat32.NewVecDense(cols, nil)
 		for i := 0; i < cols; i++ {
-			v.SetVec(i, mat.Max(op.a.Value().ColView(i)))
+			v.SetVec(i, mat32.Max(op.a.Value().ColView(i)))
 		}
-		return mat.NewDense(1, cols, dupVec(v))
+		return mat32.NewDense(1, cols, dupVec(v))
 	case 1:
-		v := mat.NewVecDense(rows, nil)
+		v := mat32.NewVecDense(rows, nil)
 		for i := 0; i < rows; i++ {
-			v.SetVec(i, mat.Max(op.a.Value().RowView(i)))
+			v.SetVec(i, mat32.Max(op.a.Value().RowView(i)))
 		}
-		return mat.NewDense(rows, 1, dupVec(v))
+		return mat32.NewDense(rows, 1, dupVec(v))
 	default:
 		panic("invalid axis")
 	}
@@ -34,17 +32,17 @@ func (op *maxAxis) df(grad *Tensor) {
 		return
 	}
 	rows, cols := op.a.Dims()
-	delta := mat.NewDense(rows, cols, nil)
+	delta := mat32.NewDense(rows, cols, nil)
 	switch op.axis {
 	case 0:
 		v := grad.Value().RowView(0)
 		for i := 0; i < rows; i++ {
-			delta.RowView(i).(*mat.VecDense).CopyVec(v)
+			delta.RowView(i).(*mat32.VecDense).CopyVec(v)
 		}
 	case 1:
 		v := grad.Value().ColView(0)
 		for i := 0; i < cols; i++ {
-			delta.ColView(i).(*mat.VecDense).CopyVec(v)
+			delta.ColView(i).(*mat32.VecDense).CopyVec(v)
 		}
 	default:
 		panic("invalid axis")
