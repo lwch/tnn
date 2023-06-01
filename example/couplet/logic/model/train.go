@@ -16,6 +16,7 @@ import (
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/optimizer"
 	"github.com/lwch/tnn/nn/tensor"
+	"github.com/olekukonko/tablewriter"
 )
 
 // Train 训练模型
@@ -56,15 +57,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		m.epoch = i + 1
 		m.trainEpoch()
 		if i%10 == 0 {
-			list, names := m.getParams()
-			for i, params := range list {
-				var cnt int
-				params.Range(func(_ string, p *tensor.Tensor) {
-					rows, cols := p.Dims()
-					cnt += rows * cols
-				})
-				fmt.Printf("%s: %d\n", names[i], cnt)
-			}
+			m.showModelInfo()
 			fmt.Printf("train %d, cost=%s, loss=%.05f\n",
 				i+1, time.Since(begin).String(),
 				m.avgLoss())
@@ -170,4 +163,20 @@ func (m *Model) trainEpoch() {
 
 	// 触发梯度更新
 	m.chUpdate <- struct{}{}
+}
+
+func (m *Model) showModelInfo() {
+	list, names := m.getParams()
+	table := tablewriter.NewWriter(os.Stdout)
+	defer table.Render()
+	table.SetHeader([]string{"name", "count"})
+	var total int
+	for i, params := range list {
+		params.Range(func(_ string, p *tensor.Tensor) {
+			rows, cols := p.Dims()
+			table.Append([]string{names[i], fmt.Sprintf("%d", rows*cols)})
+			total += rows * cols
+		})
+	}
+	table.Append([]string{"total", fmt.Sprintf("%d", total)})
 }
