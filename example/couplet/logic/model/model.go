@@ -72,7 +72,7 @@ func (m *Model) addTransformerLayer(init initializer.Initializer, i int) {
 	dense1 := layer.NewDense(unitSize*4, init)
 	dense1.SetName(fmt.Sprintf("transformer%d_dense1", i))
 	m.layers = append(m.layers, dense1)
-	m.layers = append(m.layers, activation.NewGeLU())
+	m.layers = append(m.layers, activation.NewReLU())
 	dense2 := layer.NewDense(unitSize, init)
 	dense2.SetName(fmt.Sprintf("transformer%d_dense2", i))
 	m.layers = append(m.layers, dense2)
