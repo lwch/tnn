@@ -25,6 +25,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	}()
 
 	m.modelDir = modelDir
+	runtime.Assert(os.MkdirAll(modelDir, 0755))
 
 	// 加载样本
 	m.vocabs, m.vocabsIdx = feature.LoadVocab(filepath.Join(sampleDir, "vocabs"))
@@ -119,7 +120,6 @@ func (m *Model) copyVocabs(dir string) {
 	src, err := os.Open(dir)
 	runtime.Assert(err)
 	defer src.Close()
-	runtime.Assert(os.MkdirAll(filepath.Dir(m.modelDir), 0755))
 	dst, err := os.Create(filepath.Join(m.modelDir, "vocabs"))
 	runtime.Assert(err)
 	defer dst.Close()

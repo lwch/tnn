@@ -41,7 +41,7 @@ var cutCmd = cobra.Command{
 }
 
 const dataDir = "./data"
-const trainDir = "./sample"
+const sampleDir = "./sample"
 const modelDir = "./model"
 
 func main() {
@@ -64,8 +64,8 @@ func runCut(_ *cobra.Command, args []string) {
 	vocabs, vocab2idx := feature.LoadVocab(filepath.Join(dataDir, "vocabs"))
 	xData := feature.LoadData(filepath.Join(dataDir, "train", "in.txt"), vocab2idx, int(size))
 	yData := feature.LoadData(filepath.Join(dataDir, "train", "out.txt"), vocab2idx, int(size))
-	xtokens := feature.Build(xData, vocabs, filepath.Join(trainDir, "in.txt"))
-	ytokens := feature.Build(yData, vocabs, filepath.Join(trainDir, "out.txt"))
+	xtokens := feature.Build(xData, vocabs, filepath.Join(sampleDir, "in.txt"))
+	ytokens := feature.Build(yData, vocabs, filepath.Join(sampleDir, "out.txt"))
 	merge := make(map[string]int)
 	for tk, cnt := range xtokens {
 		merge[tk] += cnt
@@ -81,13 +81,13 @@ func runCut(_ *cobra.Command, args []string) {
 		return merge[vocabs[i]] > merge[vocabs[j]]
 	})
 	vocabs = append([]string{"<s>", "</s>"}, vocabs...)
-	err = os.WriteFile(filepath.Join(trainDir, "vocabs"), []byte(strings.Join(vocabs, "\n")), 0644)
+	err = os.WriteFile(filepath.Join(sampleDir, "vocabs"), []byte(strings.Join(vocabs, "\n")), 0644)
 	runtime.Assert(err)
 }
 
 func runTrain(*cobra.Command, []string) {
 	m := model.New()
-	m.Train(trainDir, modelDir)
+	m.Train(sampleDir, modelDir)
 }
 
 func runEvaluate(_ *cobra.Command, args []string) {
