@@ -8,6 +8,10 @@
 
 ![evaluate3](img/evaluate3.png)
 
+模型结构如下，共计44万参数
+
+![model](img/params.png)
+
 ## 编译
 
 调整`logic/model/params.go`中的参数后使用以下命令进行编译
