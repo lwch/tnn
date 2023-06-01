@@ -4,6 +4,8 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// TODO: 优化row2Matrix和rowVector的内存分配
+
 type row2Matrix struct {
 	a    *Tensor
 	n    int // 获取行号
