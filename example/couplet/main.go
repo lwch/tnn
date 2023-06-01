@@ -41,7 +41,7 @@ var cutCmd = cobra.Command{
 }
 
 const dataDir = "./data"
-const trainDir = "./train"
+const trainDir = "./sample"
 const modelDir = "./model"
 
 func main() {
