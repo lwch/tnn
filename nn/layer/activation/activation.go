@@ -22,6 +22,8 @@ func Load(class string) func(string, map[string]*pb.Dense, map[string]*pb.Dense)
 	// 	fn = NewTanh
 	case "relu":
 		fn = NewReLU
+	case "gelu":
+		fn = NewGeLU
 	default:
 		return nil
 	}
