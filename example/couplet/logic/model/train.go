@@ -32,7 +32,6 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	m.vocabs, m.vocabsIdx = feature.LoadVocab(filepath.Join(sampleDir, "vocabs"))
 	m.trainX = feature.LoadData(filepath.Join(sampleDir, "in.txt"), m.vocabsIdx, -1)
 	m.trainY = feature.LoadData(filepath.Join(sampleDir, "out.txt"), m.vocabsIdx, -1)
-	m.copyVocabs(filepath.Join(sampleDir, "vocabs"))
 
 	// 加载embedding
 	if _, err := os.Stat(filepath.Join(modelDir, "embedding")); os.IsNotExist(err) {
@@ -42,6 +41,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	if _, err := os.Stat(filepath.Join(modelDir, "couplet.model")); !os.IsNotExist(err) {
 		m.Load(m.modelDir)
 	} else {
+		m.copyVocabs(filepath.Join(sampleDir, "vocabs"))
 		m.embedding = m.loadEmbedding(filepath.Join(modelDir, "embedding"))
 		m.build()
 	}
