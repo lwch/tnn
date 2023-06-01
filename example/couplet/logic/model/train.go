@@ -172,11 +172,13 @@ func (m *Model) showModelInfo() {
 	table.SetHeader([]string{"name", "count"})
 	var total int
 	for i, params := range list {
+		var cnt int
 		params.Range(func(_ string, p *tensor.Tensor) {
 			rows, cols := p.Dims()
-			table.Append([]string{names[i], fmt.Sprintf("%d", rows*cols)})
-			total += rows * cols
+			cnt += rows * cols
 		})
+		table.Append([]string{names[i], fmt.Sprintf("%d", cnt)})
+		total += cnt
 	}
 	table.Append([]string{"total", fmt.Sprintf("%d", total)})
 }
