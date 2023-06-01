@@ -15,6 +15,7 @@ func encode(vocabs []string, idx []int) string {
 	var ret string
 	for _, idx := range idx {
 		if idx < 0 {
+			ret += "<pad>"
 			break
 		}
 		ret += vocabs[idx]
@@ -24,8 +25,7 @@ func encode(vocabs []string, idx []int) string {
 
 // Build 生成一个样本，输出: sequence, next word, padding mask
 func Build(x []int, y, paddingSize int, embedding [][]float64, vocabs []string) ([]float64, []float64, []bool) {
-	// fmt.Printf("input sequence: %s\n", encode(vocabs, x))
-	// fmt.Printf("output word: %s\n", encode(vocabs, []int{y}))
+	// fmt.Printf("%s => %s\n", encode(vocabs, x), encode(vocabs, []int{y}))
 	embeddingSize := len(embedding[0])
 	dx := make([]float64, 0, paddingSize*embeddingSize)
 	paddingMask := make([]bool, 0, paddingSize)
