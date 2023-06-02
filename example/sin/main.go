@@ -70,8 +70,8 @@ func main() {
 		pred := m.Forward(input, false)
 		m.Apply()
 		pred.ZeroGrad()
-		real = append(real, plotter.XY{X: float32(i), Y: output.Value().At(0, 0)})
-		predict = append(predict, plotter.XY{X: float32(i), Y: pred.Value().At(0, 0)})
+		real = append(real, plotter.XY{X: float64(i), Y: float64(output.Value().At(0, 0))})
+		predict = append(predict, plotter.XY{X: float64(i), Y: float64(pred.Value().At(0, 0))})
 		if i%10 == 0 {
 			acc := accuracy(m, input, output)
 			loss := m.Loss(input, output)
@@ -107,11 +107,11 @@ func getBatch(i int) (*tensor.Tensor, *tensor.Tensor) {
 		var n float32
 		for t := 0; t < times; t++ {
 			n = float32(i) / max * 100
-			inputs.Set(batch, t, math.Sin(n))
+			inputs.Set(batch, t, float32(math.Sin(float64(n))))
 			i++
 		}
 		n = float32(i) / max * 100
-		outputs.Set(batch, 0, math.Sin(n))
+		outputs.Set(batch, 0, float32(math.Sin(float64(n))))
 	}
 	return inputs, outputs
 }
@@ -120,7 +120,8 @@ func accuracy(m *model.Model, input, output *tensor.Tensor) float32 {
 	predict := m.Forward(input, false)
 	var correct float32
 	for i := 0; i < batchSize; i++ {
-		diff := 1 - math.Abs(output.Value().At(i, 0)-predict.Value().At(i, 0))
+		diff := 1 - float32(math.Abs(float64(output.Value().At(i, 0))-
+			float64(predict.Value().At(i, 0))))
 		if diff > 0 {
 			correct += diff
 		}

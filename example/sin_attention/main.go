@@ -53,7 +53,7 @@ func main() {
 	var points []float32
 	i := 0.
 	for {
-		points = append(points, math.Sin(i))
+		points = append(points, float32(math.Sin(i)))
 		i += 0.001
 		if i > 2*math.Pi {
 			break
@@ -72,8 +72,8 @@ func main() {
 			pred := forward(input, false)
 			acc := accuracy(pred, output)
 			for j := 0; j < batchSize; j++ {
-				real = append(real, plotter.XY{X: float32(i*batchSize + j), Y: output.Value().At(j, 0)})
-				predict = append(predict, plotter.XY{X: float32(i*batchSize + j), Y: pred.Value().At(j, 0)})
+				real = append(real, plotter.XY{X: float64(i*batchSize + j), Y: float64(output.Value().At(j, 0))})
+				predict = append(predict, plotter.XY{X: float64(i*batchSize + j), Y: float64(pred.Value().At(j, 0))})
 			}
 			loss := loss.Loss(pred, output)
 			fmt.Printf("Epoch: %d, Loss: %.05f, Accuracy: %.02f%%\n",
@@ -199,7 +199,7 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor) {
 func accuracy(pred, output *tensor.Tensor) float32 {
 	var correct float32
 	for i := 0; i < batchSize; i++ {
-		diff := 1 - math.Abs(output.Value().At(i, 0)-pred.Value().At(i, 0))
+		diff := 1 - float32(math.Abs(float64(output.Value().At(i, 0))-float64(pred.Value().At(i, 0))))
 		if diff > 0 {
 			correct += diff
 		}

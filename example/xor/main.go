@@ -77,13 +77,16 @@ func train() {
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		inputs, outputs := getBatch()
-		m.Train(inputs, outputs)
+		pred := m.Forward(inputs, true)
+		pred.ZeroGrad()
+		m.Backward(pred, outputs)
+		m.Apply()
 		if i%100 == 0 {
 			acc := accuracy(m, inputs, outputs)
 			loss := m.Loss(inputs, outputs)
 			fmt.Printf("Epoch: %d, Lr: %.05f, Loss: %e, Accuracy: %.02f%%\n",
 				i, optimizer.GetLr(), loss, acc)
-			lossPoints = append(lossPoints, plotter.XY{X: float32(i), Y: loss})
+			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: float64(loss)})
 			if acc >= 100 {
 				break
 			}
@@ -93,7 +96,7 @@ func train() {
 		time.Since(begin).String(), m.ParamCount())
 	fmt.Println("predict:")
 	inputs, _ := getBatch()
-	pred := m.Predict(inputs)
+	pred := m.Forward(inputs, false)
 	for i := 0; i < 4; i++ {
 		fmt.Printf("%d xor %d: %.2f\n",
 			int(inputs.Value().At(i, 0)), int(inputs.Value().At(i, 1)),
@@ -141,7 +144,10 @@ func nextTrain() *model.Model {
 	runtime.Assert(m.Load(modelFile))
 	for i := 0; i < 1000; i++ {
 		inputs, outputs := getBatch()
-		m.Train(inputs, outputs)
+		pred := m.Forward(inputs, true)
+		pred.ZeroGrad()
+		m.Backward(pred, outputs)
+		m.Apply()
 		if i%100 == 0 {
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i,
 				m.Loss(inputs, outputs), accuracy(&m, inputs, outputs))
@@ -152,7 +158,7 @@ func nextTrain() *model.Model {
 
 func predict(model *model.Model) {
 	inputs, _ := getBatch()
-	pred := model.Predict(inputs)
+	pred := model.Forward(inputs, false)
 	for i := 0; i < 4; i++ {
 		fmt.Printf("%d xor %d: %.2f\n",
 			int(inputs.Value().At(i, 0)), int(inputs.Value().At(i, 1)),
@@ -161,10 +167,11 @@ func predict(model *model.Model) {
 }
 
 func accuracy(m *model.Model, input, output *tensor.Tensor) float32 {
-	pred := m.Predict(input)
+	pred := m.Forward(input, false)
 	var correct float32
 	for i := 0; i < 4; i++ {
-		diff := math.Abs(pred.Value().At(i, 0) - output.Value().At(i, 0))
+		diff := float32(math.Abs(float64(pred.Value().At(i, 0)) -
+			float64(output.Value().At(i, 0))))
 		if diff < 1 {
 			correct += 1 - diff
 		}
