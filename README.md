@@ -4,7 +4,7 @@ go版本神经网络框架，支持模型训练和预估
 
 ## 工具
 
-- [minfo](cmd/minfo/): 这是tnn框架中的一个工具，用于查看保存模型的定义信息
+- ~~[minfo](cmd/minfo/): 这是tnn框架中的一个工具，用于查看保存模型的定义信息~~
 
 ## 示例
 
@@ -45,7 +45,10 @@ optimizer := optimizer.NewAdam(lr, 0, 0.9, 0.999, 1e-8)
 ```go
 m := model.New(&net, loss, optimizer)
 for i := 0; i < 10; i++ {
-    m.Train(input, output)
+    pred := m.Forward(input, true)
+    pred.ZeroGrad()
+    m.Backward(pred, output)
+    m.Apply()
     loss := m.Loss(input, output)
     fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss)
 }
@@ -54,7 +57,7 @@ for i := 0; i < 10; i++ {
 模型预测方法如下
 
 ```go
-pred := model.Predict(input)
+pred := model.Forward(input, false)
 ```
 
 ## 感谢
