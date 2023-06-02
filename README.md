@@ -9,8 +9,9 @@ go版本神经网络框架，支持模型训练和预估
 ## 示例
 
 - [xor](example/xor/): 该示例是一个四层的神经网络，用于训练异或运算（回归）
-- [mnist](example/mnist/): 该示例是著名的手写数字识别示例，通过CNN网络进行数字识别（分类）
 - [sin](example/sin/): 该示例使用rnn网络来进行sin函数的时序任务训练（回归）
+- [sin_attention](example/sin_attention/): 使用transformer来实现sin曲线的预测（回归）
+- [couplet](example/couplet/): 使用低层的GPT模型来对对联（回归）
 
 ## 构造网络
 
