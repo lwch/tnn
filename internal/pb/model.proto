@@ -15,32 +15,6 @@ message layer {
     map<string, float>   args = 4;
 }
 
-message loss {
-    string               name = 1;
-    map<string, float> params = 2;
-}
-
-message optimizer {
-    string                name = 1;
-    double                  lr = 2;
-    double               l1reg = 3;
-    double               l2reg = 4;
-    map<string, double> params = 5;
-}
-
-message scheduler {
-    string   name = 1;
-    float    init = 2;
-    float current = 3;
-    map<string, float> params = 4;
-}
-
-message model {
-    string           name = 1;
-    uint64    train_count = 2;
-    uint64    param_count = 3;
-    repeated layer layers = 4;
-    loss             loss = 5;
-    optimizer   optimizer = 6;
-    scheduler   scheduler = 7;
+message net {
+    repeated layer layers = 1;
 }

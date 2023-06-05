@@ -67,7 +67,7 @@ func buildRnnBlock(x *gorgonia.Node, nodes []*gorgonia.Node, names []string, fea
 	return nodes
 }
 
-func (layer *Rnn) Forward(x *gorgonia.Node, _ bool) *gorgonia.Node {
+func (layer *Rnn) Forward(x *gorgonia.Node) *gorgonia.Node {
 	block := buildRnnBlock(x, []*gorgonia.Node{layer.Wih, layer.Whh, layer.Bih, layer.Bhh},
 		[]string{"Wih", "Whh", "Bih", "Bhh"}, layer.featureSize, layer.steps, layer.hidden)
 	layer.Wih = block[0]

@@ -15,6 +15,6 @@ func NewReLU() layer.Layer {
 	return &layer
 }
 
-func (layer *ReLU) Forward(x *gorgonia.Node, _ bool) *gorgonia.Node {
+func (layer *ReLU) Forward(x *gorgonia.Node) *gorgonia.Node {
 	return gorgonia.Must(gorgonia.Rectify(x))
 }

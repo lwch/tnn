@@ -1,9 +1,14 @@
 package net
 
 import (
+	"bytes"
+	"io"
+	"os"
+
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
+	"google.golang.org/protobuf/proto"
 	"gorgonia.org/gorgonia"
 )
 
@@ -28,24 +33,16 @@ var loadFuncs = map[string]loadFunc{
 }
 
 type Net struct {
+	g      *gorgonia.ExprGraph
 	layers []layer.Layer
 }
 
-func New(layers ...layer.Layer) *Net {
-	return &Net{
-		layers: layers,
-	}
+func New(g *gorgonia.ExprGraph) *Net {
+	return &Net{g: g}
 }
 
 func (n *Net) Add(layers ...layer.Layer) {
 	n.layers = append(n.layers, layers...)
-}
-
-func (n *Net) Forward(x *gorgonia.Node, train bool) *gorgonia.Node {
-	for _, l := range n.layers {
-		x = l.Forward(x, train)
-	}
-	return x
 }
 
 func (n *Net) Params() gorgonia.Nodes {
@@ -66,13 +63,24 @@ func (n *Net) ParamCount() uint64 {
 	return ret
 }
 
-func (n *Net) Save() []*pb.Layer {
-	ret := make([]*pb.Layer, len(n.layers))
+func (n *Net) Save(dir string) error {
+	f, err := os.Create(dir)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = n.WriteTo(f)
+	return err
+}
+
+func (n *Net) WriteTo(w io.Writer) (int64, error) {
+	var net pb.Net
+	net.Layers = make([]*pb.Layer, len(n.layers))
 	for i := 0; i < len(n.layers); i++ {
-		ret[i] = new(pb.Layer)
-		ret[i].Class = n.layers[i].Class()
-		ret[i].Name = n.layers[i].Name()
-		ret[i].Params = make(map[string]*pb.Dense)
+		net.Layers[i] = new(pb.Layer)
+		net.Layers[i].Class = n.layers[i].Class()
+		net.Layers[i].Name = n.layers[i].Name()
+		net.Layers[i].Params = make(map[string]*pb.Dense)
 		for _, p := range n.layers[i].Params() {
 			var dense pb.Dense
 			shape := p.Shape()
@@ -81,14 +89,37 @@ func (n *Net) Save() []*pb.Layer {
 				dense.Shape[j] = int32(shape[j])
 			}
 			dense.Data = p.Value().Data().([]float32)
-			ret[i].Params[p.Name()] = &dense
+			net.Layers[i].Params[p.Name()] = &dense
 		}
-		ret[i].Args = n.layers[i].Args()
+		net.Layers[i].Args = n.layers[i].Args()
 	}
-	return ret
+	data, err := proto.Marshal(&net)
+	if err != nil {
+		return 0, err
+	}
+	return io.Copy(w, bytes.NewReader(data))
 }
 
-func (n *Net) Load(g *gorgonia.ExprGraph, layers []*pb.Layer) {
+func (n *Net) Load(dir string) error {
+	f, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = n.ReadFrom(f)
+	return err
+}
+
+func (n *Net) ReadFrom(r io.Reader) (int64, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return 0, err
+	}
+	var net pb.Net
+	if err = proto.Unmarshal(data, &net); err != nil {
+		return 0, err
+	}
+	layers := net.GetLayers()
 	n.layers = make([]layer.Layer, len(layers))
 	for i := 0; i < len(layers); i++ {
 		class := layers[i].GetClass()
@@ -97,6 +128,11 @@ func (n *Net) Load(g *gorgonia.ExprGraph, layers []*pb.Layer) {
 			panic("unsupported " + class + " layer")
 		}
 		name := layers[i].GetName()
-		n.layers[i] = fn(g, name, layers[i].GetParams(), layers[i].GetArgs())
+		n.layers[i] = fn(n.g, name, layers[i].GetParams(), layers[i].GetArgs())
 	}
+	return int64(len(data)), nil
+}
+
+func (n *Net) Layers() []layer.Layer {
+	return n.layers
 }

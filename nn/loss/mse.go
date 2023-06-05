@@ -3,13 +3,10 @@ package loss
 import "gorgonia.org/gorgonia"
 
 type MSE struct {
-	*base
 }
 
 func NewMSE() Loss {
-	var loss MSE
-	loss.base = new("mse")
-	return &loss
+	return &MSE{}
 }
 
 func (mse *MSE) Loss(y, pred *gorgonia.Node) *gorgonia.Node {

@@ -23,7 +23,7 @@ func LoadFlatten(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense
 	return &layer
 }
 
-func (layer *Flatten) Forward(x *gorgonia.Node, _ bool) *gorgonia.Node {
+func (layer *Flatten) Forward(x *gorgonia.Node) *gorgonia.Node {
 	shape := x.Shape()
 	cols := 1
 	for _, v := range shape[1:] {
