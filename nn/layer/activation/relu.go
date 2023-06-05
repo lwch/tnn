@@ -11,14 +11,10 @@ type ReLU struct {
 
 func NewReLU() layer.Layer {
 	var layer ReLU
-	layer.base = new("relu", "")
+	layer.base = new("relu")
 	return &layer
 }
 
 func (layer *ReLU) Forward(x *gorgonia.Node) *gorgonia.Node {
 	return gorgonia.Must(gorgonia.Rectify(x))
-}
-
-func (layer *ReLU) Params() gorgonia.Nodes {
-	return nil
 }

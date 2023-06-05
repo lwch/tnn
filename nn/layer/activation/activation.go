@@ -9,8 +9,8 @@ import (
 func Load(class string) func(*gorgonia.ExprGraph, string, map[string]*pb.Dense, map[string]float32) layer.Layer {
 	var fn func() layer.Layer
 	switch class {
-	// case "sigmoid":
-	// 	fn = NewSigmoid
+	case "sigmoid":
+		fn = NewSigmoid
 	// case "softplus":
 	// 	fn = NewSoftplus
 	// case "tanh":
@@ -32,10 +32,9 @@ type base struct {
 	name  string
 }
 
-func new(class, name string) *base {
+func new(class string) *base {
 	return &base{
 		class: class,
-		name:  name,
 	}
 }
 
