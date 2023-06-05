@@ -29,7 +29,7 @@ func main() {
 	g := gorgonia.NewGraph()
 	net := net.New(
 		layer.NewRnn(g, featureSize, steps, hiddenSize),
-		// layer.NewLstm(g, 1, times, 32),
+		// layer.NewLstm(g, featureSize, steps, hiddenSize),
 		layer.NewFlatten(g),
 		layer.NewDense(g, hiddenSize*steps, 1),
 	)

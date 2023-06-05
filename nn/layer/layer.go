@@ -46,7 +46,7 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func loadParam(data *pb.Dense) tensor.Tensor {
+func loadParam(g *gorgonia.ExprGraph, data *pb.Dense, name string) *gorgonia.Node {
 	if data == nil {
 		return nil
 	}
@@ -54,5 +54,10 @@ func loadParam(data *pb.Dense) tensor.Tensor {
 	for _, v := range data.Shape {
 		shape = append(shape, int(v))
 	}
-	return tensor.New(tensor.WithShape(shape...), tensor.WithBacking(data.GetData()))
+	value := tensor.New(tensor.WithShape(shape...), tensor.WithBacking(data.GetData()))
+	ret := gorgonia.NewTensor(g, gorgonia.Float32, len(shape),
+		gorgonia.WithShape(shape...),
+		gorgonia.WithName(name))
+	gorgonia.Let(ret, value)
+	return ret
 }

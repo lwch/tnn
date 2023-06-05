@@ -31,16 +31,8 @@ func LoadDense(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, 
 	layer.name = name
 	layer.input = int(args["input"])
 	layer.output = int(args["output"])
-	w := loadParam(params["w"])
-	b := loadParam(params["b"])
-	layer.w = gorgonia.NewMatrix(g, gorgonia.Float32,
-		gorgonia.WithShape(layer.input, layer.output),
-		gorgonia.WithName("w"))
-	layer.b = gorgonia.NewMatrix(g, gorgonia.Float32,
-		gorgonia.WithShape(b.Shape()[0], layer.output),
-		gorgonia.WithName("b"))
-	gorgonia.Let(layer.w, w)
-	gorgonia.Let(layer.b, b)
+	layer.w = loadParam(g, params["w"], "w")
+	layer.b = loadParam(g, params["b"], "b")
 	return &layer
 }
 
