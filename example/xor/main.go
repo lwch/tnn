@@ -71,7 +71,7 @@ func train() {
 	net.Add(outputLayer)
 	loss := loss.NewMSE()
 	// optimizer := optimizer.NewSGD(lr, 0)
-	optimizer := optimizer.NewAdam(lr, 0, 0)
+	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
 
 	m.Compile(net, loss, x, y)
 
@@ -133,7 +133,7 @@ func loadModel() (*gorgonia.Node, *gorgonia.Node) {
 }
 
 func nextTrain(x, y *gorgonia.Node) {
-	optimizer := optimizer.NewAdam(lr, 0, 0)
+	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
 
 	for i := 0; i < 1000; i++ {
 		gorgonia.Let(x, xData)

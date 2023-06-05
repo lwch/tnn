@@ -7,14 +7,21 @@ type Adam struct {
 	slover gorgonia.Solver
 }
 
-func NewAdam(lr, l1reg, l2reg float64) Optimizer {
+func NewAdam(options ...OptimizerOption) Optimizer {
 	var optimizer Adam
-	optimizer.base = new("adam", lr, l1reg, l2reg)
-	optimizer.slover = gorgonia.NewAdamSolver(
-		gorgonia.WithLearnRate(lr),
-		gorgonia.WithL1Reg(l1reg),
-		gorgonia.WithL2Reg(l2reg),
-	)
+	optimizer.base = newBase()
+	for _, opt := range options {
+		opt(optimizer.base)
+	}
+	var opts []gorgonia.SolverOpt
+	opts = append(opts, gorgonia.WithLearnRate(optimizer.lr))
+	if optimizer.l1reg > 0 {
+		opts = append(opts, gorgonia.WithL1Reg(optimizer.l1reg))
+	}
+	if optimizer.l2reg > 0 {
+		opts = append(opts, gorgonia.WithL2Reg(optimizer.l2reg))
+	}
+	optimizer.slover = gorgonia.NewAdamSolver(opts...)
 	return &optimizer
 }
 
