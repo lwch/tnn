@@ -17,10 +17,8 @@ import (
 type Model struct {
 	name       string
 	trainCount uint64
-	vm         gorgonia.VM
 	net        *net.Net
 	loss       loss.Loss
-	lossValue  gorgonia.Value
 	optimizer  optimizer.Optimizer
 }
 
@@ -32,49 +30,24 @@ func New(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *Model {
 	}
 }
 
-func (m *Model) Close() {
-	if m.vm != nil {
-		m.vm.Close()
-	}
-}
-
-func (m *Model) Compile(g *gorgonia.ExprGraph, x, y *gorgonia.Node) *gorgonia.Node {
-	pred := m.net.Forward(x)
+func (m *Model) Compile(g *gorgonia.ExprGraph, x, y *gorgonia.Node, train bool) (
+	gorgonia.VM, *gorgonia.Node, *gorgonia.Node) {
+	pred := m.net.Forward(x, train)
 	loss := m.loss.Loss(y, pred)
-	gorgonia.Read(loss, &m.lossValue)
-	_, err := gorgonia.Grad(loss, m.net.Params()...)
-	runtime.Assert(err)
-	if m.vm != nil {
-		m.vm.Close()
+	if train {
+		_, err := gorgonia.Grad(loss, m.net.Params()...)
+		runtime.Assert(err)
 	}
-	m.vm = gorgonia.NewTapeMachine(g, gorgonia.BindDualValues(m.net.Params()...))
-	return pred
+	return gorgonia.NewTapeMachine(g, gorgonia.BindDualValues(m.net.Params()...)),
+		pred, loss
 }
 
-func (m *Model) Train() error {
-	m.vm.Reset()
-	err := m.vm.RunAll()
-	if err != nil {
-		return err
-	}
-	err = m.optimizer.Step(m.net.Params())
-	if err != nil {
-		return err
-	}
-	m.trainCount++
-	return nil
-}
-
-func (m *Model) Loss() float32 {
-	return m.lossValue.Data().(float32)
+func (m *Model) Params() gorgonia.Nodes {
+	return m.net.Params()
 }
 
 func (m *Model) ParamCount() uint64 {
 	return m.net.ParamCount()
-}
-
-func (m *Model) RunAll() error {
-	return m.vm.RunAll()
 }
 
 func (m *Model) Save(dir string) error {
@@ -134,4 +107,8 @@ func (m *Model) ReadFrom(g *gorgonia.ExprGraph, r io.Reader) (int64, error) {
 	// 	m.lr = lr.Load(model.GetScheduler(), m.optimizer)
 	// }
 	return int64(len(data)), nil
+}
+
+func (m *Model) Optimizer() optimizer.Optimizer {
+	return m.optimizer
 }

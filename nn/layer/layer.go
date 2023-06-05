@@ -7,7 +7,7 @@ import (
 )
 
 type Layer interface {
-	Forward(x *gorgonia.Node) *gorgonia.Node
+	Forward(x *gorgonia.Node, train bool) *gorgonia.Node
 	Params() gorgonia.Nodes
 	Class() string
 	SetName(name string)

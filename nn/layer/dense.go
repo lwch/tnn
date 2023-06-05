@@ -36,7 +36,7 @@ func LoadDense(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, 
 	return &layer
 }
 
-func (layer *Dense) Forward(x *gorgonia.Node) *gorgonia.Node {
+func (layer *Dense) Forward(x *gorgonia.Node, _ bool) *gorgonia.Node {
 	if layer.b == nil {
 		layer.b = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
 			gorgonia.WithShape(x.Shape()[0], layer.output),

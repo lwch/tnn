@@ -41,9 +41,9 @@ func (n *Net) Add(layers ...layer.Layer) {
 	n.layers = append(n.layers, layers...)
 }
 
-func (n *Net) Forward(x *gorgonia.Node) *gorgonia.Node {
+func (n *Net) Forward(x *gorgonia.Node, train bool) *gorgonia.Node {
 	for _, l := range n.layers {
-		x = l.Forward(x)
+		x = l.Forward(x, train)
 	}
 	return x
 }

@@ -26,6 +26,8 @@ const hiddenSize = 10
 const epoch = 40000
 const modelFile = "xor.model"
 
+var g = gorgonia.NewGraph()
+
 var xData = tensor.New(tensor.WithShape(4, 2), tensor.WithBacking([]float32{
 	0, 0,
 	0, 1,
@@ -40,17 +42,23 @@ var yData = tensor.New(tensor.WithShape(4, 1), tensor.WithBacking([]float32{
 	0,
 }))
 
+var x = gorgonia.NewMatrix(g, tensor.Float32,
+	gorgonia.WithShape(xData.Shape()...),
+	gorgonia.WithName("x"))
+var y = gorgonia.NewMatrix(g, tensor.Float32,
+	gorgonia.WithShape(yData.Shape()...),
+	gorgonia.WithName("y"))
+
 func main() {
-	g := gorgonia.NewGraph()
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
-		train(g)
+		train()
 		return
 	}
-	model, pred := nextTrain(g)
-	predict(model, pred)
+	_, pred := nextTrain()
+	predict(pred.Value())
 }
 
-func train(g *gorgonia.ExprGraph) {
+func train() {
 	hidden := layer.NewDense(g, 2, hiddenSize)
 	hidden.SetName("hidden")
 	outputLayer := layer.NewDense(g, hiddenSize, yData.Shape()[1])
@@ -65,14 +73,8 @@ func train(g *gorgonia.ExprGraph) {
 	optimizer := optimizer.NewAdam(lr, 0, 0)
 	m := model.New(net, loss, optimizer)
 
-	x := gorgonia.NewMatrix(g, tensor.Float32,
-		gorgonia.WithShape(xData.Shape()...),
-		gorgonia.WithName("x"))
-	y := gorgonia.NewMatrix(g, tensor.Float32,
-		gorgonia.WithShape(yData.Shape()...),
-		gorgonia.WithName("y"))
-
-	pred := m.Compile(g, x, y)
+	vm, pred, lossValue := m.Compile(g, x, y, true)
+	defer vm.Close()
 
 	p := plot.New()
 	p.Title.Text = "xor train model"
@@ -84,13 +86,14 @@ func train(g *gorgonia.ExprGraph) {
 	for i := 0; i < epoch; i++ {
 		gorgonia.Let(x, xData)
 		gorgonia.Let(y, yData)
-		runtime.Assert(m.Train())
+		runtime.Assert(vm.RunAll())
+		runtime.Assert(optimizer.Step(m.Params()))
+		vm.Reset()
 		if i%100 == 0 {
 			acc := accuracy(pred.Value())
-			loss := m.Loss()
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
-				i, loss, acc)
-			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: float64(loss)})
+				i, lossValue.Value(), acc)
+			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: float64(lossValue.Value().Data().(float32))})
 			if acc >= 100 {
 				break
 			}
@@ -99,7 +102,7 @@ func train(g *gorgonia.ExprGraph) {
 	fmt.Printf("train cost: %s, param count: %d\n",
 		time.Since(begin).String(), m.ParamCount())
 	fmt.Println("predict:")
-	predict(m, pred)
+	predict(pred.Value())
 
 	lossLine, err := plotter.NewLine(lossPoints)
 	runtime.Assert(err)
@@ -115,36 +118,32 @@ func train(g *gorgonia.ExprGraph) {
 	runtime.Assert(m.Save(modelFile))
 }
 
-func nextTrain(g *gorgonia.ExprGraph) (*model.Model, *gorgonia.Node) {
+func nextTrain() (*model.Model, *gorgonia.Node) {
 	var m model.Model
 	runtime.Assert(m.Load(g, modelFile))
 
-	x := gorgonia.NewMatrix(g, tensor.Float32,
-		gorgonia.WithShape(xData.Shape()...),
-		gorgonia.WithName("x"))
-	y := gorgonia.NewMatrix(g, tensor.Float32,
-		gorgonia.WithShape(yData.Shape()...),
-		gorgonia.WithName("y"))
-	pred := m.Compile(g, x, y)
+	vm, pred, loss := m.Compile(g, x, y, true)
+	defer vm.Close()
+
+	optimizer := m.Optimizer()
 
 	for i := 0; i < 1000; i++ {
 		gorgonia.Let(x, xData)
 		gorgonia.Let(y, yData)
-		runtime.Assert(m.Train())
+		runtime.Assert(vm.RunAll())
+		runtime.Assert(optimizer.Step(m.Params()))
 		if i%100 == 0 {
 			acc := accuracy(pred.Value())
-			loss := m.Loss()
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
-				i, loss, acc)
+				i, loss.Value(), acc)
 		}
 	}
 	return &m, pred
 }
 
-func predict(model *model.Model, pred *gorgonia.Node) {
+func predict(pred gorgonia.Value) {
 	xs := xData.Data().([]float32)
-	runtime.Assert(model.RunAll())
-	ys := pred.Value().Data().([]float32)
+	ys := pred.Data().([]float32)
 	for i := 0; i < 4; i++ {
 		start := i * 2
 		fmt.Printf("%d xor %d: %.2f\n",

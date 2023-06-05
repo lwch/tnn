@@ -70,7 +70,7 @@ func LoadLstm(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, a
 	return &layer
 }
 
-func (layer *Lstm) Forward(x *gorgonia.Node) *gorgonia.Node {
+func (layer *Lstm) Forward(x *gorgonia.Node, _ bool) *gorgonia.Node {
 	// it
 	blockIt := buildRnnBlock(x, []*gorgonia.Node{layer.Wii, layer.Whi, layer.Bii, layer.Bhi},
 		[]string{"Wii", "Whi", "Bii", "Bhi"}, layer.featureSize, layer.steps, layer.hidden)

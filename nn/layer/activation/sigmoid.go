@@ -15,6 +15,6 @@ func NewSigmoid() layer.Layer {
 	return &layer
 }
 
-func (layer *Sigmoid) Forward(x *gorgonia.Node) *gorgonia.Node {
+func (layer *Sigmoid) Forward(x *gorgonia.Node, _ bool) *gorgonia.Node {
 	return gorgonia.Must(gorgonia.Sigmoid(x))
 }
