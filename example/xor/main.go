@@ -51,11 +51,13 @@ func main() {
 }
 
 func train(g *gorgonia.ExprGraph) {
-	hidden1 := layer.NewDense(g, "hidden", 2, hiddenSize)
-	outputLayer := layer.NewDense(g, "output", hiddenSize, yData.Shape()[1])
+	hidden := layer.NewDense(g, 2, hiddenSize)
+	hidden.SetName("hidden")
+	outputLayer := layer.NewDense(g, hiddenSize, yData.Shape()[1])
+	outputLayer.SetName("output")
 
 	net := net.New(
-		hidden1,
+		hidden,
 		activation.NewReLU(),
 		outputLayer)
 	loss := loss.NewMSE()

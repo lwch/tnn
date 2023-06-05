@@ -10,6 +10,7 @@ type Layer interface {
 	Forward(x *gorgonia.Node) *gorgonia.Node
 	Params() gorgonia.Nodes
 	Class() string
+	SetName(name string)
 	Name() string
 	Args() map[string]float32
 }
@@ -19,10 +20,9 @@ type base struct {
 	class string
 }
 
-func new(class, name string) *base {
+func new(class string) *base {
 	return &base{
 		class: class,
-		name:  name,
 	}
 }
 
@@ -30,8 +30,16 @@ func (b *base) Class() string {
 	return b.class
 }
 
+func (b *base) SetName(name string) {
+	b.name = name
+}
+
 func (b *base) Name() string {
 	return b.name
+}
+
+func (b *base) Params() gorgonia.Nodes {
+	return nil
 }
 
 func (b *base) Args() map[string]float32 {

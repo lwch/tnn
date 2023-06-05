@@ -7,17 +7,15 @@ import (
 
 type Dense struct {
 	*base
-	w             *gorgonia.Node
-	b             *gorgonia.Node
 	input, output int
+	// params
+	w *gorgonia.Node
+	b *gorgonia.Node
 }
 
-func NewDense(g *gorgonia.ExprGraph, name string, input, output int) Layer {
-	if len(name) == 0 {
-		name = "dense"
-	}
+func NewDense(g *gorgonia.ExprGraph, input, output int) Layer {
 	var layer Dense
-	layer.base = new("dense", name)
+	layer.base = new("dense")
 	layer.input = input
 	layer.output = output
 	layer.w = gorgonia.NewMatrix(g, gorgonia.Float32,
@@ -29,7 +27,8 @@ func NewDense(g *gorgonia.ExprGraph, name string, input, output int) Layer {
 
 func LoadDense(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dense
-	layer.base = new("dense", name)
+	layer.base = new("dense")
+	layer.name = name
 	layer.input = int(args["input"])
 	layer.output = int(args["output"])
 	w := loadParam(params["w"])
