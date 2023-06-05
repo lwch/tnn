@@ -6,10 +6,13 @@ import (
 )
 
 type ReLU struct {
+	*base
 }
 
 func NewReLU() layer.Layer {
-	return &ReLU{}
+	var layer ReLU
+	layer.base = new("relu", "")
+	return &layer
 }
 
 func (layer *ReLU) Forward(x *gorgonia.Node) *gorgonia.Node {

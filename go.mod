@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/lwch/runtime v1.0.1
 	gonum.org/v1/plot v0.10.1
+	google.golang.org/protobuf v1.30.0
 	gorgonia.org/gorgonia v0.9.17
 	gorgonia.org/tensor v0.9.24
 )
@@ -33,7 +34,6 @@ require (
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gonum.org/v1/gonum v0.13.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorgonia.org/cu v0.9.4 // indirect
 	gorgonia.org/dawson v1.2.0 // indirect

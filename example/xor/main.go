@@ -41,18 +41,18 @@ var yData = tensor.New(tensor.WithShape(4, 1), tensor.WithBacking([]float32{
 }))
 
 func main() {
+	g := gorgonia.NewGraph()
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
-		train()
+		train(g)
 		return
 	}
-	model, pred := nextTrain()
+	model, pred := nextTrain(g)
 	predict(model, pred)
 }
 
-func train() {
-	g := gorgonia.NewGraph()
-	hidden1 := layer.NewDense(g, xData.Shape()[0], 2, hiddenSize)
-	outputLayer := layer.NewDense(g, yData.Shape()[0], hiddenSize, yData.Shape()[1])
+func train(g *gorgonia.ExprGraph) {
+	hidden1 := layer.NewDense(g, "hidden", 2, hiddenSize)
+	outputLayer := layer.NewDense(g, "output", hiddenSize, yData.Shape()[1])
 
 	net := net.New(
 		hidden1,
@@ -60,7 +60,7 @@ func train() {
 		outputLayer)
 	loss := loss.NewMSE()
 	// optimizer := optimizer.NewSGD(lr, 0)
-	optimizer := optimizer.NewAdam(lr)
+	optimizer := optimizer.NewAdam(lr, 0, 0)
 	m := model.New(net, loss, optimizer)
 
 	x := gorgonia.NewMatrix(g, tensor.Float32,
@@ -69,9 +69,6 @@ func train() {
 	y := gorgonia.NewMatrix(g, tensor.Float32,
 		gorgonia.WithShape(yData.Shape()...),
 		gorgonia.WithName("y"))
-
-	gorgonia.Let(x, xData)
-	gorgonia.Let(y, yData)
 
 	pred := m.Compile(g, x, y)
 
@@ -83,6 +80,8 @@ func train() {
 	var lossPoints plotter.XYs
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
+		gorgonia.Let(x, xData)
+		gorgonia.Let(y, yData)
 		runtime.Assert(m.Train())
 		if i%100 == 0 {
 			acc := accuracy(pred.Value())
@@ -111,31 +110,39 @@ func train() {
 	p.Add(lossLine)
 	p.Save(8*vg.Inch, 8*vg.Inch, "xor.png")
 
-	// runtime.Assert(m.Save(modelFile))
+	runtime.Assert(m.Save(modelFile))
 }
 
-func nextTrain() (*model.Model, *gorgonia.Node) {
-	return nil, nil
-	// var m model.Model
-	// runtime.Assert(m.Load(modelFile))
-	// for i := 0; i < 1000; i++ {
-	// 	inputs, outputs := getBatch()
-	// 	pred := m.Forward(inputs, true)
-	// 	pred.ZeroGrad()
-	// 	m.Backward(pred, outputs)
-	// 	m.Apply()
-	// 	if i%100 == 0 {
-	// 		fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i,
-	// 			m.Loss(inputs, outputs), accuracy(&m, inputs, outputs))
-	// 	}
-	// }
-	// return &m
+func nextTrain(g *gorgonia.ExprGraph) (*model.Model, *gorgonia.Node) {
+	var m model.Model
+	runtime.Assert(m.Load(g, modelFile))
+
+	x := gorgonia.NewMatrix(g, tensor.Float32,
+		gorgonia.WithShape(xData.Shape()...),
+		gorgonia.WithName("x"))
+	y := gorgonia.NewMatrix(g, tensor.Float32,
+		gorgonia.WithShape(yData.Shape()...),
+		gorgonia.WithName("y"))
+	pred := m.Compile(g, x, y)
+
+	for i := 0; i < 1000; i++ {
+		gorgonia.Let(x, xData)
+		gorgonia.Let(y, yData)
+		runtime.Assert(m.Train())
+		if i%100 == 0 {
+			acc := accuracy(pred.Value())
+			loss := m.Loss()
+			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
+				i, loss, acc)
+		}
+	}
+	return &m, pred
 }
 
 func predict(model *model.Model, pred *gorgonia.Node) {
 	xs := xData.Data().([]float32)
-	ys := pred.Value().Data().([]float32)
 	runtime.Assert(model.RunAll())
+	ys := pred.Value().Data().([]float32)
 	for i := 0; i < 4; i++ {
 		start := i * 2
 		fmt.Printf("%d xor %d: %.2f\n",
