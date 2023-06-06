@@ -17,12 +17,12 @@ import (
 
 const lr = 1e-4
 const epoch = 1000
-const batchSize = 2
+const batchSize = 16
 const steps = 8
-const featureSize = 1
+const featureSize = 16
 const unitSize = steps * featureSize
-const hiddenSize = 2
-const clearSteps = 1 // 每隔多少次迭代清空一次隐藏层状态，提高反向传播速度
+const hiddenSize = 32
+const clearSteps = 2 // 每隔多少次迭代清空一次隐藏层状态，提高反向传播速度
 
 func main() {
 	var points []float32
