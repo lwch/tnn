@@ -18,11 +18,10 @@ import (
 const lr = 1e-4
 const epoch = 1000
 const batchSize = 16
-const steps = 8
-const featureSize = 16
-const unitSize = steps * featureSize
-const hiddenSize = 32
-const clearSteps = 2 // 每隔多少次迭代清空一次隐藏层状态，提高反向传播速度
+const steps = 32
+const dims = 8
+const unitSize = steps * dims
+const transformerSize = 2
 
 func main() {
 	var points []float32
@@ -37,7 +36,12 @@ func main() {
 
 	g := gorgonia.NewGraph()
 
-	m := newModel()
+	x := gorgonia.NewTensor(g, tensor.Float32, 3,
+		gorgonia.WithShape(batchSize, steps, dims), gorgonia.WithName("x"))
+	y := gorgonia.NewTensor(g, tensor.Float32, 2,
+		gorgonia.WithShape(batchSize, 1), gorgonia.WithName("y"))
+
+	m := newModel(g)
 
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
@@ -47,18 +51,14 @@ func main() {
 	p.X.Label.Text = "epoch"
 	p.Y.Label.Text = "value"
 
-	x := gorgonia.NewTensor(g, tensor.Float32, 3,
-		gorgonia.WithShape(batchSize, steps, featureSize), gorgonia.WithName("x"))
-	y := gorgonia.NewTensor(g, tensor.Float32, 2,
-		gorgonia.WithShape(batchSize, 1), gorgonia.WithName("y"))
+	m.Compile(loss, x, y)
 
 	var real, predict plotter.XYs
 	for i := 0; i < epoch; i++ {
 		input, output := getBatch(points, i+batchSize)
 		runtime.Assert(gorgonia.Let(x, input))
 		runtime.Assert(gorgonia.Let(y, output))
-		m.Train(i, loss, optimizer, x, y)
-
+		m.Train(optimizer, x, y)
 		pred := m.Predict(x)
 		y1 := y.Value().Data().([]float32)[0]
 		y2 := pred.Data().([]float32)[0]
@@ -66,7 +66,7 @@ func main() {
 		predict = append(predict, plotter.XY{X: float64(i), Y: float64(y2)})
 		if i%10 == 0 {
 			acc := accuracy(m, x, y)
-			loss := m.Loss(loss, x, y)
+			loss := m.Loss(x)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, loss, acc)
 			// fmt.Println(y.Value())
 			// fmt.Println(pred.Value())
@@ -112,7 +112,7 @@ func getBatch(points []float32, i int) (tensor.Tensor, tensor.Tensor) {
 	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
 	// 	copy(y[j*1:(j+1)*1], dy)
 	// })
-	return tensor.New(tensor.WithShape(batchSize, steps, featureSize), tensor.WithBacking(x)),
+	return tensor.New(tensor.WithShape(batchSize, steps, dims), tensor.WithBacking(x)),
 		tensor.New(tensor.WithShape(batchSize, 1), tensor.WithBacking(y))
 }
 

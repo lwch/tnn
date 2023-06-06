@@ -10,7 +10,7 @@ type Sigmoid struct {
 	*base
 }
 
-func NewSigmoid() layer.Layer {
+func NewSigmoid() *Sigmoid {
 	var layer Sigmoid
 	layer.base = new("sigmoid")
 	return &layer

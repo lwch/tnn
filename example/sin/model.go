@@ -53,6 +53,7 @@ func (m *model) Forward(loss loss.Loss, x, y *gorgonia.Node) (gorgonia.VM, *gorg
 func (m *model) Train(epoch int, loss loss.Loss, optimizer optimizer.Optimizer, x, y *gorgonia.Node) {
 	if epoch%clearSteps == 0 {
 		m.hidden = nil
+		m.cell = nil
 	}
 	vm, _, _ := m.Forward(loss, x, y)
 	defer vm.Close()
