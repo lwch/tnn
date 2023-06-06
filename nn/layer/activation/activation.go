@@ -1,7 +1,7 @@
 package activation
 
 import (
-	"gorgonia.org/gorgonia"
+	"gorgonia.org/tensor"
 )
 
 type base struct {
@@ -30,7 +30,7 @@ func (layer *base) Name() string {
 	return layer.name
 }
 
-func (layer *base) Params() gorgonia.Nodes {
+func (layer *base) Params() map[string]tensor.Tensor {
 	return nil
 }
 

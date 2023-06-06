@@ -15,6 +15,7 @@ type model struct {
 	vm         gorgonia.VM
 	pred, loss *gorgonia.Node
 	net        *net.Net
+	params     gorgonia.Nodes
 }
 
 func newModel() *model {
@@ -40,11 +41,12 @@ func (m *model) Compile(net *net.Net, loss loss.Loss, x, y *gorgonia.Node) {
 			input = ln.Forward(input)
 		}
 	}
+	m.params = m.Params()
 	m.pred = input
 	m.loss = loss.Loss(y, m.pred)
-	_, err := gorgonia.Grad(m.loss, net.Params()...)
+	_, err := gorgonia.Grad(m.loss, m.params...)
 	runtime.Assert(err)
-	m.vm = gorgonia.NewTapeMachine(m.g, gorgonia.BindDualValues(net.Params()...))
+	m.vm = gorgonia.NewTapeMachine(m.g, gorgonia.BindDualValues(m.params...))
 }
 
 func (m *model) Train(optimizer optimizer.Optimizer) gorgonia.Value {
@@ -53,7 +55,7 @@ func (m *model) Train(optimizer optimizer.Optimizer) gorgonia.Value {
 	}
 	m.vm.Reset()
 	runtime.Assert(m.vm.RunAll())
-	runtime.Assert(optimizer.Step(m.net.Params()))
+	runtime.Assert(optimizer.Step(m.params))
 	return m.loss.Value()
 }
 
@@ -64,4 +66,14 @@ func (m *model) Evaluate() (gorgonia.Value, gorgonia.Value) {
 
 func (m *model) G() *gorgonia.ExprGraph {
 	return m.g
+}
+
+func (m *model) Params() gorgonia.Nodes {
+	var params gorgonia.Nodes
+	for _, list := range m.net.Params() {
+		for name, p := range list {
+			params = append(params, gorgonia.NodeFromAny(m.g, p, gorgonia.WithName(name)))
+		}
+	}
+	return params
 }

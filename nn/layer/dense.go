@@ -3,14 +3,15 @@ package layer
 import (
 	"github.com/lwch/tnn/internal/pb"
 	"gorgonia.org/gorgonia"
+	"gorgonia.org/tensor"
 )
 
 type Dense struct {
 	*base
 	output int
 	// params
-	w *gorgonia.Node
-	b *gorgonia.Node
+	w tensor.Tensor
+	b tensor.Tensor
 }
 
 func NewDense(output int) *Dense {
@@ -25,30 +26,29 @@ func LoadDense(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, 
 	layer.base = new("dense")
 	layer.name = name
 	layer.output = int(args["output"])
-	layer.w = loadParam(g, params["w"], "w")
-	layer.b = loadParam(g, params["b"], "b")
+	layer.w = loadParam(g, params["w"])
+	layer.b = loadParam(g, params["b"])
 	return &layer
 }
 
 func (layer *Dense) Forward(x *gorgonia.Node) *gorgonia.Node {
 	if layer.w == nil {
-		layer.w = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(x.Shape()[1], layer.output),
-			gorgonia.WithName("w"),
-			gorgonia.WithInit(gorgonia.GlorotN(1.0)))
+		layer.w = initW(x.Shape()[1], layer.output)
 	}
 	if layer.b == nil {
-		layer.b = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(x.Shape()[0], layer.output),
-			gorgonia.WithName("b"),
-			gorgonia.WithInit(gorgonia.Zeroes()))
+		layer.b = initB(x.Shape()[0], layer.output)
 	}
-	wx := gorgonia.Must(gorgonia.Mul(x, layer.w))
-	return gorgonia.Must(gorgonia.Add(wx, layer.b))
+	w := gorgonia.NodeFromAny(x.Graph(), layer.w, gorgonia.WithName("w"))
+	b := gorgonia.NodeFromAny(x.Graph(), layer.b, gorgonia.WithName("b"))
+	wx := gorgonia.Must(gorgonia.Mul(x, w))
+	return gorgonia.Must(gorgonia.Add(wx, b))
 }
 
-func (layer *Dense) Params() gorgonia.Nodes {
-	return gorgonia.Nodes{layer.w, layer.b}
+func (layer *Dense) Params() map[string]tensor.Tensor {
+	return map[string]tensor.Tensor{
+		"w": layer.w,
+		"b": layer.b,
+	}
 }
 
 func (layer *Dense) Args() map[string]float32 {

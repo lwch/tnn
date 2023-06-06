@@ -1,6 +1,8 @@
 package optimizer
 
-import "gorgonia.org/gorgonia"
+import (
+	"gorgonia.org/gorgonia"
+)
 
 type Adam struct {
 	*base

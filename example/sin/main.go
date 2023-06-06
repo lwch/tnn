@@ -57,16 +57,16 @@ func main() {
 		input, output := getBatch(points, i+batchSize)
 		runtime.Assert(gorgonia.Let(x, input))
 		runtime.Assert(gorgonia.Let(y, output))
-		m.Train(i, loss, optimizer, x, y)
+		m.Train(i, loss, optimizer, input, output)
 
-		pred := m.Predict(x)
+		pred := m.Predict(input)
 		y1 := y.Value().Data().([]float32)[0]
 		y2 := pred.Data().([]float32)[0]
 		real = append(real, plotter.XY{X: float64(i), Y: float64(y1)})
 		predict = append(predict, plotter.XY{X: float64(i), Y: float64(y2)})
 		if i%10 == 0 {
-			acc := accuracy(m, x, y)
-			loss := m.Loss(loss, x, y)
+			acc := accuracy(m, input, output)
+			loss := m.Loss(loss, input, output)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, loss, acc)
 			// fmt.Println(y.Value())
 			// fmt.Println(pred.Value())
@@ -116,9 +116,9 @@ func getBatch(points []float32, i int) (tensor.Tensor, tensor.Tensor) {
 		tensor.New(tensor.WithShape(batchSize, 1), tensor.WithBacking(y))
 }
 
-func accuracy(m *model, x, y *gorgonia.Node) float32 {
+func accuracy(m *model, x, y tensor.Tensor) float32 {
 	pred := m.Predict(x)
-	y1Values := y.Value().Data().([]float32)
+	y1Values := y.Data().([]float32)
 	y2Values := pred.Data().([]float32)
 	var correct float32
 	for i := 0; i < batchSize; i++ {

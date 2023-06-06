@@ -10,19 +10,20 @@ import (
 	"github.com/lwch/tnn/nn/layer/activation"
 	"google.golang.org/protobuf/proto"
 	"gorgonia.org/gorgonia"
+	"gorgonia.org/tensor"
 )
 
 type loadFunc func(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
-	"dense": layer.LoadDense,
-	// "dropout": layer.LoadDropout,
+	"dense":   layer.LoadDense,
+	"dropout": layer.LoadDropout,
 	// "conv2d":  layer.LoadConv2D,
 	// "maxpool": layer.LoadMaxPool,
 	"rnn":  layer.LoadRnn,
 	"lstm": layer.LoadLstm,
 	// "self_attention": layer.LoadSelfAttention,
-	// "nor":            layer.LoadNor,
+	"nor":     layer.LoadNor,
 	"flatten": layer.LoadFlatten,
 	// activation
 	"sigmoid": activation.LoadSigmoid,
@@ -45,10 +46,14 @@ func (n *Net) Add(layers ...layer.Layer) {
 	n.layers = append(n.layers, layers...)
 }
 
-func (n *Net) Params() gorgonia.Nodes {
-	var ret gorgonia.Nodes
+func (n *Net) Params() []map[string]tensor.Tensor {
+	var ret []map[string]tensor.Tensor
 	for _, l := range n.layers {
-		ret = append(ret, l.Params()...)
+		params := make(map[string]tensor.Tensor)
+		for name, p := range l.Params() {
+			params[name] = p
+		}
+		ret = append(ret, params)
 	}
 	return ret
 }
@@ -81,15 +86,15 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 		net.Layers[i].Class = n.layers[i].Class()
 		net.Layers[i].Name = n.layers[i].Name()
 		net.Layers[i].Params = make(map[string]*pb.Dense)
-		for _, p := range n.layers[i].Params() {
+		for name, p := range n.layers[i].Params() {
 			var dense pb.Dense
 			shape := p.Shape()
 			dense.Shape = make([]int32, len(shape))
 			for j := 0; j < len(shape); j++ {
 				dense.Shape[j] = int32(shape[j])
 			}
-			dense.Data = p.Value().Data().([]float32)
-			net.Layers[i].Params[p.Name()] = &dense
+			dense.Data = p.Data().([]float32)
+			net.Layers[i].Params[name] = &dense
 		}
 		net.Layers[i].Args = n.layers[i].Args()
 	}

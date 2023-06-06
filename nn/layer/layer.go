@@ -7,7 +7,7 @@ import (
 )
 
 type Layer interface {
-	Params() gorgonia.Nodes
+	Params() map[string]tensor.Tensor
 	Class() string
 	SetName(name string)
 	Name() string
@@ -37,7 +37,7 @@ func (b *base) Name() string {
 	return b.name
 }
 
-func (b *base) Params() gorgonia.Nodes {
+func (b *base) Params() map[string]tensor.Tensor {
 	return nil
 }
 
@@ -45,7 +45,7 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func loadParam(g *gorgonia.ExprGraph, data *pb.Dense, name string) *gorgonia.Node {
+func loadParam(g *gorgonia.ExprGraph, data *pb.Dense) tensor.Tensor {
 	if data == nil {
 		return nil
 	}
@@ -53,10 +53,21 @@ func loadParam(g *gorgonia.ExprGraph, data *pb.Dense, name string) *gorgonia.Nod
 	for _, v := range data.Shape {
 		shape = append(shape, int(v))
 	}
-	value := tensor.New(tensor.WithShape(shape...), tensor.WithBacking(data.GetData()))
-	ret := gorgonia.NewTensor(g, gorgonia.Float32, len(shape),
-		gorgonia.WithShape(shape...),
-		gorgonia.WithName(name))
-	gorgonia.Let(ret, value)
-	return ret
+	return tensor.New(tensor.WithShape(shape...), tensor.WithBacking(data.GetData()))
+}
+
+func initW(shapes ...int) tensor.Tensor {
+	return tensor.New(
+		tensor.WithShape(shapes...),
+		tensor.WithBacking(gorgonia.GlorotEtAlU32(1.0, shapes...)))
+}
+
+func initB(shapes ...int) tensor.Tensor {
+	total := 1
+	for _, v := range shapes {
+		total *= v
+	}
+	return tensor.New(
+		tensor.WithShape(shapes...),
+		tensor.WithBacking(make([]float32, total)))
 }

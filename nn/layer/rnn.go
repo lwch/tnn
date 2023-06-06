@@ -11,8 +11,8 @@ type Rnn struct {
 	featureSize, steps int
 	hidden             int
 	// params
-	w *gorgonia.Node
-	b *gorgonia.Node
+	w tensor.Tensor
+	b tensor.Tensor
 }
 
 func NewRnn(featureSize, steps, hidden int) *Rnn {
@@ -31,53 +31,21 @@ func LoadRnn(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, ar
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
-	layer.w = loadParam(g, params["w"], "w")
-	layer.b = loadParam(g, params["b"], "b")
+	layer.w = loadParam(g, params["w"])
+	layer.b = loadParam(g, params["b"])
 	return &layer
-}
-
-func buildRnnBlock(x *gorgonia.Node, nodes []*gorgonia.Node, names []string, batchSize, featureSize, steps, hidden int) []*gorgonia.Node {
-	if nodes[0] == nil {
-		nodes[0] = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(featureSize, hidden),
-			gorgonia.WithName(names[0]),
-			gorgonia.WithInit(gorgonia.GlorotN(1.0)))
-	}
-	if nodes[1] == nil {
-		nodes[1] = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(hidden, hidden),
-			gorgonia.WithName(names[1]),
-			gorgonia.WithInit(gorgonia.GlorotN(1.0)))
-	}
-	if nodes[2] == nil {
-		nodes[2] = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(batchSize, hidden),
-			gorgonia.WithName(names[2]),
-			gorgonia.WithInit(gorgonia.Zeroes()))
-	}
-	if nodes[3] == nil {
-		nodes[3] = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(batchSize, hidden),
-			gorgonia.WithName(names[3]),
-			gorgonia.WithInit(gorgonia.Zeroes()))
-	}
-	return nodes
 }
 
 func (layer *Rnn) Forward(x, h *gorgonia.Node) (*gorgonia.Node, *gorgonia.Node, error) {
 	inputShape := x.Shape()
 	if layer.w == nil {
-		layer.w = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(layer.hidden, layer.featureSize+layer.hidden),
-			gorgonia.WithName("w"),
-			gorgonia.WithInit(gorgonia.GlorotN(1.0)))
+		layer.w = initW(layer.featureSize+layer.hidden, layer.hidden)
 	}
 	if layer.b == nil {
-		layer.b = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(inputShape[0], layer.hidden),
-			gorgonia.WithName("b"),
-			gorgonia.WithInit(gorgonia.Zeroes()))
+		layer.b = initB(inputShape[0], layer.hidden)
 	}
+	w := gorgonia.NodeFromAny(x.Graph(), layer.w, gorgonia.WithName("w"))
+	b := gorgonia.NodeFromAny(x.Graph(), layer.b, gorgonia.WithName("b"))
 	if h == nil {
 		h = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
 			gorgonia.WithShape(inputShape[0], layer.hidden), gorgonia.WithName("h"),
@@ -93,11 +61,10 @@ func (layer *Rnn) Forward(x, h *gorgonia.Node) (*gorgonia.Node, *gorgonia.Node, 
 		if err != nil {
 			return nil, nil, err
 		}
-		z := gorgonia.Must(gorgonia.Concat(1, h, t))           // (batch, feature+hidden)
-		wt := gorgonia.Must(gorgonia.Transpose(layer.w, 1, 0)) // (feature+hidden, hidden)
-		z = gorgonia.Must(gorgonia.Mul(z, wt))                 // (batch, hidden)
-		z = gorgonia.Must(gorgonia.Add(z, layer.b))            // (batch, hidden)
-		h = gorgonia.Must(gorgonia.Tanh(z))                    // (batch, hidden)
+		z := gorgonia.Must(gorgonia.Concat(1, h, t)) // (batch, feature+hidden)
+		z = gorgonia.Must(gorgonia.Mul(z, w))        // (batch, hidden)
+		z = gorgonia.Must(gorgonia.Add(z, b))        // (batch, hidden)
+		h = gorgonia.Must(gorgonia.Tanh(z))          // (batch, hidden)
 		if result == nil {
 			result = h
 		} else {
@@ -108,8 +75,11 @@ func (layer *Rnn) Forward(x, h *gorgonia.Node) (*gorgonia.Node, *gorgonia.Node, 
 		tensor.Shape{inputShape[0], inputShape[1], layer.hidden})), h, nil
 }
 
-func (layer *Rnn) Params() gorgonia.Nodes {
-	return gorgonia.Nodes{layer.w, layer.b}
+func (layer *Rnn) Params() map[string]tensor.Tensor {
+	return map[string]tensor.Tensor{
+		"w": layer.w,
+		"b": layer.b,
+	}
 }
 
 func (layer *Rnn) Args() map[string]float32 {
