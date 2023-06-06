@@ -16,7 +16,7 @@ type transformer struct {
 	output  *layer.Dense
 }
 
-func newTransformer() *transformer {
+func newTransformer(i int) *transformer {
 	return &transformer{
 		attn:    layer.NewSelfAttention(steps, dims),
 		nor:     layer.NewNor(dims),
@@ -27,21 +27,19 @@ func newTransformer() *transformer {
 	}
 }
 
-func (t *transformer) Forward(x *gorgonia.Node) *gorgonia.Node {
-	y := t.attn.Forward(x)
+func (t *transformer) Forward(x *gorgonia.Node) (*gorgonia.Node, gorgonia.Nodes) {
+	var params gorgonia.Nodes
+	y, ps := t.attn.Forward(x)
+	params = append(params, ps...)
 	y = gorgonia.Must(gorgonia.Add(x, y))
 	y = t.flatten.Forward(y)
 	selfOut := t.nor.Forward(y)
-	y = t.dense.Forward(y)
+	y, ps = t.dense.Forward(y)
+	params = append(params, ps...)
 	y = t.relu.Forward(y)
-	y = t.output.Forward(y)
+	y, ps = t.output.Forward(y)
+	params = append(params, ps...)
 	y = gorgonia.Must(gorgonia.Add(selfOut, y))
 	y = t.nor.Forward(y)
-	return gorgonia.Must(gorgonia.Reshape(y, tensor.Shape{batchSize, steps, dims}))
-}
-
-func (t *transformer) Params() []*gorgonia.Node {
-	return append(t.attn.Params(),
-		append(t.dense.Params(),
-			t.output.Params()...)...)
+	return gorgonia.Must(gorgonia.Reshape(y, tensor.Shape{batchSize, steps, dims})), params
 }
