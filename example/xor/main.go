@@ -60,9 +60,9 @@ func train() {
 		gorgonia.WithShape(yData.Shape()...),
 		gorgonia.WithName("y"))
 
-	hidden := layer.NewDense(m.G(), 2, hiddenSize)
+	hidden := layer.NewDense(hiddenSize)
 	hidden.SetName("hidden")
-	outputLayer := layer.NewDense(m.G(), hiddenSize, yData.Shape()[1])
+	outputLayer := layer.NewDense(yData.Shape()[1])
 	outputLayer.SetName("output")
 
 	net := net.New(m.G())

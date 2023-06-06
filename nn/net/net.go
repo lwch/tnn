@@ -25,10 +25,10 @@ var loadFuncs = map[string]loadFunc{
 	// "nor":            layer.LoadNor,
 	"flatten": layer.LoadFlatten,
 	// activation
-	// "sigmoid":  activation.Load("sigmoid"),
+	"sigmoid": activation.LoadSigmoid,
 	// "softplus": activation.Load("softplus"),
 	// "tanh":     activation.Load("tanh"),
-	"relu": activation.Load("relu"),
+	"relu": activation.LoadRelu,
 	// "gelu": activation.Load("gelu"),
 }
 

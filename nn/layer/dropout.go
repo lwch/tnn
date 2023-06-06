@@ -10,7 +10,7 @@ type Dropout struct {
 	keep float64
 }
 
-func NewDropout(g *gorgonia.ExprGraph, keep float64) Layer {
+func NewDropout(g *gorgonia.ExprGraph, keep float64) *Dropout {
 	var layer Dropout
 	layer.base = new("dropout")
 	layer.keep = keep

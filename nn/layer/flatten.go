@@ -10,7 +10,7 @@ type Flatten struct {
 	*base
 }
 
-func NewFlatten(g *gorgonia.ExprGraph) Layer {
+func NewFlatten() *Flatten {
 	var layer Flatten
 	layer.base = new("flatten")
 	return &layer

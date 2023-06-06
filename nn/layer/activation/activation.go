@@ -1,31 +1,8 @@
 package activation
 
 import (
-	"github.com/lwch/tnn/internal/pb"
-	"github.com/lwch/tnn/nn/layer"
 	"gorgonia.org/gorgonia"
 )
-
-func Load(class string) func(*gorgonia.ExprGraph, string, map[string]*pb.Dense, map[string]float32) layer.Layer {
-	var fn func() layer.Layer
-	switch class {
-	case "sigmoid":
-		fn = NewSigmoid
-	// case "softplus":
-	// 	fn = NewSoftplus
-	// case "tanh":
-	// 	fn = NewTanh
-	case "relu":
-		fn = NewReLU
-	// case "gelu":
-	// 	fn = NewGeLU
-	default:
-		return nil
-	}
-	return func(*gorgonia.ExprGraph, string, map[string]*pb.Dense, map[string]float32) layer.Layer {
-		return fn()
-	}
-}
 
 type base struct {
 	class string
