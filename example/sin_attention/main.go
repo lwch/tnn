@@ -44,14 +44,12 @@ func main() {
 	p.X.Label.Text = "epoch"
 	p.Y.Label.Text = "value"
 
-	evaluate := newRunner()
-	evaluate.Compile(m, l)
+	evaluate := newRunner(m, l)
 
 	ch := make(chan int)
 	for i := 0; i < rt.NumCPU(); i++ {
 		go func() {
-			r := newRunner()
-			r.Compile(m, l)
+			r := newRunner(m, l)
 			for {
 				idx := <-ch
 				x, y := getBatch(points, idx)

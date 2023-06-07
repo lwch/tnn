@@ -2,16 +2,16 @@ package layer
 
 import (
 	"github.com/lwch/tnn/internal/pb"
-	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type Dense struct {
 	*base
 	output int
 	// params
-	w tensor.Tensor
-	b tensor.Tensor
+	w *ts.Tensor
+	b *ts.Tensor
 }
 
 func NewDense(output int) *Dense {
@@ -21,32 +21,29 @@ func NewDense(output int) *Dense {
 	return &layer
 }
 
-func LoadDense(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDense(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dense
 	layer.base = new("dense")
 	layer.name = name
 	layer.output = int(args["output"])
-	layer.w = loadParam(g, params["w"])
-	layer.b = loadParam(g, params["b"])
+	layer.w = loadParam(params["w"])
+	layer.b = loadParam(params["b"])
 	return &layer
 }
 
-func (layer *Dense) Forward(x *gorgonia.Node) (*gorgonia.Node, gorgonia.Nodes) {
+func (layer *Dense) Forward(vs *nn.Path, x *ts.Tensor) *ts.Tensor {
+	inputShape := x.MustSize()
 	if layer.w == nil {
-		layer.w = initW(x.Shape()[1], layer.output)
+		layer.w = initW(vs, "w", inputShape[1], int64(layer.output))
 	}
 	if layer.b == nil {
-		layer.b = initB(x.Shape()[0], layer.output)
+		layer.b = initB(vs, "b", inputShape[0], int64(layer.output))
 	}
-	w := gorgonia.NodeFromAny(x.Graph(), layer.w, gorgonia.WithName("w"))
-	b := gorgonia.NodeFromAny(x.Graph(), layer.b, gorgonia.WithName("b"))
-	wx := gorgonia.Must(gorgonia.Mul(x, w))
-	return gorgonia.Must(gorgonia.Add(wx, b)),
-		gorgonia.Nodes{w, b}
+	return x.MustMm(layer.w, false).MustAdd(layer.b, true)
 }
 
-func (layer *Dense) Params() map[string]tensor.Tensor {
-	return map[string]tensor.Tensor{
+func (layer *Dense) Params() map[string]*ts.Tensor {
+	return map[string]*ts.Tensor{
 		"w": layer.w,
 		"b": layer.b,
 	}

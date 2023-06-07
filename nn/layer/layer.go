@@ -1,13 +1,14 @@
 package layer
 
 import (
+	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/internal/pb"
-	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type Layer interface {
-	Params() map[string]tensor.Tensor
+	Params() map[string]*ts.Tensor
 	Class() string
 	SetName(name string)
 	Name() string
@@ -37,7 +38,7 @@ func (b *base) Name() string {
 	return b.name
 }
 
-func (b *base) Params() map[string]tensor.Tensor {
+func (b *base) Params() map[string]*ts.Tensor {
 	return nil
 }
 
@@ -45,29 +46,23 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func loadParam(g *gorgonia.ExprGraph, data *pb.Dense) tensor.Tensor {
+func loadParam(data *pb.Dense) *ts.Tensor {
 	if data == nil {
 		return nil
 	}
-	shape := make([]int, 0, 2)
+	shape := make([]int64, 0, 2)
 	for _, v := range data.Shape {
-		shape = append(shape, int(v))
+		shape = append(shape, int64(v))
 	}
-	return tensor.New(tensor.WithShape(shape...), tensor.WithBacking(data.GetData()))
+	t, err := ts.NewTensorFromData(data.GetData(), shape)
+	runtime.Assert(err)
+	return t
 }
 
-func initW(shapes ...int) tensor.Tensor {
-	return tensor.New(
-		tensor.WithShape(shapes...),
-		tensor.WithBacking(gorgonia.GlorotEtAlU32(1.0, shapes...)))
+func initW(vs *nn.Path, name string, dims ...int64) *ts.Tensor {
+	return vs.MustKaimingUniform(name, dims)
 }
 
-func initB(shapes ...int) tensor.Tensor {
-	total := 1
-	for _, v := range shapes {
-		total *= v
-	}
-	return tensor.New(
-		tensor.WithShape(shapes...),
-		tensor.WithBacking(make([]float32, total)))
+func initB(vs *nn.Path, name string, dims ...int64) *ts.Tensor {
+	return vs.MustZeros(name, dims)
 }

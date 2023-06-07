@@ -18,60 +18,62 @@ type runner struct {
 	params gorgonia.Nodes
 }
 
-func newRunner() *runner {
+func newRunner(m *model, loss loss.Loss) *runner {
 	g := gorgonia.NewGraph()
-	return &runner{
-		g: g,
-		x: gorgonia.NewTensor(g, gorgonia.Float32, 3,
-			gorgonia.WithName("x"),
-			gorgonia.WithShape(batchSize, steps, dims),
-			gorgonia.WithInit(gorgonia.Zeroes())),
-		y: gorgonia.NewMatrix(g, gorgonia.Float32,
-			gorgonia.WithName("y"),
-			gorgonia.WithShape(batchSize, 1),
-			gorgonia.WithInit(gorgonia.Zeroes())),
-	}
-}
-
-func (r *runner) Compile(m *model, loss loss.Loss) {
-	output := r.x
+	x := gorgonia.NewTensor(g, gorgonia.Float32, 3,
+		gorgonia.WithName("x"),
+		gorgonia.WithShape(batchSize, steps, dims),
+		gorgonia.WithInit(gorgonia.Zeroes()))
+	y := gorgonia.NewMatrix(g, gorgonia.Float32,
+		gorgonia.WithName("y"),
+		gorgonia.WithShape(batchSize, 1),
+		gorgonia.WithInit(gorgonia.Zeroes()))
+	output := x
+	var params gorgonia.Nodes
 	var ps gorgonia.Nodes
 	for _, attn := range m.attn {
 		output, ps = attn.Forward(output)
-		r.params = append(r.params, ps...)
+		params = append(params, ps...)
 	}
 	output = m.flatten.Forward(output)
 	output = m.sigmoid.Forward(output)
-	r.pred, ps = m.outputLayer.Forward(output)
-	r.params = append(r.params, ps...)
-	r.loss = loss.Loss(r.y, r.pred)
-	_, err := gorgonia.Grad(r.loss, r.params...)
+	pred, ps := m.outputLayer.Forward(output)
+	params = append(params, ps...)
+	ls := loss.Loss(y, pred)
+	_, err := gorgonia.Grad(ls, params...)
 	runtime.Assert(err)
-	prog, locMap, err := gorgonia.Compile(r.g)
-	runtime.Assert(err)
-	r.vm = gorgonia.NewTapeMachine(r.g,
-		gorgonia.WithPrecompiled(prog, locMap),
-		gorgonia.BindDualValues(r.params...))
+	vm := gorgonia.NewTapeMachine(g,
+		gorgonia.BindDualValues(params...))
+	return &runner{
+		g:      g,
+		vm:     vm,
+		pred:   pred,
+		loss:   ls,
+		x:      x,
+		y:      y,
+		params: params,
+	}
 }
 
 func (r *runner) Train(optimizer optimizer.Optimizer, x, y tensor.Tensor) {
 	runtime.Assert(gorgonia.Let(r.x, x))
 	runtime.Assert(gorgonia.Let(r.y, y))
+	err := r.vm.RunAll()
+	if err != nil {
+		return
+	}
+	optimizer.Step(r.params)
 	r.vm.Reset()
-	runtime.Assert(r.vm.RunAll())
-	runtime.Assert(optimizer.Step(r.params))
 }
 
 func (r *runner) Predict(x tensor.Tensor) gorgonia.Value {
 	runtime.Assert(gorgonia.Let(r.x, x))
-	r.vm.Reset()
-	runtime.Assert(r.vm.RunAll())
+	r.vm.RunAll()
 	return r.pred.Value()
 }
 
 func (r *runner) Loss(x tensor.Tensor) float32 {
 	runtime.Assert(gorgonia.Let(r.x, x))
-	r.vm.Reset()
-	runtime.Assert(r.vm.RunAll())
+	r.vm.RunAll()
 	return r.loss.Value().Data().(float32)
 }

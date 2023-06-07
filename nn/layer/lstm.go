@@ -2,18 +2,19 @@ package layer
 
 import (
 	"github.com/lwch/tnn/internal/pb"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
 )
 
 type Lstm struct {
 	*base
 	featureSize, steps int
 	hidden             int
-	Wi, Bi             tensor.Tensor
-	Wf, Bf             tensor.Tensor
-	Wg, Bg             tensor.Tensor
-	Wo, Bo             tensor.Tensor
+	Wi, Bi             *ts.Tensor
+	Wf, Bf             *ts.Tensor
+	Wg, Bg             *ts.Tensor
+	Wo, Bo             *ts.Tensor
 }
 
 func NewLstm(featureSize, steps, hidden int) *Lstm {
@@ -32,101 +33,79 @@ func LoadLstm(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, a
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
-	layer.Wi = loadParam(g, params["Wi"])
-	layer.Wf = loadParam(g, params["Wf"])
-	layer.Wg = loadParam(g, params["Wg"])
-	layer.Wo = loadParam(g, params["Wo"])
-	layer.Bi = loadParam(g, params["Bi"])
-	layer.Bf = loadParam(g, params["Bf"])
-	layer.Bg = loadParam(g, params["Bg"])
-	layer.Bo = loadParam(g, params["Bo"])
+	layer.Wi = loadParam(params["Wi"])
+	layer.Wf = loadParam(params["Wf"])
+	layer.Wg = loadParam(params["Wg"])
+	layer.Wo = loadParam(params["Wo"])
+	layer.Bi = loadParam(params["Bi"])
+	layer.Bf = loadParam(params["Bf"])
+	layer.Bg = loadParam(params["Bg"])
+	layer.Bo = loadParam(params["Bo"])
 	return &layer
 }
 
-func (layer *Lstm) Forward(x, h, c *gorgonia.Node) (*gorgonia.Node, *gorgonia.Node, *gorgonia.Node, error) {
-	inputShape := x.Shape()
+func (layer *Lstm) Forward(vs *nn.Path, x, h, c *ts.Tensor) (*ts.Tensor, *ts.Tensor, *ts.Tensor, error) {
+	inputShape := x.MustSize()
 	if layer.Wi == nil {
-		layer.Wi = initW(layer.featureSize+layer.hidden, layer.hidden)
+		layer.Wi = initW(vs, "Wi", int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Wf == nil {
-		layer.Wf = initW(layer.featureSize+layer.hidden, layer.hidden)
+		layer.Wf = initW(vs, "Wf", int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Wg == nil {
-		layer.Wg = initW(layer.featureSize+layer.hidden, layer.hidden)
+		layer.Wg = initW(vs, "Wg", int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Wo == nil {
-		layer.Wo = initW(layer.featureSize+layer.hidden, layer.hidden)
+		layer.Wo = initW(vs, "Wo", int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Bi == nil {
-		layer.Bi = initB(inputShape[0], layer.hidden)
+		layer.Bi = initB(vs, "Bi", inputShape[0], int64(layer.hidden))
 	}
 	if layer.Bf == nil {
-		layer.Bf = initB(inputShape[0], layer.hidden)
+		layer.Bf = initB(vs, "Bf", inputShape[0], int64(layer.hidden))
 	}
 	if layer.Bg == nil {
-		layer.Bg = initB(inputShape[0], layer.hidden)
+		layer.Bg = initB(vs, "Bg", inputShape[0], int64(layer.hidden))
 	}
 	if layer.Bo == nil {
-		layer.Bo = initB(inputShape[0], layer.hidden)
+		layer.Bo = initB(vs, "Bo", inputShape[0], int64(layer.hidden))
 	}
-	Wi := gorgonia.NodeFromAny(x.Graph(), layer.Wi, gorgonia.WithName("Wi"))
-	Wf := gorgonia.NodeFromAny(x.Graph(), layer.Wf, gorgonia.WithName("Wf"))
-	Wg := gorgonia.NodeFromAny(x.Graph(), layer.Wg, gorgonia.WithName("Wg"))
-	Wo := gorgonia.NodeFromAny(x.Graph(), layer.Wo, gorgonia.WithName("Wo"))
-	Bi := gorgonia.NodeFromAny(x.Graph(), layer.Bi, gorgonia.WithName("Bi"))
-	Bf := gorgonia.NodeFromAny(x.Graph(), layer.Bf, gorgonia.WithName("Bf"))
-	Bg := gorgonia.NodeFromAny(x.Graph(), layer.Bg, gorgonia.WithName("Bg"))
-	Bo := gorgonia.NodeFromAny(x.Graph(), layer.Bo, gorgonia.WithName("Bo"))
 	if h == nil {
-		h = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(inputShape[0], layer.hidden), gorgonia.WithName("h"),
-			gorgonia.WithInit(gorgonia.Zeroes()))
+		h = vs.MustZeros("h", []int64{int64(inputShape[0]), int64(layer.hidden)})
 	}
 	if c == nil {
-		c = gorgonia.NewMatrix(x.Graph(), gorgonia.Float32,
-			gorgonia.WithShape(inputShape[0], layer.hidden), gorgonia.WithName("c"),
-			gorgonia.WithInit(gorgonia.Zeroes()))
+		c = vs.MustZeros("c", []int64{int64(inputShape[0]), int64(layer.hidden)})
 	}
-	x, err := gorgonia.Transpose(x, 1, 0, 2) // (steps, batch, feature)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	var result *gorgonia.Node
+	x = x.MustTranspose(1, 0, false) // (steps, batch, feature)
+	var result *ts.Tensor
 	for step := 0; step < layer.steps; step++ {
-		t, err := gorgonia.Slice(x, gorgonia.S(step)) // (batch, feature)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		z := gorgonia.Must(gorgonia.Concat(1, h, t))    // (batch, feature+hidden)
-		i := gorgonia.Must(gorgonia.Mul(z, Wi))         // (batch, hidden)
-		i = gorgonia.Must(gorgonia.Add(i, Bi))          // (batch, hidden)
-		i = gorgonia.Must(gorgonia.Sigmoid(i))          // (batch, hidden)
-		f := gorgonia.Must(gorgonia.Mul(z, Wf))         // (batch, hidden)
-		f = gorgonia.Must(gorgonia.Add(f, Bf))          // (batch, hidden)
-		f = gorgonia.Must(gorgonia.Sigmoid(f))          // (batch, hidden)
-		o := gorgonia.Must(gorgonia.Mul(z, Wo))         // (batch, hidden)
-		o = gorgonia.Must(gorgonia.Add(o, Bo))          // (batch, hidden)
-		o = gorgonia.Must(gorgonia.Sigmoid(o))          // (batch, hidden)
-		g := gorgonia.Must(gorgonia.Mul(z, Wg))         // (batch, hidden)
-		g = gorgonia.Must(gorgonia.Add(g, Bg))          // (batch, hidden)
-		g = gorgonia.Must(gorgonia.Tanh(g))             // (batch, hidden)
-		a := gorgonia.Must(gorgonia.HadamardProd(f, c)) // (batch, hidden)
-		b := gorgonia.Must(gorgonia.HadamardProd(i, g)) // (batch, hidden)
-		c = gorgonia.Must(gorgonia.Add(a, b))           // (batch, hidden)
-		ct := gorgonia.Must(gorgonia.Tanh(c))           // (batch, hidden)
-		h = gorgonia.Must(gorgonia.HadamardProd(o, ct)) // (batch, hidden)
+		t := x.MustNarrow(0, int64(step), 1, false).
+			MustReshape([]int64{int64(inputShape[0]), int64(layer.featureSize)}, false) // (batch, feature)
+		z := ts.MustHstack([]ts.Tensor{*h, *t})                 // (batch, feature+hidden)
+		i := z.MustMm(layer.Wi, false).MustAdd(layer.Bi, false) // (batch, hidden)
+		i = i.MustSigmoid(false)                                // (batch, hidden)
+		f := z.MustMm(layer.Wf, false).MustAdd(layer.Bf, false) // (batch, hidden)
+		f = f.MustSigmoid(false)                                // (batch, hidden)
+		o := z.MustMm(layer.Wo, false).MustAdd(layer.Bo, false) // (batch, hidden)
+		o = o.MustSigmoid(false)                                // (batch, hidden)
+		g := z.MustMm(layer.Wg, false).MustAdd(layer.Bg, false) // (batch, hidden)
+		g = g.MustTanh(false)                                   // (batch, hidden)
+		a := f.MustMul(c, false)                                // (batch, hidden)
+		b := i.MustMul(g, false)                                // (batch, hidden)
+		c = a.MustAdd(b, false)                                 // (batch, hidden)
+		ct := c.MustTanh(false)                                 // (batch, hidden)
+		h = o.MustMul(ct, false)                                // (batch, hidden)
 		if result == nil {
 			result = h
 		} else {
-			result = gorgonia.Must(gorgonia.Concat(0, result, h))
+			result = ts.MustVstack([]ts.Tensor{*result, *h})
 		}
 	}
-	return gorgonia.Must(gorgonia.Reshape(result,
-		tensor.Shape{inputShape[0], inputShape[1], layer.hidden})), h, c, nil
+	return result.MustReshape([]int64{inputShape[0], inputShape[1], int64(layer.hidden)}, true), h, c, nil
 }
 
-func (layer *Lstm) Params() map[string]tensor.Tensor {
-	return map[string]tensor.Tensor{
+func (layer *Lstm) Params() map[string]*ts.Tensor {
+	return map[string]*ts.Tensor{
 		"Wi": layer.Wi,
 		"Wf": layer.Wf,
 		"Wg": layer.Wg,
