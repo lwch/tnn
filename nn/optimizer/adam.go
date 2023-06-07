@@ -1,7 +1,6 @@
 package optimizer
 
 import (
-	"github.com/lwch/runtime"
 	"github.com/sugarme/gotch/nn"
 	"github.com/sugarme/gotch/ts"
 )
@@ -24,6 +23,8 @@ func NewAdam(options ...OptimizerOption) Optimizer {
 
 func (optimizer *Adam) Step(vs *nn.VarStore, loss *ts.Tensor) error {
 	opt, err := optimizer.cfg.Build(vs, optimizer.lr)
-	runtime.Assert(err)
+	if err != nil {
+		return err
+	}
 	return opt.BackwardStep(loss)
 }

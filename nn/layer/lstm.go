@@ -70,10 +70,12 @@ func (layer *Lstm) Forward(vs *nn.Path, x, h, c *ts.Tensor) (*ts.Tensor, *ts.Ten
 		layer.Bo = initB(vs, "Bo", inputShape[0], int64(layer.hidden))
 	}
 	if h == nil {
-		h = vs.MustZeros("h", []int64{int64(inputShape[0]), int64(layer.hidden)})
+		h = vs.MustZeros("h", []int64{int64(inputShape[0]), int64(layer.hidden)}).
+			MustSetRequiresGrad(false, false)
 	}
 	if c == nil {
-		c = vs.MustZeros("c", []int64{int64(inputShape[0]), int64(layer.hidden)})
+		c = vs.MustZeros("c", []int64{int64(inputShape[0]), int64(layer.hidden)}).
+			MustSetRequiresGrad(false, false)
 	}
 	x = x.MustTranspose(1, 0, false) // (steps, batch, feature)
 	var result *ts.Tensor

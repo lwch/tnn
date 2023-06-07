@@ -7,7 +7,6 @@ import (
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
-	"github.com/sugarme/gotch/nn"
 	"github.com/sugarme/gotch/ts"
 )
 
@@ -25,12 +24,12 @@ func newModel(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *mode
 	}
 }
 
-func (m *model) Forward(vs *nn.Path, x *ts.Tensor) *ts.Tensor {
+func (m *model) Forward(x *ts.Tensor) *ts.Tensor {
 	output := x
 	for _, l := range m.net.Layers() {
 		switch ln := l.(type) {
 		case *layer.Dense:
-			output = ln.Forward(vs, output)
+			output = ln.Forward(vs.Root(), output)
 		case *activation.ReLU:
 			output = ln.Forward(output)
 		}
@@ -38,19 +37,19 @@ func (m *model) Forward(vs *nn.Path, x *ts.Tensor) *ts.Tensor {
 	return output
 }
 
-func (m *model) Train(vs *nn.VarStore, x, y *ts.Tensor) float32 {
-	pred := m.Forward(vs.Root(), x)
+func (m *model) Train(x, y *ts.Tensor) float32 {
+	pred := m.Forward(x)
 	loss := m.loss.Loss(y, pred)
 	runtime.Assert(m.optimizer.Step(vs, loss))
 	return loss.Vals().([]float32)[0]
 }
 
-func (m *model) Predict(vs *nn.VarStore, x *ts.Tensor) []float32 {
-	return m.Forward(vs.Root(), x).Vals().([]float32)
+func (m *model) Predict(x *ts.Tensor) []float32 {
+	return m.Forward(x).Vals().([]float32)
 }
 
-func (m *model) Loss(vs *nn.VarStore, x, y *ts.Tensor) float32 {
-	pred := m.Forward(vs.Root(), x)
+func (m *model) Loss(x, y *ts.Tensor) float32 {
+	pred := m.Forward(x)
 	loss := m.loss.Loss(y, pred)
 	return loss.Vals().([]float32)[0]
 }

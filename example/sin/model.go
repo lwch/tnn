@@ -1,105 +1,60 @@
 package main
 
 import (
-	"sort"
-
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/optimizer"
-	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
+	"github.com/sugarme/gotch/ts"
 )
 
 type model struct {
-	g           *gorgonia.ExprGraph
 	rnn         *layer.Rnn
 	lstm        *layer.Lstm
 	flatten     *layer.Flatten
 	outputLayer *layer.Dense
-	hidden      *gorgonia.Node
-	cell        *gorgonia.Node
+	hidden      *ts.Tensor
+	cell        *ts.Tensor
+	loss        loss.Loss
+	optimizer   optimizer.Optimizer
 }
 
-func newModel() *model {
+func newModel(loss loss.Loss, optimizer optimizer.Optimizer) *model {
 	return &model{
-		rnn: layer.NewRnn(featureSize, steps, hiddenSize),
-		// lstm:        layer.NewLstm(featureSize, steps, hiddenSize),
+		// rnn:         layer.NewRnn(featureSize, steps, hiddenSize),
+		lstm:        layer.NewLstm(featureSize, steps, hiddenSize),
 		flatten:     layer.NewFlatten(),
 		outputLayer: layer.NewDense(1),
+		loss:        loss,
+		optimizer:   optimizer,
 	}
 }
 
-func (m *model) Forward(loss loss.Loss, x, y tensor.Tensor) (gorgonia.VM, *gorgonia.Node, *gorgonia.Node, gorgonia.Nodes) {
-	xs := gorgonia.NodeFromAny(m.g, x, gorgonia.WithName("x"))
-	var output *gorgonia.Node
+func (m *model) Forward(x *ts.Tensor) *ts.Tensor {
+	var output *ts.Tensor
 	if m.rnn != nil {
-		var err error
-		output, m.hidden, err = m.rnn.Forward(xs, m.hidden)
-		runtime.Assert(err)
+		output, m.hidden = m.rnn.Forward(vs.Root(), x, m.hidden)
 	} else {
-		var err error
-		output, m.hidden, m.cell, err = m.lstm.Forward(xs, m.hidden, m.cell)
-		runtime.Assert(err)
+		output, m.hidden, m.cell = m.lstm.Forward(vs.Root(), x, m.hidden, m.cell)
 	}
 	output = m.flatten.Forward(output)
-	output = m.outputLayer.Forward(output)
-	var lossValue *gorgonia.Node
-	params := m.Params(m.g)
-	if loss != nil {
-		ys := gorgonia.NodeFromAny(m.g, y, gorgonia.WithName("y"))
-		lossValue = loss.Loss(ys, output)
-		_, err := gorgonia.Grad(lossValue, params...)
-		runtime.Assert(err)
-	}
-	return gorgonia.NewTapeMachine(m.g,
-			gorgonia.BindDualValues(params...)),
-		output, lossValue, params
+	return m.outputLayer.Forward(vs.Root(), output)
 }
 
-func (m *model) Train(epoch int, loss loss.Loss, optimizer optimizer.Optimizer, x, y tensor.Tensor) {
-	if epoch%clearSteps == 0 {
-		m.hidden = nil
-		m.cell = nil
-		m.g = gorgonia.NewGraph()
-	}
-	vm, _, _, params := m.Forward(loss, x, y)
-	defer vm.Close()
-	runtime.Assert(vm.RunAll())
-	runtime.Assert(optimizer.Step(params))
+func (m *model) Train(epoch int, x, y *ts.Tensor) float32 {
+	m.hidden = nil // TODO: fix backward
+	m.cell = nil   // TODO: fix backward
+	pred := m.Forward(x)
+	l := m.loss.Loss(y, pred)
+	runtime.Assert(m.optimizer.Step(vs, l))
+	return l.Vals().([]float32)[0]
 }
 
-func (m *model) Predict(x tensor.Tensor) gorgonia.Value {
-	vm, pred, _, _ := m.Forward(nil, x, nil)
-	defer vm.Close()
-	runtime.Assert(vm.RunAll())
-	return pred.Value()
+func (m *model) Predict(x *ts.Tensor) []float32 {
+	return m.Forward(x).Vals().([]float32)
 }
 
-func (m *model) Loss(loss loss.Loss, x, y tensor.Tensor) float32 {
-	vm, _, lossValue, _ := m.Forward(loss, x, y)
-	defer vm.Close()
-	runtime.Assert(vm.RunAll())
-	return lossValue.Value().Data().(float32)
-}
-
-func (m *model) Params(g *gorgonia.ExprGraph) gorgonia.Nodes {
-	var ret gorgonia.Nodes
-	if m.rnn != nil {
-		for name, p := range m.rnn.Params() {
-			ret = append(ret, gorgonia.NodeFromAny(g, p, gorgonia.WithName(name)))
-		}
-	}
-	if m.lstm != nil {
-		for name, p := range m.lstm.Params() {
-			ret = append(ret, gorgonia.NodeFromAny(g, p, gorgonia.WithName(name)))
-		}
-	}
-	for name, p := range m.outputLayer.Params() {
-		ret = append(ret, gorgonia.NodeFromAny(g, p, gorgonia.WithName(name)))
-	}
-	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Hashcode() < ret[j].Hashcode()
-	})
-	return ret
+func (m *model) Loss(x, y *ts.Tensor) float32 {
+	pred := m.Forward(x)
+	return m.loss.Loss(y, pred).Vals().([]float32)[0]
 }

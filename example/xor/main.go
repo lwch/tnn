@@ -26,17 +26,16 @@ const hiddenSize = 10
 const epoch = 10000
 const modelFile = "xor.model"
 
-var device = gotch.CPU
+var vs = nn.NewVarStore(gotch.CPU)
 
 func main() {
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
 		train()
 		return
 	}
-	vs := nn.NewVarStore(device)
-	m := loadModel(vs)
-	nextTrain(m, vs)
-	predict(m, vs)
+	m := loadModel()
+	nextTrain(m)
+	predict(m)
 }
 
 func train() {
@@ -45,7 +44,6 @@ func train() {
 	outputLayer := layer.NewDense(1)
 	outputLayer.SetName("output")
 
-	vs := nn.NewVarStore(device)
 	net := net.New(vs)
 	net.Add(hidden)
 	net.Add(activation.NewReLU())
@@ -65,9 +63,9 @@ func train() {
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		x, y := getBatch()
-		loss := m.Train(vs, x, y)
+		loss := m.Train(x, y)
 		if i%10 == 0 {
-			acc := accuracy(m, vs)
+			acc := accuracy(m)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
 				i, loss, acc)
 			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: float64(loss)})
@@ -76,7 +74,7 @@ func train() {
 	fmt.Printf("train cost: %s, param count: %d\n",
 		time.Since(begin).String(), net.ParamCount())
 	fmt.Println("predict:")
-	predict(m, vs)
+	predict(m)
 
 	lossLine, err := plotter.NewLine(lossPoints)
 	runtime.Assert(err)
@@ -92,7 +90,7 @@ func train() {
 	runtime.Assert(net.Save(modelFile))
 }
 
-func loadModel(vs *nn.VarStore) *model {
+func loadModel() *model {
 	net := net.New(vs)
 	runtime.Assert(net.Load(modelFile))
 
@@ -101,22 +99,22 @@ func loadModel(vs *nn.VarStore) *model {
 	return newModel(net, loss, optimizer)
 }
 
-func nextTrain(m *model, vs *nn.VarStore) {
+func nextTrain(m *model) {
 	for i := 0; i < 1000; i++ {
 		x, y := getBatch()
-		loss := m.Train(vs, x, y)
+		loss := m.Train(x, y)
 		if i%100 == 0 {
-			acc := accuracy(m, vs)
+			acc := accuracy(m)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
 				i, loss, acc)
 		}
 	}
 }
 
-func predict(m *model, vs *nn.VarStore) {
+func predict(m *model) {
 	x, _ := getBatch()
 	xs := x.Vals().([]float32)
-	ys := m.Predict(vs, x)
+	ys := m.Predict(x)
 	for i := 0; i < 4; i++ {
 		start := i * 2
 		fmt.Printf("%d xor %d: %.2f\n",
@@ -125,9 +123,9 @@ func predict(m *model, vs *nn.VarStore) {
 	}
 }
 
-func accuracy(m *model, vs *nn.VarStore) float32 {
+func accuracy(m *model) float32 {
 	x, y := getBatch()
-	pred := m.Predict(vs, x)
+	pred := m.Predict(x)
 	values := y.Vals().([]float32)
 	var correct float32
 	for i := 0; i < 4; i++ {

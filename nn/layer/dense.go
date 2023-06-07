@@ -39,7 +39,7 @@ func (layer *Dense) Forward(vs *nn.Path, x *ts.Tensor) *ts.Tensor {
 	if layer.b == nil {
 		layer.b = initB(vs, "b", inputShape[0], int64(layer.output))
 	}
-	return x.MustMm(layer.w, false).MustAdd(layer.b, true)
+	return x.MustMm(layer.w, true).MustAdd(layer.b, true)
 }
 
 func (layer *Dense) Params() map[string]*ts.Tensor {

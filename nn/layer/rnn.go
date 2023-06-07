@@ -2,6 +2,7 @@ package layer
 
 import (
 	"github.com/lwch/tnn/internal/pb"
+	"github.com/sugarme/gotch"
 	"github.com/sugarme/gotch/nn"
 	"github.com/sugarme/gotch/ts"
 )
@@ -45,17 +46,17 @@ func (layer *Rnn) Forward(vs *nn.Path, x, h *ts.Tensor) (*ts.Tensor, *ts.Tensor)
 		layer.b = initB(vs, "b", inputShape[0], int64(layer.hidden))
 	}
 	if h == nil {
-		h = vs.MustZeros("h", []int64{inputShape[0], int64(layer.hidden)})
+		h = ts.MustZeros([]int64{inputShape[0], int64(layer.hidden)}, gotch.Float, vs.Device())
 	}
-	x = x.MustTranspose(1, 0, false) // (steps, batch, feature)
+	x = x.MustTranspose(1, 0, true) // (steps, batch, feature)
 	var result *ts.Tensor
 	for step := 0; step < layer.steps; step++ {
 		t := x.MustNarrow(0, int64(step), 1, false).
-			MustReshape([]int64{int64(inputShape[0]), int64(layer.featureSize)}, false) // (batch, feature)
+			MustReshape([]int64{int64(inputShape[0]), int64(layer.featureSize)}, true) // (batch, feature)
 		z := ts.MustHstack([]ts.Tensor{*h, *t}) // (batch, feature+hidden)
-		z = z.MustMm(layer.w, false)            // (batch, hidden)
-		z = z.MustAdd(layer.b, false)           // (batch, hidden)
-		h = z.MustTanh(false)                   // (batch, hidden)
+		z = z.MustMm(layer.w, true)             // (batch, hidden)
+		z = z.MustAdd(layer.b, true)            // (batch, hidden)
+		h = z.MustTanh(true)                    // (batch, hidden)
 		if result == nil {
 			result = h
 		} else {

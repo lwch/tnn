@@ -7,25 +7,27 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/optimizer"
+	"github.com/sugarme/gotch"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
-	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
 )
 
 const lr = 1e-4
 const epoch = 1000
-const batchSize = 16
-const steps = 8
-const featureSize = 16
+const batchSize = 64
+const steps = 32
+const featureSize = 8
 const unitSize = steps * featureSize
 const hiddenSize = 32
-const clearSteps = 2 // 每隔多少次迭代清空一次隐藏层状态，提高反向传播速度
+
+var vs = nn.NewVarStore(gotch.CPU)
+var points []float32
 
 func main() {
-	var points []float32
 	i := 0.
 	for {
 		points = append(points, float32(math.Sin(i)))
@@ -35,38 +37,27 @@ func main() {
 		}
 	}
 
-	g := gorgonia.NewGraph()
-
-	m := newModel()
-
 	loss := loss.NewMSE()
 	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
+	m := newModel(loss, optimizer)
 
 	p := plot.New()
 	p.Title.Text = "predict sin(x)"
 	p.X.Label.Text = "epoch"
 	p.Y.Label.Text = "value"
 
-	x := gorgonia.NewTensor(g, tensor.Float32, 3,
-		gorgonia.WithShape(batchSize, steps, featureSize), gorgonia.WithName("x"))
-	y := gorgonia.NewTensor(g, tensor.Float32, 2,
-		gorgonia.WithShape(batchSize, 1), gorgonia.WithName("y"))
-
 	var real, predict plotter.XYs
 	for i := 0; i < epoch; i++ {
-		input, output := getBatch(points, i+batchSize)
-		runtime.Assert(gorgonia.Let(x, input))
-		runtime.Assert(gorgonia.Let(y, output))
-		m.Train(i, loss, optimizer, input, output)
-
-		pred := m.Predict(input)
-		y1 := y.Value().Data().([]float32)[0]
-		y2 := pred.Data().([]float32)[0]
+		x, y, _ := getBatch(points, i+batchSize)
+		loss := m.Train(i, x, y)
+		x, _, ys := getBatch(points, i+batchSize)
+		pred := m.Predict(x)
+		y1 := ys[0]
+		y2 := pred[0]
 		real = append(real, plotter.XY{X: float64(i), Y: float64(y1)})
 		predict = append(predict, plotter.XY{X: float64(i), Y: float64(y2)})
 		if i%10 == 0 {
-			acc := accuracy(m, input, output)
-			loss := m.Loss(loss, input, output)
+			acc := accuracy(m, i+batchSize)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, loss, acc)
 			// fmt.Println(y.Value())
 			// fmt.Println(pred.Value())
@@ -91,7 +82,7 @@ func main() {
 	p.Save(16*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
-func getBatch(points []float32, i int) (tensor.Tensor, tensor.Tensor) {
+func getBatch(points []float32, i int) (*ts.Tensor, *ts.Tensor, []float32) {
 	x := make([]float32, batchSize*unitSize)
 	y := make([]float32, batchSize)
 	for batch := 0; batch < batchSize; batch++ {
@@ -112,18 +103,20 @@ func getBatch(points []float32, i int) (tensor.Tensor, tensor.Tensor) {
 	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
 	// 	copy(y[j*1:(j+1)*1], dy)
 	// })
-	return tensor.New(tensor.WithShape(batchSize, steps, featureSize), tensor.WithBacking(x)),
-		tensor.New(tensor.WithShape(batchSize, 1), tensor.WithBacking(y))
+	xs, err := ts.NewTensorFromData(x, []int64{batchSize, steps, featureSize})
+	runtime.Assert(err)
+	ys, err := ts.NewTensorFromData(y, []int64{batchSize, 1})
+	runtime.Assert(err)
+	return xs, ys, y
 }
 
-func accuracy(m *model, x, y tensor.Tensor) float32 {
+func accuracy(m *model, i int) float32 {
+	x, _, y := getBatch(points, i)
 	pred := m.Predict(x)
-	y1Values := y.Data().([]float32)
-	y2Values := pred.Data().([]float32)
 	var correct float32
 	for i := 0; i < batchSize; i++ {
-		diff := 1 - float32(math.Abs(float64(y1Values[i])-
-			float64(y2Values[i])))
+		diff := 1 - float32(math.Abs(float64(y[i])-
+			float64(pred[i])))
 		if diff > 0 {
 			correct += diff
 		}
