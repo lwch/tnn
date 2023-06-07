@@ -3,6 +3,7 @@ package activation
 import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
+	"github.com/sugarme/gotch/nn"
 	"gorgonia.org/gorgonia"
 )
 
@@ -16,7 +17,7 @@ func NewSigmoid() *Sigmoid {
 	return &layer
 }
 
-func LoadSigmoid(g *gorgonia.ExprGraph, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
+func LoadSigmoid(_ *nn.Path, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
 	var layer Sigmoid
 	layer.base = new("sigmoid")
 	layer.name = name

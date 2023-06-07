@@ -2,6 +2,7 @@ package layer
 
 import (
 	"github.com/lwch/tnn/internal/pb"
+	"github.com/sugarme/gotch/nn"
 	"github.com/sugarme/gotch/ts"
 )
 
@@ -17,7 +18,7 @@ func NewDropout(keep float64) *Dropout {
 	return &layer
 }
 
-func LoadDropout(name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDropout(_ *nn.Path, name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dropout
 	layer.base = new("dropout")
 	layer.name = name

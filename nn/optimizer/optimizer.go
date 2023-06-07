@@ -1,18 +1,19 @@
 package optimizer
 
 import (
-	"gorgonia.org/gorgonia"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type Optimizer interface {
-	Step(params gorgonia.Nodes) error
+	Step(vs *nn.VarStore, loss *ts.Tensor) error
 }
 
 type OptimizerOption func(*base)
 
 type base struct {
-	lr           float64
-	l1reg, l2reg float64
+	lr          float64
+	weightDeacy float64
 }
 
 func newBase() *base {
@@ -25,14 +26,8 @@ func WithLearnRate(lr float64) OptimizerOption {
 	}
 }
 
-func WithL1Reg(l1reg float64) OptimizerOption {
+func WithWeightDeacy(wd float64) OptimizerOption {
 	return func(optimizer *base) {
-		optimizer.l1reg = l1reg
-	}
-}
-
-func WithL2Reg(l2reg float64) OptimizerOption {
-	return func(optimizer *base) {
-		optimizer.l2reg = l2reg
+		optimizer.weightDeacy = wd
 	}
 }

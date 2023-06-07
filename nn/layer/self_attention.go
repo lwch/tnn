@@ -3,18 +3,20 @@ package layer
 import (
 	"math"
 
+	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/internal/pb"
-	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
+	"github.com/sugarme/gotch"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type SelfAttention struct {
 	*base
 	steps, dims int
-	scale       tensor.Tensor
+	scale       *ts.Tensor
 	// params
-	wq, wk, wv tensor.Tensor
-	bq, bk, bv tensor.Tensor
+	wq, wk, wv *ts.Tensor
+	bq, bk, bv *ts.Tensor
 }
 
 func NewSelfAttention(steps, dims int) *SelfAttention {
@@ -25,78 +27,70 @@ func NewSelfAttention(steps, dims int) *SelfAttention {
 	return &layer
 }
 
-func LoadSelfAttention(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadSelfAttention(vs *nn.Path, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer SelfAttention
 	layer.base = new("self_attention")
 	layer.name = name
 	layer.steps = int(args["steps"])
 	layer.dims = int(args["dims"])
-	layer.wq = loadParam(g, params["Wq"])
-	layer.wk = loadParam(g, params["Wk"])
-	layer.wv = loadParam(g, params["Wv"])
-	layer.bq = loadParam(g, params["Bq"])
-	layer.bk = loadParam(g, params["Bk"])
-	layer.bv = loadParam(g, params["Bv"])
+	layer.wq = loadParam(vs, params["Wq"], "Wq")
+	layer.wk = loadParam(vs, params["Wk"], "Wk")
+	layer.wv = loadParam(vs, params["Wv"], "Wv")
+	layer.bq = loadParam(vs, params["Bq"], "Bq")
+	layer.bk = loadParam(vs, params["Bk"], "Bk")
+	layer.bv = loadParam(vs, params["Bv"], "Bv")
 	return &layer
 }
 
-func (layer *SelfAttention) Forward(x *gorgonia.Node) (*gorgonia.Node, gorgonia.Nodes) {
-	inputShape := x.Shape()
+func (layer *SelfAttention) Forward(vs *nn.Path, x *ts.Tensor) *ts.Tensor {
+	inputShape := x.MustSize()
 	if layer.scale == nil {
-		layer.scale = tensor.New(tensor.FromScalar(
-			float32(math.Sqrt(float64(layer.dims)))))
+		scale, err := ts.NewTensorFromData(
+			float32(math.Sqrt(float64(layer.dims))),
+			[]int64{1})
+		runtime.Assert(err)
+		layer.scale = vs.MustAdd("scale", scale, false)
 	}
 	if layer.wq == nil {
-		layer.wq = initW(layer.dims, layer.dims)
+		layer.wq = initW(vs, "Wq", int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wk == nil {
-		layer.wk = initW(layer.dims, layer.dims)
+		layer.wk = initW(vs, "Wk", int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wv == nil {
-		layer.wv = initW(layer.dims, layer.dims)
+		layer.wv = initW(vs, "Wv", int64(layer.dims), int64(layer.dims))
 	}
 	if layer.bq == nil {
-		layer.bq = initB(layer.steps, layer.dims)
+		layer.bq = initB(vs, "Bq", int64(layer.steps), int64(layer.dims))
 	}
 	if layer.bk == nil {
-		layer.bk = initB(layer.steps, layer.dims)
+		layer.bk = initB(vs, "Bk", int64(layer.steps), int64(layer.dims))
 	}
 	if layer.bv == nil {
-		layer.bv = initB(layer.steps, layer.dims)
+		layer.bv = initB(vs, "Bv", int64(layer.steps), int64(layer.dims))
 	}
-	Wq := gorgonia.NodeFromAny(x.Graph(), layer.wq, gorgonia.WithName("Wq"))
-	Wk := gorgonia.NodeFromAny(x.Graph(), layer.wk, gorgonia.WithName("Wk"))
-	Wv := gorgonia.NodeFromAny(x.Graph(), layer.wv, gorgonia.WithName("Wv"))
-	Bq := gorgonia.NodeFromAny(x.Graph(), layer.bq, gorgonia.WithName("Bq"))
-	Bk := gorgonia.NodeFromAny(x.Graph(), layer.bk, gorgonia.WithName("Bk"))
-	Bv := gorgonia.NodeFromAny(x.Graph(), layer.bv, gorgonia.WithName("Bv"))
-	scale := gorgonia.NodeFromAny(x.Graph(), layer.scale, gorgonia.WithName("scale"))
-	var result *gorgonia.Node
-	for batch := 0; batch < inputShape[0]; batch++ {
-		x := gorgonia.Must(gorgonia.Slice(x, gorgonia.S(batch)))
-		q := gorgonia.Must(gorgonia.Mul(x, Wq))
-		q = gorgonia.Must(gorgonia.Add(q, Bq))
-		k := gorgonia.Must(gorgonia.Mul(x, Wk))
-		k = gorgonia.Must(gorgonia.Add(k, Bk))
-		v := gorgonia.Must(gorgonia.Mul(x, Wv))
-		v = gorgonia.Must(gorgonia.Add(v, Bv))
-		k = gorgonia.Must(gorgonia.Transpose(k))
-		a := gorgonia.Must(gorgonia.Mul(q, k))
-		a = gorgonia.Must(gorgonia.Div(a, scale))
-		a = gorgonia.Must(gorgonia.SoftMax(a, 1))
-		a = gorgonia.Must(gorgonia.Mul(a, v))
+	var result *ts.Tensor
+	for batch := int64(0); batch < inputShape[0]; batch++ {
+		x := x.MustNarrow(0, int64(batch), 1, false).
+			MustReshape([]int64{int64(layer.steps), int64(layer.dims)}, false) // (steps, dims)
+		q := x.MustMm(layer.wq, false).MustAdd(layer.bq, false) // (steps, dims)
+		k := x.MustMm(layer.wk, false).MustAdd(layer.bk, false) // (steps, dims)
+		v := x.MustMm(layer.wv, false).MustAdd(layer.bv, false) // (steps, dims)
+		a := q.MustMm(k.MustTranspose(1, 0, false), false)      // (steps, steps)
+		a = a.MustDiv(layer.scale, false)                       // (steps, steps)
+		a = a.MustSoftmax(1, gotch.Float, false)                // (steps, steps)
+		a = a.MustMm(v, false)                                  // (steps, dims
 		if result == nil {
 			result = a
 		} else {
-			result = gorgonia.Must(gorgonia.Concat(0, result, a))
+			result = ts.MustVstack([]ts.Tensor{*result, *a})
 		}
 	}
-	return gorgonia.Must(gorgonia.Reshape(result, tensor.Shape{inputShape[0], layer.steps, layer.dims})),
-		gorgonia.Nodes{Wq, Wk, Wv, Bq, Bk, Bv}
+	return result.MustReshape([]int64{inputShape[0], int64(layer.steps), int64(layer.dims)}, true)
 }
 
-func (layer *SelfAttention) Params() map[string]tensor.Tensor {
-	return map[string]tensor.Tensor{
+func (layer *SelfAttention) Params() map[string]*ts.Tensor {
+	return map[string]*ts.Tensor{
 		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv,
 		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv,
 	}

@@ -4,7 +4,6 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/sugarme/gotch/nn"
 	"github.com/sugarme/gotch/ts"
-	"gorgonia.org/gorgonia"
 )
 
 type Lstm struct {
@@ -26,25 +25,25 @@ func NewLstm(featureSize, steps, hidden int) *Lstm {
 	return &layer
 }
 
-func LoadLstm(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadLstm(vs *nn.Path, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Lstm
 	layer.base = new("lstm")
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
-	layer.Wi = loadParam(params["Wi"])
-	layer.Wf = loadParam(params["Wf"])
-	layer.Wg = loadParam(params["Wg"])
-	layer.Wo = loadParam(params["Wo"])
-	layer.Bi = loadParam(params["Bi"])
-	layer.Bf = loadParam(params["Bf"])
-	layer.Bg = loadParam(params["Bg"])
-	layer.Bo = loadParam(params["Bo"])
+	layer.Wi = loadParam(vs, params["Wi"], "Wi")
+	layer.Wf = loadParam(vs, params["Wf"], "Wf")
+	layer.Wg = loadParam(vs, params["Wg"], "Wg")
+	layer.Wo = loadParam(vs, params["Wo"], "Wo")
+	layer.Bi = loadParam(vs, params["Bi"], "Bi")
+	layer.Bf = loadParam(vs, params["Bf"], "Bf")
+	layer.Bg = loadParam(vs, params["Bg"], "Bg")
+	layer.Bo = loadParam(vs, params["Bo"], "Bo")
 	return &layer
 }
 
-func (layer *Lstm) Forward(vs *nn.Path, x, h, c *ts.Tensor) (*ts.Tensor, *ts.Tensor, *ts.Tensor, error) {
+func (layer *Lstm) Forward(vs *nn.Path, x, h, c *ts.Tensor) (*ts.Tensor, *ts.Tensor, *ts.Tensor) {
 	inputShape := x.MustSize()
 	if layer.Wi == nil {
 		layer.Wi = initW(vs, "Wi", int64(layer.featureSize+layer.hidden), int64(layer.hidden))
@@ -101,7 +100,7 @@ func (layer *Lstm) Forward(vs *nn.Path, x, h, c *ts.Tensor) (*ts.Tensor, *ts.Ten
 			result = ts.MustVstack([]ts.Tensor{*result, *h})
 		}
 	}
-	return result.MustReshape([]int64{inputShape[0], inputShape[1], int64(layer.hidden)}, true), h, c, nil
+	return result.MustReshape([]int64{inputShape[0], inputShape[1], int64(layer.hidden)}, true), h, c
 }
 
 func (layer *Lstm) Params() map[string]*ts.Tensor {

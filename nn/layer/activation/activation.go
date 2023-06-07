@@ -1,8 +1,6 @@
 package activation
 
-import (
-	"gorgonia.org/tensor"
-)
+import "github.com/sugarme/gotch/ts"
 
 type base struct {
 	class string
@@ -30,7 +28,7 @@ func (layer *base) Name() string {
 	return layer.name
 }
 
-func (layer *base) Params() map[string]tensor.Tensor {
+func (layer *base) Params() map[string]*ts.Tensor {
 	return nil
 }
 

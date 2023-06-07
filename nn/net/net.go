@@ -8,12 +8,12 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 	"google.golang.org/protobuf/proto"
-	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
 )
 
-type loadFunc func(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
+type loadFunc func(vs *nn.Path, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"dense":   layer.LoadDense,
@@ -34,22 +34,22 @@ var loadFuncs = map[string]loadFunc{
 }
 
 type Net struct {
-	g      *gorgonia.ExprGraph
+	vs     *nn.VarStore
 	layers []layer.Layer
 }
 
-func New(g *gorgonia.ExprGraph) *Net {
-	return &Net{g: g}
+func New(vs *nn.VarStore) *Net {
+	return &Net{vs: vs}
 }
 
 func (n *Net) Add(layers ...layer.Layer) {
 	n.layers = append(n.layers, layers...)
 }
 
-func (n *Net) Params() []map[string]tensor.Tensor {
-	var ret []map[string]tensor.Tensor
+func (n *Net) Params() []map[string]*ts.Tensor {
+	var ret []map[string]*ts.Tensor
 	for _, l := range n.layers {
-		params := make(map[string]tensor.Tensor)
+		params := make(map[string]*ts.Tensor)
 		for name, p := range l.Params() {
 			params[name] = p
 		}
@@ -62,7 +62,12 @@ func (n *Net) ParamCount() uint64 {
 	var ret uint64
 	for _, l := range n.layers {
 		for _, p := range l.Params() {
-			ret += uint64(p.Shape().TotalSize())
+			size := p.MustSize()
+			n := int64(1)
+			for _, dim := range size {
+				n *= dim
+			}
+			ret += uint64(n)
 		}
 	}
 	return ret
@@ -88,12 +93,12 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 		net.Layers[i].Params = make(map[string]*pb.Dense)
 		for name, p := range n.layers[i].Params() {
 			var dense pb.Dense
-			shape := p.Shape()
+			shape := p.MustSize()
 			dense.Shape = make([]int32, len(shape))
 			for j := 0; j < len(shape); j++ {
 				dense.Shape[j] = int32(shape[j])
 			}
-			dense.Data = p.Data().([]float32)
+			dense.Data = p.Vals().([]float32)
 			net.Layers[i].Params[name] = &dense
 		}
 		net.Layers[i].Args = n.layers[i].Args()
@@ -133,7 +138,7 @@ func (n *Net) ReadFrom(r io.Reader) (int64, error) {
 			panic("unsupported " + class + " layer")
 		}
 		name := layers[i].GetName()
-		n.layers[i] = fn(n.g, name, layers[i].GetParams(), layers[i].GetArgs())
+		n.layers[i] = fn(n.vs.Root(), name, layers[i].GetParams(), layers[i].GetArgs())
 	}
 	return int64(len(data)), nil
 }

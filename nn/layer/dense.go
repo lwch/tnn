@@ -21,13 +21,13 @@ func NewDense(output int) *Dense {
 	return &layer
 }
 
-func LoadDense(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDense(vs *nn.Path, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dense
 	layer.base = new("dense")
 	layer.name = name
 	layer.output = int(args["output"])
-	layer.w = loadParam(params["w"])
-	layer.b = loadParam(params["b"])
+	layer.w = loadParam(vs, params["w"], "w")
+	layer.b = loadParam(vs, params["b"], "b")
 	return &layer
 }
 

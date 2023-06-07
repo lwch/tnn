@@ -3,7 +3,8 @@ package activation
 import (
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
-	"gorgonia.org/gorgonia"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type ReLU struct {
@@ -16,13 +17,13 @@ func NewReLU() *ReLU {
 	return &layer
 }
 
-func LoadRelu(g *gorgonia.ExprGraph, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
+func LoadRelu(_ *nn.Path, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
 	var layer ReLU
 	layer.base = new("relu")
 	layer.name = name
 	return &layer
 }
 
-func (layer *ReLU) Forward(x *gorgonia.Node) *gorgonia.Node {
-	return gorgonia.Must(gorgonia.Rectify(x))
+func (layer *ReLU) Forward(x *ts.Tensor) *ts.Tensor {
+	return x.MustRelu(true)
 }

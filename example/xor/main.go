@@ -12,60 +12,41 @@ import (
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
+	"github.com/sugarme/gotch"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
-	"gorgonia.org/gorgonia"
-	"gorgonia.org/tensor"
 )
 
-const lr = 1e-3
+const lr = 5e-5
 const hiddenSize = 10
-const epoch = 40000
+const epoch = 10000
 const modelFile = "xor.model"
 
-var m = newModel()
-
-var xData = tensor.New(tensor.WithShape(4, 2), tensor.WithBacking([]float32{
-	0, 0,
-	0, 1,
-	1, 0,
-	1, 1,
-}))
-
-var yData = tensor.New(tensor.WithShape(4, 1), tensor.WithBacking([]float32{
-	0,
-	1,
-	1,
-	0,
-}))
+var device = gotch.CPU
 
 func main() {
-	defer m.Close()
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
 		train()
 		return
 	}
-	x, y := loadModel()
-	nextTrain(x, y)
-	predict()
+	vs := nn.NewVarStore(device)
+	m := loadModel(vs)
+	nextTrain(m, vs)
+	predict(m, vs)
 }
 
 func train() {
-	var x = gorgonia.NewMatrix(m.G(), tensor.Float32,
-		gorgonia.WithShape(xData.Shape()...),
-		gorgonia.WithName("x"))
-	var y = gorgonia.NewMatrix(m.G(), tensor.Float32,
-		gorgonia.WithShape(yData.Shape()...),
-		gorgonia.WithName("y"))
-
 	hidden := layer.NewDense(hiddenSize)
 	hidden.SetName("hidden")
-	outputLayer := layer.NewDense(yData.Shape()[1])
+	outputLayer := layer.NewDense(1)
 	outputLayer.SetName("output")
 
-	net := net.New(m.G())
+	vs := nn.NewVarStore(device)
+	net := net.New(vs)
 	net.Add(hidden)
 	net.Add(activation.NewReLU())
 	net.Add(outputLayer)
@@ -73,7 +54,7 @@ func train() {
 	// optimizer := optimizer.NewSGD(lr, 0)
 	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
 
-	m.Compile(net, loss, x, y)
+	m := newModel(net, loss, optimizer)
 
 	p := plot.New()
 	p.Title.Text = "xor train model"
@@ -83,23 +64,19 @@ func train() {
 	var lossPoints plotter.XYs
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
-		gorgonia.Let(x, xData)
-		gorgonia.Let(y, yData)
-		loss := m.Train(optimizer)
-		if i%100 == 0 {
-			acc := accuracy()
+		x, y := getBatch()
+		loss := m.Train(vs, x, y)
+		if i%10 == 0 {
+			acc := accuracy(m, vs)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
 				i, loss, acc)
-			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: float64(loss.Data().(float32))})
-			if acc >= 100 {
-				break
-			}
+			lossPoints = append(lossPoints, plotter.XY{X: float64(i), Y: float64(loss)})
 		}
 	}
 	fmt.Printf("train cost: %s, param count: %d\n",
 		time.Since(begin).String(), net.ParamCount())
 	fmt.Println("predict:")
-	predict()
+	predict(m, vs)
 
 	lossLine, err := plotter.NewLine(lossPoints)
 	runtime.Assert(err)
@@ -115,42 +92,31 @@ func train() {
 	runtime.Assert(net.Save(modelFile))
 }
 
-func loadModel() (*gorgonia.Node, *gorgonia.Node) {
-	net := net.New(m.G())
+func loadModel(vs *nn.VarStore) *model {
+	net := net.New(vs)
 	runtime.Assert(net.Load(modelFile))
 
 	loss := loss.NewMSE()
-
-	var x = gorgonia.NewMatrix(m.G(), tensor.Float32,
-		gorgonia.WithShape(xData.Shape()...),
-		gorgonia.WithName("x"))
-	var y = gorgonia.NewMatrix(m.G(), tensor.Float32,
-		gorgonia.WithShape(yData.Shape()...),
-		gorgonia.WithName("y"))
-
-	m.Compile(net, loss, x, y)
-	return x, y
+	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
+	return newModel(net, loss, optimizer)
 }
 
-func nextTrain(x, y *gorgonia.Node) {
-	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
-
+func nextTrain(m *model, vs *nn.VarStore) {
 	for i := 0; i < 1000; i++ {
-		gorgonia.Let(x, xData)
-		gorgonia.Let(y, yData)
-		loss := m.Train(optimizer)
+		x, y := getBatch()
+		loss := m.Train(vs, x, y)
 		if i%100 == 0 {
-			acc := accuracy()
+			acc := accuracy(m, vs)
 			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n",
 				i, loss, acc)
 		}
 	}
 }
 
-func predict() {
-	pred, _ := m.Evaluate()
-	xs := xData.Data().([]float32)
-	ys := pred.Data().([]float32)
+func predict(m *model, vs *nn.VarStore) {
+	x, _ := getBatch()
+	xs := x.Vals().([]float32)
+	ys := m.Predict(vs, x)
 	for i := 0; i < 4; i++ {
 		start := i * 2
 		fmt.Printf("%d xor %d: %.2f\n",
@@ -159,17 +125,35 @@ func predict() {
 	}
 }
 
-func accuracy() float32 {
-	pred, _ := m.Evaluate()
-	predValues := pred.Data().([]float32)
-	values := yData.Data().([]float32)
+func accuracy(m *model, vs *nn.VarStore) float32 {
+	x, y := getBatch()
+	pred := m.Predict(vs, x)
+	values := y.Vals().([]float32)
 	var correct float32
 	for i := 0; i < 4; i++ {
-		diff := float32(math.Abs(float64(predValues[i]) -
+		diff := float32(math.Abs(float64(pred[i]) -
 			float64(values[i])))
 		if diff < 1 {
 			correct += 1 - diff
 		}
 	}
 	return float32(correct) * 100 / 4
+}
+
+func getBatch() (*ts.Tensor, *ts.Tensor) {
+	x, err := ts.NewTensorFromData([][]float32{
+		{0, 0},
+		{0, 1},
+		{1, 0},
+		{1, 1},
+	}, []int64{4, 2})
+	runtime.Assert(err)
+	y, err := ts.NewTensorFromData([][]float32{
+		{0},
+		{1},
+		{1},
+		{0},
+	}, []int64{4, 1})
+	runtime.Assert(err)
+	return x, y
 }

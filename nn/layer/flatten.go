@@ -2,6 +2,7 @@ package layer
 
 import (
 	"github.com/lwch/tnn/internal/pb"
+	"github.com/sugarme/gotch/nn"
 	"github.com/sugarme/gotch/ts"
 )
 
@@ -15,7 +16,7 @@ func NewFlatten() *Flatten {
 	return &layer
 }
 
-func LoadFlatten(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadFlatten(_ *nn.Path, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Flatten
 	layer.base = new("flatten")
 	layer.name = name

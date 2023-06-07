@@ -7,73 +7,50 @@ import (
 	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
 	"github.com/lwch/tnn/nn/optimizer"
-	"gorgonia.org/gorgonia"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type model struct {
-	g          *gorgonia.ExprGraph
-	vm         gorgonia.VM
-	pred, loss *gorgonia.Node
-	net        *net.Net
-	params     gorgonia.Nodes
+	net       *net.Net
+	loss      loss.Loss
+	optimizer optimizer.Optimizer
 }
 
-func newModel() *model {
+func newModel(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *model {
 	return &model{
-		g: gorgonia.NewGraph(),
+		net:       net,
+		loss:      loss,
+		optimizer: optimizer,
 	}
 }
 
-func (m *model) Close() {
-	if m.vm != nil {
-		m.vm.Close()
-	}
-}
-
-func (m *model) Compile(net *net.Net, loss loss.Loss, x, y *gorgonia.Node) {
-	m.net = net
-	input := x
-	for _, l := range net.Layers() {
+func (m *model) Forward(vs *nn.Path, x *ts.Tensor) *ts.Tensor {
+	output := x
+	for _, l := range m.net.Layers() {
 		switch ln := l.(type) {
 		case *layer.Dense:
-			input = ln.Forward(input)
+			output = ln.Forward(vs, output)
 		case *activation.ReLU:
-			input = ln.Forward(input)
+			output = ln.Forward(output)
 		}
 	}
-	m.params = m.Params()
-	m.pred = input
-	m.loss = loss.Loss(y, m.pred)
-	_, err := gorgonia.Grad(m.loss, m.params...)
-	runtime.Assert(err)
-	m.vm = gorgonia.NewTapeMachine(m.g, gorgonia.BindDualValues(m.params...))
+	return output
 }
 
-func (m *model) Train(optimizer optimizer.Optimizer) gorgonia.Value {
-	if m.vm == nil {
-		panic("model not compiled")
-	}
-	m.vm.Reset()
-	runtime.Assert(m.vm.RunAll())
-	runtime.Assert(optimizer.Step(m.params))
-	return m.loss.Value()
+func (m *model) Train(vs *nn.VarStore, x, y *ts.Tensor) float32 {
+	pred := m.Forward(vs.Root(), x)
+	loss := m.loss.Loss(y, pred)
+	runtime.Assert(m.optimizer.Step(vs, loss))
+	return loss.Vals().([]float32)[0]
 }
 
-func (m *model) Evaluate() (gorgonia.Value, gorgonia.Value) {
-	runtime.Assert(m.vm.RunAll())
-	return m.pred.Value(), m.loss.Value()
+func (m *model) Predict(vs *nn.VarStore, x *ts.Tensor) []float32 {
+	return m.Forward(vs.Root(), x).Vals().([]float32)
 }
 
-func (m *model) G() *gorgonia.ExprGraph {
-	return m.g
-}
-
-func (m *model) Params() gorgonia.Nodes {
-	var params gorgonia.Nodes
-	for _, list := range m.net.Params() {
-		for name, p := range list {
-			params = append(params, gorgonia.NodeFromAny(m.g, p, gorgonia.WithName(name)))
-		}
-	}
-	return params
+func (m *model) Loss(vs *nn.VarStore, x, y *ts.Tensor) float32 {
+	pred := m.Forward(vs.Root(), x)
+	loss := m.loss.Loss(y, pred)
+	return loss.Vals().([]float32)[0]
 }

@@ -1,9 +1,9 @@
 package layer
 
 import (
-	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/internal/pb"
-	"gorgonia.org/gorgonia"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type Nor struct {
@@ -16,15 +16,14 @@ func NewNor(output int) *Nor {
 	return &layer
 }
 
-func LoadNor(g *gorgonia.ExprGraph, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadNor(_ *nn.Path, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Nor
 	layer.base = new("nor")
 	layer.name = name
 	return &layer
 }
 
-func (layer *Nor) Forward(x *gorgonia.Node) *gorgonia.Node {
-	y, _, _, _, err := gorgonia.BatchNorm(x, nil, nil, 0.99, 1e-9)
-	runtime.Assert(err)
-	return y
+func (layer *Nor) Forward(x *ts.Tensor) *ts.Tensor {
+	// TODO
+	return x
 }

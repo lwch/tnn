@@ -1,12 +1,14 @@
 package optimizer
 
 import (
-	"gorgonia.org/gorgonia"
+	"github.com/lwch/runtime"
+	"github.com/sugarme/gotch/nn"
+	"github.com/sugarme/gotch/ts"
 )
 
 type Adam struct {
 	*base
-	slover gorgonia.Solver
+	cfg *nn.AdamConfig
 }
 
 func NewAdam(options ...OptimizerOption) Optimizer {
@@ -15,18 +17,13 @@ func NewAdam(options ...OptimizerOption) Optimizer {
 	for _, opt := range options {
 		opt(optimizer.base)
 	}
-	var opts []gorgonia.SolverOpt
-	opts = append(opts, gorgonia.WithLearnRate(optimizer.lr))
-	if optimizer.l1reg > 0 {
-		opts = append(opts, gorgonia.WithL1Reg(optimizer.l1reg))
-	}
-	if optimizer.l2reg > 0 {
-		opts = append(opts, gorgonia.WithL2Reg(optimizer.l2reg))
-	}
-	optimizer.slover = gorgonia.NewAdamSolver(opts...)
+	optimizer.cfg = nn.DefaultAdamConfig()
+	optimizer.cfg.Wd = optimizer.weightDeacy
 	return &optimizer
 }
 
-func (optimizer *Adam) Step(params gorgonia.Nodes) error {
-	return optimizer.slover.Step(gorgonia.NodesToValueGrads(params))
+func (optimizer *Adam) Step(vs *nn.VarStore, loss *ts.Tensor) error {
+	opt, err := optimizer.cfg.Build(vs, optimizer.lr)
+	runtime.Assert(err)
+	return opt.BackwardStep(loss)
 }

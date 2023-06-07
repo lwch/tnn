@@ -46,7 +46,7 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func loadParam(data *pb.Dense) *ts.Tensor {
+func loadParam(vs *nn.Path, data *pb.Dense, name string) *ts.Tensor {
 	if data == nil {
 		return nil
 	}
@@ -56,7 +56,7 @@ func loadParam(data *pb.Dense) *ts.Tensor {
 	}
 	t, err := ts.NewTensorFromData(data.GetData(), shape)
 	runtime.Assert(err)
-	return t
+	return vs.MustAdd(name, t, true)
 }
 
 func initW(vs *nn.Path, name string, dims ...int64) *ts.Tensor {
