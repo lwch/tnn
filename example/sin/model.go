@@ -1,60 +1,82 @@
-// package main
+package main
 
-// import (
-// 	"github.com/lwch/runtime"
-// 	"github.com/lwch/tnn/nn/layer"
-// 	"github.com/lwch/tnn/nn/loss"
-// 	"github.com/lwch/tnn/nn/optimizer"
-// 	"github.com/sugarme/gotch/ts"
-// )
+import (
+	"github.com/lwch/gotorch/optimizer"
+	"github.com/lwch/gotorch/tensor"
+	"github.com/lwch/tnn/nn/layer"
+)
 
-// type model struct {
-// 	rnn         *layer.Rnn
-// 	lstm        *layer.Lstm
-// 	flatten     *layer.Flatten
-// 	outputLayer *layer.Dense
-// 	hidden      *ts.Tensor
-// 	cell        *ts.Tensor
-// 	loss        loss.Loss
-// 	optimizer   optimizer.Optimizer
-// }
+type model struct {
+	rnn         *layer.Rnn
+	lstm        *layer.Lstm
+	flatten     *layer.Flatten
+	outputLayer *layer.Dense
+	hidden      *tensor.Tensor
+	cell        *tensor.Tensor
+	optimizer   optimizer.Optimizer
+}
 
-// func newModel(loss loss.Loss, optimizer optimizer.Optimizer) *model {
-// 	return &model{
-// 		// rnn:         layer.NewRnn(featureSize, steps, hiddenSize),
-// 		lstm:        layer.NewLstm(featureSize, steps, hiddenSize),
-// 		flatten:     layer.NewFlatten(),
-// 		outputLayer: layer.NewDense(1),
-// 		loss:        loss,
-// 		optimizer:   optimizer,
-// 	}
-// }
+func newModel(optimizer optimizer.Optimizer) *model {
+	return &model{
+		rnn: layer.NewRnn(featureSize, steps, hiddenSize),
+		// lstm:        layer.NewLstm(featureSize, steps, hiddenSize),
+		flatten:     layer.NewFlatten(),
+		outputLayer: layer.NewDense(1),
+		optimizer:   optimizer,
+	}
+}
 
-// func (m *model) Forward(x *ts.Tensor) *ts.Tensor {
-// 	var output *ts.Tensor
-// 	if m.rnn != nil {
-// 		output, m.hidden = m.rnn.Forward(vs.Root(), x, m.hidden)
-// 	} else {
-// 		output, m.hidden, m.cell = m.lstm.Forward(vs.Root(), x, m.hidden, m.cell)
-// 	}
-// 	output = m.flatten.Forward(output)
-// 	return m.outputLayer.Forward(vs.Root(), output)
-// }
+func (m *model) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+	var output *tensor.Tensor
+	if m.rnn != nil {
+		var hidden *tensor.Tensor
+		old := m.hidden
+		output, hidden = m.rnn.Forward(x, m.hidden)
+		if train {
+			m.hidden = hidden
+			if old != nil {
+				old.Free()
+			}
+		}
+	} else {
+		// output, m.hidden, m.cell = m.lstm.Forward(vs.Root(), x, m.hidden, m.cell)
+	}
+	output = m.flatten.Forward(output)
+	return m.outputLayer.Forward(output)
+}
 
-// func (m *model) Train(epoch int, x, y *ts.Tensor) float32 {
-// 	m.hidden = nil // TODO: fix backward
-// 	m.cell = nil   // TODO: fix backward
-// 	pred := m.Forward(x)
-// 	l := m.loss.Loss(y, pred)
-// 	runtime.Assert(m.optimizer.Step(vs, l))
-// 	return l.Vals().([]float32)[0]
-// }
+func (m *model) Train(epoch int, x, y *tensor.Tensor) float32 {
+	pred := m.Forward(x, true)
+	l := lossFunc(pred, y)
+	l.Backward()
+	value := l.Value()
+	m.optimizer.Step(m.params())
+	return float32(value)
+}
 
-// func (m *model) Predict(x *ts.Tensor) []float32 {
-// 	return m.Forward(x).Vals().([]float32)
-// }
+func (m *model) Predict(x *tensor.Tensor) []float32 {
+	return m.Forward(x, false).Float32Value()
+}
 
-// func (m *model) Loss(x, y *ts.Tensor) float32 {
-// 	pred := m.Forward(x)
-// 	return m.loss.Loss(y, pred).Vals().([]float32)[0]
-// }
+func (m *model) Loss(x, y *tensor.Tensor) float32 {
+	pred := m.Forward(x, false)
+	return float32(lossFunc(pred, y).Value())
+}
+
+func (m *model) params() []*tensor.Tensor {
+	var ret []*tensor.Tensor
+	if m.rnn != nil {
+		for _, p := range m.rnn.Params() {
+			ret = append(ret, p)
+		}
+	}
+	if m.lstm != nil {
+		for _, p := range m.lstm.Params() {
+			ret = append(ret, p)
+		}
+	}
+	for _, p := range m.outputLayer.Params() {
+		ret = append(ret, p)
+	}
+	return ret
+}

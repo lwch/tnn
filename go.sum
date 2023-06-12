@@ -24,8 +24,8 @@ github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaS
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.8 h1:e6P7q2lk1O+qJJb4BtCQXlK8vWEO8V1ZeuEdJNOqZyg=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/lwch/gotorch v0.0.0-20230612054325-369bc1e8d2c4 h1:rTR1yqR0/7tD549JqXdVj1bojFF8uL+HVFoOBW+eIVg=
-github.com/lwch/gotorch v0.0.0-20230612054325-369bc1e8d2c4/go.mod h1:9PKKNMouYtoOdOdcuO5SJevc93mfHxjgY5aW5m6tBMI=
+github.com/lwch/gotorch v0.0.0-20230612093405-c9c6e42f1bc2 h1:ars8u2HzX8/bfiacc2mvKVsypb3NlFFrWJSQS/bb5bs=
+github.com/lwch/gotorch v0.0.0-20230612093405-c9c6e42f1bc2/go.mod h1:9PKKNMouYtoOdOdcuO5SJevc93mfHxjgY5aW5m6tBMI=
 github.com/lwch/runtime v1.0.1 h1:xfurs9IGzkTWfdum1K5GaDkEuGopohOQhk7roELmbf4=
 github.com/lwch/runtime v1.0.1/go.mod h1:mJuSABS7wUvRK3rUyV624NZ3+rV5eiAhsGEuU1iNrtk=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

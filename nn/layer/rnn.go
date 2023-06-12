@@ -45,26 +45,24 @@ func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) 
 		layer.b = initB(int64(layer.hidden))
 	}
 	if h == nil {
-		h = tensor.Zeros(nil, consts.KFloat, inputShape[0], int64(layer.hidden))
+		h = tensor.Zeros(x.Storage(), consts.KFloat, inputShape[0], int64(layer.hidden))
 	}
-	// TODO
-	return x, h
-	// x = x.MustTranspose(1, 0, true) // (steps, batch, feature)
-	// var result *ts.Tensor
-	// for step := 0; step < layer.steps; step++ {
-	// 	t := x.MustNarrow(0, int64(step), 1, false).
-	// 		MustReshape([]int64{int64(inputShape[0]), int64(layer.featureSize)}, true) // (batch, feature)
-	// 	z := ts.MustHstack([]ts.Tensor{*h, *t}) // (batch, feature+hidden)
-	// 	z = z.MustMm(layer.w, true)             // (batch, hidden)
-	// 	z = z.MustAdd(layer.b, true)            // (batch, hidden)
-	// 	h = z.MustTanh(true)                    // (batch, hidden)
-	// 	if result == nil {
-	// 		result = h
-	// 	} else {
-	// 		result = ts.MustVstack([]ts.Tensor{*result, *h})
-	// 	}
-	// }
-	// return result.MustReshape([]int64{inputShape[0], inputShape[1], int64(layer.hidden)}, true), h
+	x = x.Transpose(1, 0) // (steps, batch, feature)
+	var result *tensor.Tensor
+	for step := 0; step < layer.steps; step++ {
+		t := x.NArrow(0, int64(step), 1).
+			Reshape(int64(inputShape[0]), int64(layer.featureSize)) // (batch, feature)
+		z := tensor.HStack(t, h)           // (batch, feature+hidden)
+		z = z.MatMul(layer.w).Add(layer.b) // (batch, hidden)
+		h = z.Tanh()                       // (batch, hidden)
+		if result == nil {
+			result = h
+		} else {
+			result = tensor.VStack(result, h)
+		}
+	}
+	return result.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)),
+		tensor.FromFloat32(nil, h.Float32Value(), h.Shapes()...)
 }
 
 func (layer *Rnn) Params() map[string]*tensor.Tensor {
