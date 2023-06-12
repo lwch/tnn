@@ -6,15 +6,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/lwch/gotorch/loss"
+	"github.com/lwch/gotorch/mmgr"
+	"github.com/lwch/gotorch/optimizer"
+	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
-	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
-	"github.com/lwch/tnn/nn/optimizer"
-	"github.com/sugarme/gotch"
-	"github.com/sugarme/gotch/nn"
-	"github.com/sugarme/gotch/ts"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -26,7 +25,8 @@ const hiddenSize = 10
 const epoch = 10000
 const modelFile = "xor.model"
 
-var vs = nn.NewVarStore(gotch.CPU)
+var lossFunc = loss.NewMSE
+var storage = mmgr.New()
 
 func main() {
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
@@ -44,15 +44,14 @@ func train() {
 	outputLayer := layer.NewDense(1)
 	outputLayer.SetName("output")
 
-	net := net.New(vs)
+	net := net.New()
 	net.Add(hidden)
 	net.Add(activation.NewReLU())
 	net.Add(outputLayer)
-	loss := loss.NewMSE()
 	// optimizer := optimizer.NewSGD(lr, 0)
-	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
+	optimizer := optimizer.NewAdam()
 
-	m := newModel(net, loss, optimizer)
+	m := newModel(net, optimizer)
 
 	p := plot.New()
 	p.Title.Text = "xor train model"
@@ -91,12 +90,11 @@ func train() {
 }
 
 func loadModel() *model {
-	net := net.New(vs)
+	net := net.New()
 	runtime.Assert(net.Load(modelFile))
 
-	loss := loss.NewMSE()
-	optimizer := optimizer.NewAdam(optimizer.WithLearnRate(lr))
-	return newModel(net, loss, optimizer)
+	optimizer := optimizer.NewAdam()
+	return newModel(net, optimizer)
 }
 
 func nextTrain(m *model) {
@@ -113,7 +111,7 @@ func nextTrain(m *model) {
 
 func predict(m *model) {
 	x, _ := getBatch()
-	xs := x.Vals().([]float32)
+	xs := x.Float32Value()
 	ys := m.Predict(x)
 	for i := 0; i < 4; i++ {
 		start := i * 2
@@ -126,7 +124,7 @@ func predict(m *model) {
 func accuracy(m *model) float32 {
 	x, y := getBatch()
 	pred := m.Predict(x)
-	values := y.Vals().([]float32)
+	values := y.Float32Value()
 	var correct float32
 	for i := 0; i < 4; i++ {
 		diff := float32(math.Abs(float64(pred[i]) -
@@ -138,20 +136,18 @@ func accuracy(m *model) float32 {
 	return float32(correct) * 100 / 4
 }
 
-func getBatch() (*ts.Tensor, *ts.Tensor) {
-	x, err := ts.NewTensorFromData([][]float32{
-		{0, 0},
-		{0, 1},
-		{1, 0},
-		{1, 1},
-	}, []int64{4, 2})
-	runtime.Assert(err)
-	y, err := ts.NewTensorFromData([][]float32{
-		{0},
-		{1},
-		{1},
-		{0},
-	}, []int64{4, 1})
-	runtime.Assert(err)
+func getBatch() (*tensor.Tensor, *tensor.Tensor) {
+	x := tensor.FromFloat32(storage, []float32{
+		0, 0,
+		0, 1,
+		1, 0,
+		1, 1,
+	}, 4, 2)
+	y := tensor.FromFloat32(storage, []float32{
+		0,
+		1,
+		1,
+		0,
+	}, 4, 1)
 	return x, y
 }

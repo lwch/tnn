@@ -1,17 +1,16 @@
 package layer
 
 import (
+	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
-	"github.com/sugarme/gotch/nn"
-	"github.com/sugarme/gotch/ts"
 )
 
 type Dense struct {
 	*base
 	output int
 	// params
-	w *ts.Tensor
-	b *ts.Tensor
+	w *tensor.Tensor
+	b *tensor.Tensor
 }
 
 func NewDense(output int) *Dense {
@@ -21,29 +20,29 @@ func NewDense(output int) *Dense {
 	return &layer
 }
 
-func LoadDense(vs *nn.Path, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDense(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dense
 	layer.base = new("dense")
 	layer.name = name
 	layer.output = int(args["output"])
-	layer.w = loadParam(vs, params["w"], "w")
-	layer.b = loadParam(vs, params["b"], "b")
+	layer.w = loadParam(params["w"])
+	layer.b = loadParam(params["b"])
 	return &layer
 }
 
-func (layer *Dense) Forward(vs *nn.Path, x *ts.Tensor) *ts.Tensor {
-	inputShape := x.MustSize()
+func (layer *Dense) Forward(x *tensor.Tensor) *tensor.Tensor {
+	inputShape := x.Shapes()
 	if layer.w == nil {
-		layer.w = initW(vs, "w", inputShape[1], int64(layer.output))
+		layer.w = initW(inputShape[1], int64(layer.output))
 	}
 	if layer.b == nil {
-		layer.b = initB(vs, "b", inputShape[0], int64(layer.output))
+		layer.b = initB(int64(layer.output))
 	}
-	return x.MustMm(layer.w, true).MustAdd(layer.b, true)
+	return x.MatMul(layer.w).Add(layer.b)
 }
 
-func (layer *Dense) Params() map[string]*ts.Tensor {
-	return map[string]*ts.Tensor{
+func (layer *Dense) Params() map[string]*tensor.Tensor {
+	return map[string]*tensor.Tensor{
 		"w": layer.w,
 		"b": layer.b,
 	}

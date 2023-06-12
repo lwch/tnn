@@ -1,6 +1,6 @@
 package activation
 
-import "github.com/sugarme/gotch/ts"
+import "github.com/lwch/gotorch/tensor"
 
 type base struct {
 	class string
@@ -28,7 +28,7 @@ func (layer *base) Name() string {
 	return layer.name
 }
 
-func (layer *base) Params() map[string]*ts.Tensor {
+func (layer *base) Params() map[string]*tensor.Tensor {
 	return nil
 }
 

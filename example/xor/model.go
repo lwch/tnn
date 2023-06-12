@@ -1,35 +1,31 @@
 package main
 
 import (
-	"github.com/lwch/runtime"
+	"github.com/lwch/gotorch/optimizer"
+	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
-	"github.com/lwch/tnn/nn/loss"
 	"github.com/lwch/tnn/nn/net"
-	"github.com/lwch/tnn/nn/optimizer"
-	"github.com/sugarme/gotch/ts"
 )
 
 type model struct {
 	net       *net.Net
-	loss      loss.Loss
 	optimizer optimizer.Optimizer
 }
 
-func newModel(net *net.Net, loss loss.Loss, optimizer optimizer.Optimizer) *model {
+func newModel(net *net.Net, optimizer optimizer.Optimizer) *model {
 	return &model{
 		net:       net,
-		loss:      loss,
 		optimizer: optimizer,
 	}
 }
 
-func (m *model) Forward(x *ts.Tensor) *ts.Tensor {
+func (m *model) Forward(x *tensor.Tensor) *tensor.Tensor {
 	output := x
 	for _, l := range m.net.Layers() {
 		switch ln := l.(type) {
 		case *layer.Dense:
-			output = ln.Forward(vs.Root(), output)
+			output = ln.Forward(output)
 		case *activation.ReLU:
 			output = ln.Forward(output)
 		}
@@ -37,19 +33,31 @@ func (m *model) Forward(x *ts.Tensor) *ts.Tensor {
 	return output
 }
 
-func (m *model) Train(x, y *ts.Tensor) float32 {
+func (m *model) Train(x, y *tensor.Tensor) float32 {
 	pred := m.Forward(x)
-	loss := m.loss.Loss(y, pred)
-	runtime.Assert(m.optimizer.Step(vs, loss))
-	return loss.Vals().([]float32)[0]
+	l := lossFunc(pred, y)
+	l.Backward()
+	value := l.Value()
+	m.optimizer.Step(m.Params())
+	return float32(value)
 }
 
-func (m *model) Predict(x *ts.Tensor) []float32 {
-	return m.Forward(x).Vals().([]float32)
+func (m *model) Predict(x *tensor.Tensor) []float32 {
+	return m.Forward(x).Float32Value()
 }
 
-func (m *model) Loss(x, y *ts.Tensor) float32 {
+func (m *model) Loss(x, y *tensor.Tensor) float32 {
 	pred := m.Forward(x)
-	loss := m.loss.Loss(y, pred)
-	return loss.Vals().([]float32)[0]
+	loss := lossFunc(y, pred)
+	return float32(loss.Value())
+}
+
+func (m *model) Params() []*tensor.Tensor {
+	var ret []*tensor.Tensor
+	for _, ps := range m.net.Params() {
+		for _, p := range ps {
+			ret = append(ret, p)
+		}
+	}
+	return ret
 }

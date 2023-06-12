@@ -1,14 +1,14 @@
 package layer
 
 import (
-	"github.com/lwch/runtime"
+	"github.com/lwch/gotorch/consts"
+	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
-	"github.com/sugarme/gotch/nn"
-	"github.com/sugarme/gotch/ts"
+	"github.com/lwch/tnn/nn/initializer"
 )
 
 type Layer interface {
-	Params() map[string]*ts.Tensor
+	Params() map[string]*tensor.Tensor
 	Class() string
 	SetName(name string)
 	Name() string
@@ -38,7 +38,7 @@ func (b *base) Name() string {
 	return b.name
 }
 
-func (b *base) Params() map[string]*ts.Tensor {
+func (b *base) Params() map[string]*tensor.Tensor {
 	return nil
 }
 
@@ -46,7 +46,7 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func loadParam(vs *nn.Path, data *pb.Dense, name string) *ts.Tensor {
+func loadParam(data *pb.Dense) *tensor.Tensor {
 	if data == nil {
 		return nil
 	}
@@ -54,15 +54,21 @@ func loadParam(vs *nn.Path, data *pb.Dense, name string) *ts.Tensor {
 	for _, v := range data.Shape {
 		shape = append(shape, int64(v))
 	}
-	t, err := ts.NewTensorFromData(data.GetData(), shape)
-	runtime.Assert(err)
-	return vs.MustAdd(name, t, true)
+	t := tensor.FromFloat32(nil, data.GetData(), shape...)
+	t.SetRequiresGrad(true)
+	return t
 }
 
-func initW(vs *nn.Path, name string, dims ...int64) *ts.Tensor {
-	return vs.MustKaimingUniform(name, dims)
+var wInitializer = initializer.NewXavierUniform(1)
+
+func initW(shapes ...int64) *tensor.Tensor {
+	t := tensor.FromFloat32(nil, wInitializer.RandShape(shapes...), shapes...)
+	t.SetRequiresGrad(true)
+	return t
 }
 
-func initB(vs *nn.Path, name string, dims ...int64) *ts.Tensor {
-	return vs.MustZeros(name, dims)
+func initB(shapes ...int64) *tensor.Tensor {
+	t := tensor.Zeros(nil, consts.KFloat, shapes...)
+	t.SetRequiresGrad(true)
+	return t
 }

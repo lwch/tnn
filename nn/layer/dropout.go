@@ -1,9 +1,8 @@
 package layer
 
 import (
+	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
-	"github.com/sugarme/gotch/nn"
-	"github.com/sugarme/gotch/ts"
 )
 
 type Dropout struct {
@@ -18,7 +17,7 @@ func NewDropout(keep float64) *Dropout {
 	return &layer
 }
 
-func LoadDropout(_ *nn.Path, name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDropout(name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dropout
 	layer.base = new("dropout")
 	layer.name = name
@@ -26,9 +25,8 @@ func LoadDropout(_ *nn.Path, name string, _ map[string]*pb.Dense, args map[strin
 	return &layer
 }
 
-func (layer *Dropout) Forward(x *ts.Tensor, train bool) *ts.Tensor {
-	x.MustDropout_(layer.keep, train)
-	return x
+func (layer *Dropout) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+	return x.Dropout(layer.keep, train)
 }
 
 func (layer *Dropout) Args() map[string]float32 {
