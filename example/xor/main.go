@@ -25,7 +25,7 @@ const hiddenSize = 10
 const epoch = 10000
 const modelFile = "xor.model"
 
-var lossFunc = loss.NewMSE
+var lossFunc = loss.NewMse
 var storage = mmgr.New()
 
 func main() {

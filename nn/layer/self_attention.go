@@ -40,7 +40,7 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 }
 
 func (layer *SelfAttention) Forward(x *tensor.Tensor) *tensor.Tensor {
-	inputShape := x.Shapes()
+	// inputShape := x.Shapes()
 	if layer.scale == nil {
 		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, 1)
 	}

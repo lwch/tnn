@@ -39,6 +39,7 @@ func (m *model) Train(x, y *tensor.Tensor) float32 {
 	l.Backward()
 	value := l.Value()
 	m.optimizer.Step(m.Params())
+	storage.GC()
 	return float32(value)
 }
 

@@ -1,8 +1,7 @@
 package layer
 
 import (
-	"gotorch/consts"
-
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
 )
