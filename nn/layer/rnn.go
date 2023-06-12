@@ -36,6 +36,10 @@ func LoadRnn(name string, params map[string]*pb.Dense, args map[string]float32) 
 	return &layer
 }
 
+func copyState(s *tensor.Tensor) *tensor.Tensor {
+	return tensor.FromFloat32(nil, s.Float32Value(), s.Shapes()...)
+}
+
 func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if layer.w == nil {
@@ -61,8 +65,7 @@ func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) 
 			result = tensor.VStack(result, h)
 		}
 	}
-	return result.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)),
-		tensor.FromFloat32(nil, h.Float32Value(), h.Shapes()...)
+	return result.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)), copyState(h)
 }
 
 func (layer *Rnn) Params() map[string]*tensor.Tensor {

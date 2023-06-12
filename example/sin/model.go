@@ -37,9 +37,27 @@ func (m *model) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 			if old != nil {
 				old.Free()
 			}
+		} else {
+			hidden.Free()
 		}
 	} else {
-		// output, m.hidden, m.cell = m.lstm.Forward(vs.Root(), x, m.hidden, m.cell)
+		var hidden, cell *tensor.Tensor
+		oldHidden := m.hidden
+		oldCell := m.cell
+		output, hidden, cell = m.lstm.Forward(x, m.hidden, m.cell)
+		if train {
+			m.hidden = hidden
+			m.cell = cell
+			if oldHidden != nil {
+				oldHidden.Free()
+			}
+			if oldCell != nil {
+				oldCell.Free()
+			}
+		} else {
+			hidden.Free()
+			cell.Free()
+		}
 	}
 	output = m.flatten.Forward(output)
 	return m.outputLayer.Forward(output)

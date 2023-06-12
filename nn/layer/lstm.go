@@ -75,34 +75,32 @@ func (layer *Lstm) Forward(x, h, c *tensor.Tensor) (*tensor.Tensor, *tensor.Tens
 	if c == nil {
 		c = tensor.Zeros(nil, consts.KFloat, int64(inputShape[0]), int64(layer.hidden))
 	}
-	// TODO
-	return x, h, c
-	// x = x.MustTranspose(1, 0, false) // (steps, batch, feature)
-	// var result *ts.Tensor
-	// for step := 0; step < layer.steps; step++ {
-	// 	t := x.MustNarrow(0, int64(step), 1, false).
-	// 		MustReshape([]int64{int64(inputShape[0]), int64(layer.featureSize)}, false) // (batch, feature)
-	// 	z := ts.MustHstack([]ts.Tensor{*h, *t})                 // (batch, feature+hidden)
-	// 	i := z.MustMm(layer.Wi, false).MustAdd(layer.Bi, false) // (batch, hidden)
-	// 	i = i.MustSigmoid(false)                                // (batch, hidden)
-	// 	f := z.MustMm(layer.Wf, false).MustAdd(layer.Bf, false) // (batch, hidden)
-	// 	f = f.MustSigmoid(false)                                // (batch, hidden)
-	// 	o := z.MustMm(layer.Wo, false).MustAdd(layer.Bo, false) // (batch, hidden)
-	// 	o = o.MustSigmoid(false)                                // (batch, hidden)
-	// 	g := z.MustMm(layer.Wg, false).MustAdd(layer.Bg, false) // (batch, hidden)
-	// 	g = g.MustTanh(false)                                   // (batch, hidden)
-	// 	a := f.MustMul(c, false)                                // (batch, hidden)
-	// 	b := i.MustMul(g, false)                                // (batch, hidden)
-	// 	c = a.MustAdd(b, false)                                 // (batch, hidden)
-	// 	ct := c.MustTanh(false)                                 // (batch, hidden)
-	// 	h = o.MustMul(ct, false)                                // (batch, hidden)
-	// 	if result == nil {
-	// 		result = h
-	// 	} else {
-	// 		result = ts.MustVstack([]ts.Tensor{*result, *h})
-	// 	}
-	// }
-	// return result.MustReshape([]int64{inputShape[0], inputShape[1], int64(layer.hidden)}, true), h, c
+	x = x.Transpose(1, 0) // (steps, batch, feature)
+	var result *tensor.Tensor
+	for step := 0; step < layer.steps; step++ {
+		t := x.NArrow(0, int64(step), 1).
+			Reshape(int64(inputShape[0]), int64(layer.featureSize)) // (batch, feature)
+		z := tensor.HStack(t, h)              // (batch, feature+hidden)
+		i := z.MatMul(layer.Wi).Add(layer.Bi) // (batch, hidden)
+		i = i.Sigmoid()                       // (batch, hidden)
+		f := z.MatMul(layer.Wf).Add(layer.Bf) // (batch, hidden)
+		f = f.Sigmoid()                       // (batch, hidden)
+		o := z.MatMul(layer.Wo).Add(layer.Bo) // (batch, hidden)
+		o = o.Sigmoid()                       // (batch, hidden)
+		g := z.MatMul(layer.Wg).Add(layer.Bg) // (batch, hidden)
+		g = g.Tanh()                          // (batch, hidden)
+		a := f.Mul(c)                         // (batch, hidden)
+		b := i.Mul(g)                         // (batch, hidden)
+		c = a.Add(b)                          // (batch, hidden)
+		h = o.Mul(c.Tanh())                   // (batch, hidden)
+		if result == nil {
+			result = h
+		} else {
+			result = tensor.VStack(result, h)
+		}
+	}
+	return result.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)),
+		copyState(h), copyState(c)
 }
 
 func (layer *Lstm) Params() map[string]*tensor.Tensor {
