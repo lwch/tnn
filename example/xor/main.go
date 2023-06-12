@@ -49,7 +49,7 @@ func train() {
 	net.Add(activation.NewReLU())
 	net.Add(outputLayer)
 	// optimizer := optimizer.NewSGD(lr, 0)
-	optimizer := optimizer.NewAdam()
+	optimizer := optimizer.NewAdam(optimizer.WithAdamLr(lr))
 
 	m := newModel(net, optimizer)
 
@@ -93,7 +93,7 @@ func loadModel() *model {
 	net := net.New()
 	runtime.Assert(net.Load(modelFile))
 
-	optimizer := optimizer.NewAdam()
+	optimizer := optimizer.NewAdam(optimizer.WithAdamLr(lr))
 	return newModel(net, optimizer)
 }
 

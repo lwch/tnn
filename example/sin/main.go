@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	optimizer := optimizer.NewAdam()
+	optimizer := optimizer.NewAdam(optimizer.WithAdamLr(lr))
 	m := newModel(optimizer)
 
 	p := plot.New()
