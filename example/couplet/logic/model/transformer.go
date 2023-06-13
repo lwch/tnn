@@ -65,3 +65,19 @@ func (t *transformer) layers() []layer.Layer {
 		t.output,
 	}
 }
+
+func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
+	t.attn = layers[idx].(*layer.SelfAttention)
+	idx++
+	t.nor = layers[idx].(*layer.Nor)
+	idx++
+	t.flatten = layers[idx].(*layer.Flatten)
+	idx++
+	t.dense = layers[idx].(*layer.Dense)
+	idx++
+	t.relu = layers[idx].(*activation.ReLU)
+	idx++
+	t.output = layers[idx].(*layer.Dense)
+	idx++
+	return idx
+}

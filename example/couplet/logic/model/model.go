@@ -101,7 +101,7 @@ func (m *Model) save() {
 		net.Add(attn.layers()...)
 	}
 	net.Add(m.flatten, m.relu, m.output)
-	err := net.Save(filepath.Join(m.modelDir, "couplet.net"))
+	err := net.Save(filepath.Join(m.modelDir, "couplet.model"))
 	runtime.Assert(err)
 	fmt.Println("model saved")
 }
@@ -130,4 +130,19 @@ func (m *Model) forward(x *tensor.Tensor, paddingMasks []*tensor.Tensor, train b
 	y = m.output.Forward(y)  // output
 	y = y.Softmax(-1)        // softmax
 	return y
+}
+
+func (m *Model) loadFrom(net *net.Net) {
+	layers := net.Layers()
+	idx := 0
+	for i := 0; i < transformerSize; i++ {
+		var attn transformer
+		idx = attn.loadFrom(layers, idx)
+		m.attn = append(m.attn, &attn)
+	}
+	m.flatten = layers[idx].(*layer.Flatten)
+	idx++
+	m.relu = layers[idx].(*activation.ReLU)
+	idx++
+	m.output = layers[idx].(*layer.Dense)
 }
