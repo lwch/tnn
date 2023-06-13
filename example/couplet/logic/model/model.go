@@ -33,7 +33,7 @@ type Model struct {
 	// 模型定义
 	attn    []*transformer
 	flatten *layer.Flatten
-	relu    *activation.ReLU
+	sigmoid *activation.Sigmoid
 	output  *layer.Dense
 
 	// 运行时
@@ -66,7 +66,7 @@ func (m *Model) build() {
 		m.attn = append(m.attn, newTransformer(i))
 	}
 	m.flatten = layer.NewFlatten()
-	m.relu = activation.NewReLU()
+	m.sigmoid = activation.NewSigmoid()
 	m.output = layer.NewDense(len(m.vocabs))
 	m.output.SetName("output")
 }
@@ -102,7 +102,7 @@ func (m *Model) save() {
 	for _, attn := range m.attn {
 		net.Add(attn.layers()...)
 	}
-	net.Add(m.flatten, m.relu, m.output)
+	net.Add(m.flatten, m.sigmoid, m.output)
 	err := net.Save(filepath.Join(m.modelDir, "couplet.model"))
 	runtime.Assert(err)
 	fmt.Println("model saved")
@@ -131,7 +131,7 @@ func (m *Model) forward(x *tensor.Tensor, paddingMask *tensor.Tensor, train bool
 		y = attn.forward(y, mask)
 	}
 	y = m.flatten.Forward(y) // flatten
-	y = m.relu.Forward(y)    // relu
+	y = m.sigmoid.Forward(y) // relu
 	y = m.output.Forward(y)  // output
 	return y
 }
@@ -146,7 +146,7 @@ func (m *Model) loadFrom(net *net.Net) {
 	}
 	m.flatten = layers[idx].(*layer.Flatten)
 	idx++
-	m.relu = layers[idx].(*activation.ReLU)
+	m.sigmoid = layers[idx].(*activation.Sigmoid)
 	idx++
 	m.output = layers[idx].(*layer.Dense)
 }
