@@ -20,11 +20,11 @@ import (
 
 const lr = 1e-3
 const epoch = 1000
-const batchSize = 16
+const batchSize = 128
 const steps = 32
 const dims = 8
 const unitSize = steps * dims
-const transformerSize = 4
+const transformerSize = 2
 
 var lossFunc = loss.NewMse
 var storage = mmgr.New()
@@ -34,7 +34,7 @@ func main() {
 	i := 0.
 	for {
 		points = append(points, float32(math.Sin(i)))
-		i += 0.001
+		i += 0.0001
 		if i > 2*math.Pi {
 			break
 		}
@@ -71,16 +71,14 @@ func main() {
 		x, y := getBatch(points, i)
 		pred := m.Predict(x)
 		ys := y.Float32Value()
-		for j := 0; j < len(pred); j++ {
+		for j := 0; j < len(pred); j += 200 {
 			real = append(real, plotter.XY{X: float64(i), Y: float64(ys[j])})
 			predict = append(predict, plotter.XY{X: float64(i), Y: float64(pred[j])})
 		}
-		if i%10 == 0 {
-			acc := accuracy(ys, pred)
-			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, m.Loss(x, y), acc)
-			// fmt.Println(y.Value())
-			// fmt.Println(pred.Value())
-		}
+		acc := accuracy(ys, pred)
+		fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, m.Loss(x, y), acc)
+		// fmt.Println(y.Value())
+		// fmt.Println(pred.Value())
 		storage.GC()
 	}
 
