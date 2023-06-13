@@ -145,6 +145,7 @@ func (m *Model) trainEpoch() float64 {
 				dz = dy[j]
 				dy = dy[:j]
 			} else {
+				m.current.Add(1)
 				continue
 			}
 			b.append(pair{append(dx, dy...), dz})
