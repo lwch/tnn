@@ -90,6 +90,10 @@ func (m *Model) trainWorker(idx []int) float64 {
 		y = append(y, zTrain...)
 		paddingMask = append(paddingMask, pm)
 	}
+	if len(x) == 0 {
+		m.current.Add(uint64(len(idx)))
+		return 0
+	}
 	xIn := tensor.FromFloat32(storage, x, int64(len(idx)), paddingSize, embeddingDim)
 	zOut := tensor.FromFloat32(storage, y, int64(len(idx)), int64(len(m.vocabs)))
 	// pred := m.forward(xIn, buildPaddingMasks(paddingMask), true)
