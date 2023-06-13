@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	rt "runtime"
+	"sync"
 
 	"github.com/lwch/gotorch/loss"
 	"github.com/lwch/gotorch/mmgr"
@@ -21,7 +24,7 @@ const batchSize = 16
 const steps = 32
 const dims = 8
 const unitSize = steps * dims
-const transformerSize = 2
+const transformerSize = 4
 
 var lossFunc = loss.NewMse
 var storage = mmgr.New()
@@ -45,18 +48,36 @@ func main() {
 	p.X.Label.Text = "epoch"
 	p.Y.Label.Text = "value"
 
+	var miniBatchSize = rt.NumCPU()
+	// trainBatchSize = 1
+
+	trainBatch := func(i int) {
+		var wg sync.WaitGroup
+		wg.Add(miniBatchSize)
+		for j := 0; j < miniBatchSize; j++ {
+			go func(idx int) {
+				defer wg.Done()
+				x, y := getBatch(points, idx)
+				m.Train(x, y)
+			}(i + j)
+		}
+		wg.Wait()
+	}
+
 	var real, predict plotter.XYs
-	for i := 0; i < epoch; i++ {
-		x, y := getBatch(points, i+batchSize)
-		loss := m.Train(x, y)
+	for i := 0; i < epoch; i += miniBatchSize {
+		trainBatch(i)
+		m.Apply()
+		x, y := getBatch(points, i)
 		pred := m.Predict(x)
-		y1 := y.Float32Value()[0]
-		y2 := pred[0]
-		real = append(real, plotter.XY{X: float64(i), Y: float64(y1)})
-		predict = append(predict, plotter.XY{X: float64(i), Y: float64(y2)})
+		ys := y.Float32Value()
+		for j := 0; j < len(pred); j++ {
+			real = append(real, plotter.XY{X: float64(i), Y: float64(ys[j])})
+			predict = append(predict, plotter.XY{X: float64(i), Y: float64(pred[j])})
+		}
 		if i%10 == 0 {
-			acc := accuracy(m, x, y)
-			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, loss, acc)
+			acc := accuracy(ys, pred)
+			fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, m.Loss(x, y), acc)
 			// fmt.Println(y.Value())
 			// fmt.Println(pred.Value())
 		}
@@ -92,28 +113,24 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor) {
 		}
 		y[batch] = points[(i*batchSize+batch)%len(points)]
 	}
-	// rand.Shuffle(batchSize, func(i, j int) {
-	// 	dx := make([]float32, unitSize)
-	// 	dy := make([]float32, 1)
-	// 	copy(dx, x[i*unitSize:(i+1)*unitSize])
-	// 	copy(dy, y[i*1:(i+1)*1])
-	// 	copy(x[i*unitSize:(i+1)*unitSize], x[j*unitSize:(j+1)*unitSize])
-	// 	copy(y[i*1:(i+1)*1], y[j*1:(j+1)*1])
-	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
-	// 	copy(y[j*1:(j+1)*1], dy)
-	// })
+	rand.Shuffle(batchSize, func(i, j int) {
+		dx := make([]float32, unitSize)
+		dy := make([]float32, 1)
+		copy(dx, x[i*unitSize:(i+1)*unitSize])
+		copy(dy, y[i*1:(i+1)*1])
+		copy(x[i*unitSize:(i+1)*unitSize], x[j*unitSize:(j+1)*unitSize])
+		copy(y[i*1:(i+1)*1], y[j*1:(j+1)*1])
+		copy(x[j*unitSize:(j+1)*unitSize], dx)
+		copy(y[j*1:(j+1)*1], dy)
+	})
 	return tensor.FromFloat32(storage, x, batchSize, steps, dims),
 		tensor.FromFloat32(storage, y, batchSize, 1)
 }
 
-func accuracy(m *model, x, y *tensor.Tensor) float32 {
-	pred := m.Predict(x)
-	y1Values := y.Float32Value()
-	y2Values := pred
+func accuracy(y, pred []float32) float32 {
 	var correct float32
 	for i := 0; i < batchSize; i++ {
-		diff := 1 - float32(math.Abs(float64(y1Values[i])-
-			float64(y2Values[i])))
+		diff := 1 - float32(math.Abs(float64(pred[i]-y[i])))
 		if diff > 0 {
 			correct += diff
 		}

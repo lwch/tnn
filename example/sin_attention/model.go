@@ -38,13 +38,14 @@ func (m *model) Forward(x *tensor.Tensor) *tensor.Tensor {
 	return y
 }
 
-func (m *model) Train(x, y *tensor.Tensor) float32 {
+func (m *model) Train(x, y *tensor.Tensor) {
 	pred := m.Forward(x)
 	l := lossFunc(pred, y)
 	l.Backward()
-	value := l.Value()
+}
+
+func (m *model) Apply() {
 	m.optimizer.Step(m.params())
-	return float32(value)
 }
 
 func (m *model) Predict(x *tensor.Tensor) []float32 {
