@@ -71,6 +71,7 @@ func (m *Model) trainWorker(idx []int) float64 {
 	x := make([]float32, 0, len(idx)*unitSize)
 	y := make([]float32, 0, len(idx)*embeddingDim)
 	paddingMask := make([][]bool, 0, batchSize)
+	batchSize := 0
 	for _, idx := range idx {
 		i := math.Floor(float64(idx) / float64(paddingSize/2))
 		j := idx % (paddingSize / 2)
@@ -89,13 +90,14 @@ func (m *Model) trainWorker(idx []int) float64 {
 		x = append(x, xTrain...)
 		y = append(y, zTrain...)
 		paddingMask = append(paddingMask, pm)
+		batchSize++
 	}
 	if len(x) == 0 {
 		m.current.Add(uint64(len(idx)))
-		return 1e-9
+		return 0
 	}
-	xIn := tensor.FromFloat32(storage, x, int64(len(idx)), paddingSize, embeddingDim)
-	zOut := tensor.FromFloat32(storage, y, int64(len(idx)), int64(len(m.vocabs)))
+	xIn := tensor.FromFloat32(storage, x, int64(batchSize), paddingSize, embeddingDim)
+	zOut := tensor.FromFloat32(storage, y, int64(batchSize), int64(len(m.vocabs)))
 	// pred := m.forward(xIn, buildPaddingMasks(paddingMask), true)
 	pred := m.forward(xIn, nil, true)
 	loss := lossFunc(pred, zOut)
