@@ -48,7 +48,6 @@ type Model struct {
 	trainX    [][]int
 	trainY    [][]int
 	embedding [][]float32
-	loss      loss.Loss
 	optimizer optimizer.Optimizer
 }
 

@@ -67,34 +67,17 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	m.save()
 }
 
-func (m *Model) trainWorker(idx []int) float64 {
-	x := make([]float32, 0, len(idx)*unitSize)
-	y := make([]float32, 0, len(idx)*embeddingDim)
+func (m *Model) trainWorker(samples []pair) float64 {
+	x := make([]float32, 0, len(samples)*unitSize)
+	y := make([]float32, 0, len(samples)*embeddingDim)
 	paddingMask := make([][]bool, 0, batchSize)
 	batchSize := 0
-	for _, idx := range idx {
-		i := math.Floor(float64(idx) / float64(paddingSize/2))
-		j := idx % (paddingSize / 2)
-		dx := m.trainX[int(i)]
-		dy := m.trainY[int(i)]
-		dy = append([]int{0}, dy...) // <s> ...
-		var dz int
-		if j < len(dy) {
-			dz = dy[j]
-			dy = dy[:j]
-		} else {
-			continue
-			dz = -1 // padding
-		}
-		xTrain, zTrain, pm := sample.Build(append(dx, dy...), dz, paddingSize, m.embedding, m.vocabs)
+	for _, s := range samples {
+		xTrain, zTrain, pm := sample.Build(s.x, s.y, paddingSize, m.embedding, m.vocabs)
 		x = append(x, xTrain...)
 		y = append(y, zTrain...)
 		paddingMask = append(paddingMask, pm)
 		batchSize++
-	}
-	if len(x) == 0 {
-		m.current.Add(uint64(len(idx)))
-		return 0
 	}
 	xIn := tensor.FromFloat32(storage, x, int64(batchSize), paddingSize, embeddingDim)
 	zOut := tensor.FromFloat32(storage, y, int64(batchSize), int64(len(m.vocabs)))
@@ -102,7 +85,7 @@ func (m *Model) trainWorker(idx []int) float64 {
 	pred := m.forward(xIn, nil, true)
 	loss := lossFunc(pred, zOut)
 	loss.Backward()
-	m.current.Add(uint64(len(idx)))
+	m.current.Add(uint64(len(samples)))
 	return loss.Value()
 }
 
@@ -140,15 +123,35 @@ func (m *Model) trainEpoch() float64 {
 	// workerCount = 1
 
 	var batches []batch
-	for i := 0; i < len(idx); i += batchSize {
+	i := 0
+	for {
+		if i >= len(idx) {
+			break
+		}
 		var b batch
-		for j := 0; j < batchSize; j++ {
-			if i+j >= len(idx) {
+		for len(b.data) < batchSize {
+			if i >= len(idx) {
 				break
 			}
-			b.append(idx[i+j])
+			idx := idx[i]
+			i++
+			i := math.Floor(float64(idx) / float64(paddingSize/2))
+			j := idx % (paddingSize / 2)
+			dx := m.trainX[int(i)]
+			dy := m.trainY[int(i)]
+			dy = append([]int{0}, dy...) // <s> ...
+			var dz int
+			if j < len(dy) {
+				dz = dy[j]
+				dy = dy[:j]
+			} else {
+				continue
+			}
+			b.append(pair{append(dx, dy...), dz})
 		}
-		batches = append(batches, b)
+		if b.size() > 0 {
+			batches = append(batches, b)
+		}
 	}
 
 	var trainBatch []batch

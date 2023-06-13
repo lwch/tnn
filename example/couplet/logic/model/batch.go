@@ -1,9 +1,18 @@
 package model
 
-type batch struct {
-	data []int
+type pair struct {
+	x []int
+	y int
 }
 
-func (b *batch) append(i int) {
-	b.data = append(b.data, i)
+type batch struct {
+	data []pair
+}
+
+func (b *batch) append(p pair) {
+	b.data = append(b.data, p)
+}
+
+func (b *batch) size() int {
+	return len(b.data)
 }
