@@ -22,13 +22,13 @@ func init() {
 }
 
 // buildPositionEmbedding 为每一个样本生成位置编码
-func buildPositionEmbedding(batchSize int) *tensor.Tensor {
+func buildPositionEmbedding(batchSize int64) *tensor.Tensor {
 	data := make([]float32, batchSize*unitSize)
-	for i := 0; i < batchSize; i++ {
+	for i := int64(0); i < batchSize; i++ {
 		start := i * unitSize
 		copy(data[start:start+unitSize], positionEmbedding)
 	}
-	return tensor.FromFloat32(storage, data, int64(batchSize), paddingSize, embeddingDim)
+	return tensor.FromFloat32(storage, data, batchSize, paddingSize, embeddingDim)
 }
 
 // // 未来信息掩码，上三角矩阵，注意：此处添加了对角线的掩码来降低该词与自身的权重
