@@ -63,11 +63,12 @@ func New() *Model {
 // build 生成模型
 func (m *Model) build() {
 	for i := 0; i < transformerSize; i++ {
-		m.attn = append(m.attn, newTransformer())
+		m.attn = append(m.attn, newTransformer(i))
 	}
 	m.flatten = layer.NewFlatten()
 	m.relu = activation.NewReLU()
 	m.output = layer.NewDense(len(m.vocabs))
+	m.output.SetName("output")
 }
 
 func (m *Model) params() []*tensor.Tensor {

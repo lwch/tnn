@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
@@ -15,14 +17,20 @@ type transformer struct {
 	output  *layer.Dense
 }
 
-func newTransformer() *transformer {
+func newTransformer(i int) *transformer {
+	attn := layer.NewSelfAttention(paddingSize, embeddingDim)
+	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
+	dense := layer.NewDense(unitSize * 4)
+	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
+	output := layer.NewDense(unitSize)
+	output.SetName(fmt.Sprintf("transformer%d_output", i))
 	return &transformer{
-		attn:    layer.NewSelfAttention(paddingSize, embeddingDim),
+		attn:    attn,
 		nor:     layer.NewNor(),
 		flatten: layer.NewFlatten(),
-		dense:   layer.NewDense(unitSize * 4),
+		dense:   dense,
 		relu:    activation.NewReLU(),
-		output:  layer.NewDense(unitSize),
+		output:  output,
 	}
 }
 

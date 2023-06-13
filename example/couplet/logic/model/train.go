@@ -15,6 +15,7 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/example/couplet/logic/feature"
 	"github.com/lwch/tnn/example/couplet/logic/sample"
+	"github.com/olekukonko/tablewriter"
 )
 
 // Train 训练模型
@@ -172,19 +173,35 @@ func (m *Model) buildSamples() {
 }
 
 func (m *Model) showModelInfo() {
-	// list, names := m.getParams()
-	// table := tablewriter.NewWriter(os.Stdout)
-	// defer table.Render()
-	// table.SetHeader([]string{"name", "count"})
-	// var total int
-	// for i, params := range list {
-	// 	var cnt int
-	// 	params.Range(func(_ string, p *tensor.Tensor) {
-	// 		rows, cols := p.Dims()
-	// 		cnt += rows * cols
-	// 	})
-	// 	table.Append([]string{names[i], fmt.Sprintf("%d", cnt)})
-	// 	total += cnt
-	// }
-	// table.Append([]string{"total", fmt.Sprintf("%d", total)})
+	table := tablewriter.NewWriter(os.Stdout)
+	defer table.Render()
+	table.SetHeader([]string{"name", "count"})
+	var total int64
+	for _, attn := range m.attn {
+		cnt := paramSize(attn.attn.Params())
+		total += cnt
+		table.Append([]string{attn.attn.Name(), fmt.Sprintf("%d", cnt)})
+		cnt = paramSize(attn.dense.Params())
+		total += cnt
+		table.Append([]string{attn.dense.Name(), fmt.Sprintf("%d", cnt)})
+		cnt = paramSize(attn.output.Params())
+		total += cnt
+		table.Append([]string{attn.dense.Name(), fmt.Sprintf("%d", cnt)})
+	}
+	cnt := paramSize(m.output.Params())
+	total += cnt
+	table.Append([]string{m.output.Name(), fmt.Sprintf("%d", cnt)})
+	table.Append([]string{"total", fmt.Sprintf("%d", total)})
+}
+
+func paramSize(params map[string]*tensor.Tensor) int64 {
+	var ret int64
+	for _, p := range params {
+		size := int64(1)
+		for _, s := range p.Shapes() {
+			size *= s
+		}
+		ret += size
+	}
+	return ret
 }
