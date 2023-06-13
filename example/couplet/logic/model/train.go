@@ -50,7 +50,6 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	// optimizer := optimizer.NewSGD(lr, 0)
 
 	go m.showProgress()
-	go m.update()
 
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
@@ -66,23 +65,6 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		storage.GC()
 	}
 	m.save()
-}
-
-// update 梯度更新，每隔1分钟计算一次
-func (m *Model) update() {
-	tk := time.NewTicker(time.Minute)
-	defer tk.Stop()
-	for {
-		select {
-		case <-tk.C:
-		case <-m.chUpdate:
-		}
-		// params, _ := m.getParams()
-		// m.optimizer.Update(params)
-		// m.save()
-		// m.zeroGrads(params)
-		// fmt.Println("params updated")
-	}
 }
 
 func (m *Model) trainWorker(idx []int) float64 {
@@ -148,7 +130,7 @@ func (m *Model) trainEpoch() float64 {
 
 	// 创建训练协程并行训练
 	workerCount := rt.NumCPU()
-	workerCount = 1
+	// workerCount = 1
 
 	var batches []batch
 	for i := 0; i < len(idx); i += batchSize {
