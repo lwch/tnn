@@ -24,7 +24,7 @@ const (
 	statusEvaluate
 )
 
-var lossFunc = loss.NewMse
+var lossFunc = loss.NewCrossEntropy
 var storage = mmgr.New()
 
 // Model 模型
@@ -127,7 +127,7 @@ func (m *Model) forward(x *tensor.Tensor, paddingMasks []*tensor.Tensor, train b
 	y = m.flatten.Forward(y) // flatten
 	y = m.relu.Forward(y)    // relu
 	y = m.output.Forward(y)  // output
-	y = y.Softmax(-1)        // softmax
+	// y = y.Softmax(-1)        // softmax
 	return y
 }
 
