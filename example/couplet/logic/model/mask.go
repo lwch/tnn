@@ -31,17 +31,28 @@ func buildPositionEmbedding(batchSize int64) *tensor.Tensor {
 	return tensor.FromFloat32(storage, data, batchSize, paddingSize, embeddingDim)
 }
 
-// // 未来信息掩码，上三角矩阵，注意：此处添加了对角线的掩码来降低该词与自身的权重
-// var featureMask *tensor.Tensor
+// 未来信息掩码，上三角矩阵，注意：此处添加了对角线的掩码来降低该词与自身的权重
+var featureMask []float32
 
-// func init() {
-// 	featureMask = tensor.New(nil, paddingSize, paddingSize)
-// 	for i := 0; i < paddingSize; i++ {
-// 		for j := i; j < paddingSize; j++ {
-// 			featureMask.Set(i, j, -1e9)
-// 		}
-// 	}
-// }
+func init() {
+	featureMask = make([]float32, maskSize)
+	for i := 0; i < paddingSize; i++ {
+		start := i * paddingSize
+		for j := i; j < paddingSize; j++ {
+			featureMask[start+j] = -1e9
+		}
+	}
+}
+
+// buildFeatureMasks 为每一个样本生成未来信息掩码矩阵
+func buildFeatureMasks(batchSize int64) *tensor.Tensor {
+	data := make([]float32, batchSize*maskSize)
+	for i := int64(0); i < batchSize; i++ {
+		start := i * maskSize
+		copy(data[start:start+maskSize], featureMask)
+	}
+	return tensor.FromFloat32(storage, data, batchSize, paddingSize, paddingSize)
+}
 
 // // buildPaddingMasks 生成padding的掩码
 // func buildPaddingMasks(masks [][]bool) []*tensor.Tensor {
