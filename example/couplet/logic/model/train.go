@@ -57,7 +57,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		loss := m.trainEpoch()
 		if i%10 == 0 {
 			m.showModelInfo()
-			fmt.Printf("train %d, cost=%s, loss=%.05f\n",
+			fmt.Printf("train %d, cost=%s, loss=%e\n",
 				i+1, time.Since(begin).String(),
 				loss)
 			m.save()
@@ -82,6 +82,7 @@ func (m *Model) trainWorker(idx []int) float64 {
 			dz = dy[j]
 			dy = dy[:j]
 		} else {
+			continue
 			dz = -1 // padding
 		}
 		xTrain, zTrain, pm := sample.Build(append(dx, dy...), dz, paddingSize, m.embedding, m.vocabs)
