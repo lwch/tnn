@@ -58,11 +58,11 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		m.epoch = i + 1
 		loss := m.trainEpoch()
 		m.save()
-		if i%10 == 0 {
+		fmt.Printf("train %d, cost=%s, loss=%e\n",
+			i+1, time.Since(begin).String(),
+			loss)
+		if i == 0 {
 			m.showModelInfo()
-			fmt.Printf("train %d, cost=%s, loss=%e\n",
-				i+1, time.Since(begin).String(),
-				loss)
 		}
 	}
 	m.save()
