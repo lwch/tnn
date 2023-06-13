@@ -25,7 +25,7 @@ func encode(vocabs []string, idx []int) string {
 
 // Build 生成一个样本，输出: sequence, next word, padding mask
 func Build(s *Sample, paddingSize int, embedding [][]float32, vocabs []string) ([]float32, []float32, []bool) {
-	// fmt.Printf("%s => %s\n", encode(vocabs, x), encode(vocabs, []int{y}))
+	// fmt.Printf("%s => %s\n", encode(vocabs, s.x), encode(vocabs, []int{s.y}))
 	embeddingSize := len(embedding[0])
 	dx := make([]float32, 0, paddingSize*embeddingSize)
 	paddingMask := make([]bool, 0, paddingSize)

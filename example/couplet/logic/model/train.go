@@ -130,7 +130,7 @@ func (m *Model) trainEpoch() float64 {
 			if i+j >= len(m.samples) {
 				break
 			}
-			b.append(m.samples[i+j])
+			b.append(m.samples[idx[i+j]])
 		}
 		batches = append(batches, b)
 	}
