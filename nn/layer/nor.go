@@ -10,7 +10,7 @@ type Nor struct {
 	eps *tensor.Tensor
 }
 
-func NewNor(output int) *Nor {
+func NewNor() *Nor {
 	var layer Nor
 	layer.base = new("nor")
 	return &layer

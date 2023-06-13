@@ -1,4 +1,4 @@
-package main
+package model
 
 import (
 	"github.com/lwch/gotorch/tensor"
@@ -11,30 +11,31 @@ type transformer struct {
 	nor     *layer.Nor
 	flatten *layer.Flatten
 	dense   *layer.Dense
-	sigmoid *activation.Sigmoid
+	relu    *activation.ReLU
 	output  *layer.Dense
 }
 
 func newTransformer() *transformer {
 	return &transformer{
-		attn:    layer.NewSelfAttention(steps, dims),
+		attn:    layer.NewSelfAttention(paddingSize, embeddingDim),
 		nor:     layer.NewNor(),
 		flatten: layer.NewFlatten(),
 		dense:   layer.NewDense(unitSize * 4),
-		sigmoid: activation.NewSigmoid(),
+		relu:    activation.NewReLU(),
 		output:  layer.NewDense(unitSize),
 	}
 }
 
-func (t *transformer) Forward(x *tensor.Tensor) *tensor.Tensor {
+func (t *transformer) forward(x *tensor.Tensor) *tensor.Tensor {
+	batchSize := x.Shapes()[0]
 	y := t.attn.Forward(x)
 	y = y.Add(x)
 	selfOut := t.nor.Forward(y)
 	y = t.flatten.Forward(y)
 	y = t.dense.Forward(y)
-	y = t.sigmoid.Forward(y)
+	y = t.relu.Forward(y)
 	y = t.output.Forward(y)
-	y = y.Reshape(batchSize, steps, dims)
+	y = y.Reshape(batchSize, paddingSize, embeddingDim)
 	y = y.Add(selfOut)
 	y = t.nor.Forward(y)
 	return y
@@ -52,4 +53,15 @@ func (t *transformer) params() []*tensor.Tensor {
 		ret = append(ret, p)
 	}
 	return ret
+}
+
+func (t *transformer) layers() []layer.Layer {
+	return []layer.Layer{
+		t.attn,
+		t.nor,
+		t.flatten,
+		t.dense,
+		t.relu,
+		t.output,
+	}
 }
