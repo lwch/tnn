@@ -64,7 +64,6 @@ func (m *Model) Train(sampleDir, modelDir string) {
 				i+1, time.Since(begin).String(),
 				loss)
 		}
-		storage.GC()
 	}
 	m.save()
 }
@@ -102,6 +101,7 @@ func (m *Model) trainBatch(b []batch) float64 {
 	}
 	wg.Wait()
 	m.optimizer.Step(m.params())
+	storage.GC()
 	return sum / float64(len(b))
 }
 
