@@ -43,8 +43,9 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		m.embedding = m.loadEmbedding(filepath.Join(modelDir, "embedding"))
 		m.build()
 	}
+	m.buildSamples()
 
-	m.total = len(m.trainX) * paddingSize / 2
+	m.total = len(m.samples)
 
 	m.optimizer = optimizer.NewAdam(optimizer.WithAdamLr(lr))
 	// optimizer := optimizer.NewSGD(lr, 0)
@@ -67,13 +68,13 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	m.save()
 }
 
-func (m *Model) trainWorker(samples []pair) float64 {
+func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 	x := make([]float32, 0, len(samples)*unitSize)
 	y := make([]float32, 0, len(samples)*embeddingDim)
 	paddingMask := make([][]bool, 0, batchSize)
 	batchSize := 0
 	for _, s := range samples {
-		xTrain, zTrain, pm := sample.Build(s.x, s.y, paddingSize, m.embedding, m.vocabs)
+		xTrain, zTrain, pm := sample.Build(s, paddingSize, m.embedding, m.vocabs)
 		x = append(x, xTrain...)
 		y = append(y, zTrain...)
 		paddingMask = append(paddingMask, pm)
@@ -109,7 +110,7 @@ func (m *Model) trainEpoch() float64 {
 	m.current.Store(0)
 
 	// 生成索引序列
-	idx := make([]int, len(m.trainX)*paddingSize/2)
+	idx := make([]int, len(m.samples))
 	for i := 0; i < len(idx); i++ {
 		idx[i] = i
 	}
@@ -122,36 +123,15 @@ func (m *Model) trainEpoch() float64 {
 	// workerCount = 1
 
 	var batches []batch
-	i := 0
-	for {
-		if i >= len(idx) {
-			break
-		}
+	for i := 0; i < len(m.samples); i += batchSize {
 		var b batch
-		for len(b.data) < batchSize {
-			if i >= len(idx) {
+		for j := 0; j < batchSize; j++ {
+			if i+j >= len(m.samples) {
 				break
 			}
-			idx := idx[i]
-			i++
-			i := math.Floor(float64(idx) / float64(paddingSize/2))
-			j := idx % (paddingSize / 2)
-			dx := m.trainX[int(i)]
-			dy := m.trainY[int(i)]
-			dy = append([]int{0}, dy...) // <s> ...
-			var dz int
-			if j < len(dy) {
-				dz = dy[j]
-				dy = dy[:j]
-			} else {
-				m.current.Add(1)
-				continue
-			}
-			b.append(pair{append(dx, dy...), dz})
+			b.append(m.samples[i+j])
 		}
-		if b.size() > 0 {
-			batches = append(batches, b)
-		}
+		batches = append(batches, b)
 	}
 
 	var trainBatch []batch
@@ -170,6 +150,25 @@ func (m *Model) trainEpoch() float64 {
 		size++
 	}
 	return sum / size
+}
+
+func (m *Model) buildSamples() {
+	size := len(m.trainX) * paddingSize / 2
+	for idx := 0; idx < size; idx++ {
+		i := math.Floor(float64(idx) / float64(paddingSize/2))
+		j := idx % (paddingSize / 2)
+		dx := m.trainX[int(i)]
+		dy := m.trainY[int(i)]
+		dy = append([]int{0}, dy...) // <s> ...
+		var dz int
+		if j < len(dy) {
+			dz = dy[j]
+			dy = dy[:j]
+		} else {
+			continue
+		}
+		m.samples = append(m.samples, sample.New(append(dx, dy...), dz))
+	}
 }
 
 func (m *Model) showModelInfo() {

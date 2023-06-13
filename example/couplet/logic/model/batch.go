@@ -1,15 +1,12 @@
 package model
 
-type pair struct {
-	x []int
-	y int
-}
+import "github.com/lwch/tnn/example/couplet/logic/sample"
 
 type batch struct {
-	data []pair
+	data []*sample.Sample
 }
 
-func (b *batch) append(p pair) {
+func (b *batch) append(p *sample.Sample) {
 	b.data = append(b.data, p)
 }
 

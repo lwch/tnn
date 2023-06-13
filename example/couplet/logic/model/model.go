@@ -14,6 +14,7 @@ import (
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
+	"github.com/lwch/tnn/example/couplet/logic/sample"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/net"
@@ -47,6 +48,7 @@ type Model struct {
 	vocabsIdx map[string]int
 	trainX    [][]int
 	trainY    [][]int
+	samples   []*sample.Sample
 	embedding [][]float32
 	optimizer optimizer.Optimizer
 }
