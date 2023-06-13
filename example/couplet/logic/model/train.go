@@ -129,7 +129,7 @@ func (m *Model) trainEpoch() float64 {
 	})
 
 	// 创建训练协程并行训练
-	workerCount := rt.NumCPU()
+	workerCount := rt.NumCPU() * 2
 	// workerCount = 1
 
 	var batches []batch
