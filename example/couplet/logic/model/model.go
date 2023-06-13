@@ -24,7 +24,7 @@ const (
 	statusEvaluate
 )
 
-var lossFunc = loss.NewCrossEntropy
+var lossFunc = loss.NewMse
 var storage = mmgr.New()
 
 // Model 模型
