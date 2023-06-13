@@ -21,9 +21,11 @@ func (m *Model) Evaluate(str string) string {
 	dy := make([]int, 0, len(str))
 	dy = append(dy, 0) // <s>
 	for i := 0; i < size; i++ {
-		x, _, _ := sample.Build(append(dx, dy...), 0, paddingSize, m.embedding, m.vocabs)
-		// pred := m.forward(tensor.New(x, 1, unitSize), buildPaddingMasks([][]bool{paddingMask}), false)
-		pred := m.forward(tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim), nil, false)
+		x, _, paddingMask := sample.Build(append(dx, dy...), 0, paddingSize, m.embedding, m.vocabs)
+		pred := m.forward(
+			tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim),
+			buildPaddingMasks([][]bool{paddingMask}),
+			false)
 		predProb := pred.Float32Value()
 		label := lookup(predProb, m.vocabs)
 		dy = append(dy, label)

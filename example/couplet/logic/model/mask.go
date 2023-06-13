@@ -54,21 +54,23 @@ func buildFeatureMasks(batchSize int64) *tensor.Tensor {
 	return tensor.FromFloat32(storage, data, batchSize, paddingSize, paddingSize)
 }
 
-// // buildPaddingMasks 生成padding的掩码
-// func buildPaddingMasks(masks [][]bool) []*tensor.Tensor {
-// 	ret := make([]*tensor.Tensor, 0, len(masks))
-// 	for batch := 0; batch < len(masks); batch++ {
-// 		size := len(masks[batch])
-// 		mask := tensor.New(nil, size, size)
-// 		for i, b := range masks[batch] {
-// 			if !b {
-// 				continue
-// 			}
-// 			for j := 0; j < size; j++ {
-// 				mask.Set(j, i, -1e9)
-// 			}
-// 		}
-// 		ret = append(ret, mask)
-// 	}
-// 	return ret
-// }
+// buildPaddingMasks 生成padding的掩码
+func buildPaddingMasks(masks [][]bool) *tensor.Tensor {
+	ret := make([]float32, 0, len(masks)*maskSize)
+	for batch := 0; batch < len(masks); batch++ {
+		mask := make([]float32, maskSize)
+		for i, b := range masks[batch] {
+			if !b {
+				continue
+			}
+			for j := 0; j < paddingSize; j++ {
+				// 行
+				mask[i*paddingSize+j] = -1e9
+				// 列
+				mask[j*paddingSize+i] = -1e9
+			}
+		}
+		ret = append(ret, mask...)
+	}
+	return tensor.FromFloat32(storage, ret, int64(len(masks)), paddingSize, paddingSize)
+}

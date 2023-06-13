@@ -81,8 +81,7 @@ func (m *Model) trainWorker(samples []pair) float64 {
 	}
 	xIn := tensor.FromFloat32(storage, x, int64(batchSize), paddingSize, embeddingDim)
 	zOut := tensor.FromFloat32(storage, y, int64(batchSize), int64(len(m.vocabs)))
-	// pred := m.forward(xIn, buildPaddingMasks(paddingMask), true)
-	pred := m.forward(xIn, nil, true)
+	pred := m.forward(xIn, buildPaddingMasks(paddingMask), true)
 	loss := lossFunc(pred, zOut)
 	loss.Backward()
 	m.current.Add(uint64(len(samples)))

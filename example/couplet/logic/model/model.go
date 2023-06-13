@@ -118,9 +118,10 @@ func (m *Model) copyVocabs(dir string) {
 }
 
 // forward 正向迭代
-func (m *Model) forward(x *tensor.Tensor, paddingMasks []*tensor.Tensor, train bool) *tensor.Tensor {
+func (m *Model) forward(x *tensor.Tensor, paddingMask *tensor.Tensor, train bool) *tensor.Tensor {
 	batchSize := x.Shapes()[0]
 	mask := buildFeatureMasks(batchSize)
+	mask = mask.Add(paddingMask)
 	x = x.Add(buildPositionEmbedding(batchSize)) // 添加位置信息
 	y := x
 	for _, attn := range m.attn {
