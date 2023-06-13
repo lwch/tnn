@@ -1,35 +1,35 @@
 package model
 
-// import (
-// 	"math"
+import (
+	"math"
 
-// 	"github.com/lwch/gotorch/tensor"
-// )
+	"github.com/lwch/gotorch/tensor"
+)
 
-// // 位置信息编码，由于padding size和embedding size固定，因此每一个样本的位置编码信息固定
-// var positionEmbedding []float32
+// 位置信息编码，由于padding size和embedding size固定，因此每一个样本的位置编码信息固定
+var positionEmbedding []float32
 
-// func init() {
-// 	positionEmbedding = make([]float32, unitSize)
-// 	for k := 0; k < paddingSize; k++ {
-// 		start := k * embeddingDim
-// 		for i := 0; i < embeddingDim/2; i++ {
-// 			n := float32(k) / float32(math.Pow(10000, 2*float64(i)/float64(embeddingDim)))
-// 			positionEmbedding[start+i*2] = float32(math.Sin(float64(n)))
-// 			positionEmbedding[start+i*2+1] = float32(math.Cos(float64(n)))
-// 		}
-// 	}
-// }
+func init() {
+	positionEmbedding = make([]float32, unitSize)
+	for k := 0; k < paddingSize; k++ {
+		start := k * embeddingDim
+		for i := 0; i < embeddingDim/2; i++ {
+			n := float32(k) / float32(math.Pow(10000, 2*float64(i)/float64(embeddingDim)))
+			positionEmbedding[start+i*2] = float32(math.Sin(float64(n)))
+			positionEmbedding[start+i*2+1] = float32(math.Cos(float64(n)))
+		}
+	}
+}
 
-// // buildPositionEmbedding 为每一个样本生成位置编码
-// func buildPositionEmbedding(batchSize int) *tensor.Tensor {
-// 	data := make([]float32, batchSize*unitSize)
-// 	for i := 0; i < batchSize; i++ {
-// 		start := i * unitSize
-// 		copy(data[start:start+unitSize], positionEmbedding)
-// 	}
-// 	return tensor.New(data, batchSize, unitSize)
-// }
+// buildPositionEmbedding 为每一个样本生成位置编码
+func buildPositionEmbedding(batchSize int) *tensor.Tensor {
+	data := make([]float32, batchSize*unitSize)
+	for i := 0; i < batchSize; i++ {
+		start := i * unitSize
+		copy(data[start:start+unitSize], positionEmbedding)
+	}
+	return tensor.FromFloat32(storage, data, int64(batchSize), paddingSize, embeddingDim)
+}
 
 // // 未来信息掩码，上三角矩阵，注意：此处添加了对角线的掩码来降低该词与自身的权重
 // var featureMask *tensor.Tensor

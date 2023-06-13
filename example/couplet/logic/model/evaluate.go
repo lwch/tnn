@@ -10,6 +10,7 @@ import (
 
 // Evaluate 根据输入内容进行推理
 func (m *Model) Evaluate(str string) string {
+	defer storage.GC()
 	dx := make([]int, 0, len(str))
 	var size int
 	for _, ch := range str {
@@ -22,7 +23,7 @@ func (m *Model) Evaluate(str string) string {
 	for i := 0; i < size; i++ {
 		x, _, _ := sample.Build(append(dx, dy...), 0, paddingSize, m.embedding, m.vocabs)
 		// pred := m.forward(tensor.New(x, 1, unitSize), buildPaddingMasks([][]bool{paddingMask}), false)
-		pred := m.forward(tensor.FromFloat32(nil, x, 1, paddingSize, embeddingDim), nil, false)
+		pred := m.forward(tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim), nil, false)
 		predProb := pred.Float32Value()
 		label := lookup(predProb, m.vocabs)
 		dy = append(dy, label)
