@@ -3,7 +3,7 @@ module github.com/lwch/tnn
 go 1.20
 
 require (
-	github.com/lwch/gotorch v0.0.0-20230612093405-c9c6e42f1bc2
+	github.com/lwch/gotorch v1.0.1
 	github.com/lwch/runtime v1.0.1
 	gonum.org/v1/gonum v0.13.0
 	gonum.org/v1/plot v0.13.0

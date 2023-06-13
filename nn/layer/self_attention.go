@@ -40,7 +40,6 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 }
 
 func (layer *SelfAttention) Forward(x *tensor.Tensor) *tensor.Tensor {
-	// inputShape := x.Shapes()
 	if layer.scale == nil {
 		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, 1)
 	}
@@ -62,26 +61,14 @@ func (layer *SelfAttention) Forward(x *tensor.Tensor) *tensor.Tensor {
 	if layer.bv == nil {
 		layer.bv = initB(int64(layer.steps), int64(layer.dims))
 	}
-	// TODO
-	return x
-	// var result *tensor.Tensor
-	// for batch := int64(0); batch < inputShape[0]; batch++ {
-	// 	x := x.MustNarrow(0, int64(batch), 1, false).
-	// 		MustReshape([]int64{int64(layer.steps), int64(layer.dims)}, false) // (steps, dims)
-	// 	q := x.MustMm(layer.wq, false).MustAdd(layer.bq, false) // (steps, dims)
-	// 	k := x.MustMm(layer.wk, false).MustAdd(layer.bk, false) // (steps, dims)
-	// 	v := x.MustMm(layer.wv, false).MustAdd(layer.bv, false) // (steps, dims)
-	// 	a := q.MustMm(k.MustTranspose(1, 0, false), false)      // (steps, steps)
-	// 	a = a.MustDiv(layer.scale, false)                       // (steps, steps)
-	// 	a = a.MustSoftmax(1, gotch.Float, false)                // (steps, steps)
-	// 	a = a.MustMm(v, false)                                  // (steps, dims
-	// 	if result == nil {
-	// 		result = a
-	// 	} else {
-	// 		result = ts.MustVstack([]ts.Tensor{*result, *a})
-	// 	}
-	// }
-	// return result.MustReshape([]int64{inputShape[0], int64(layer.steps), int64(layer.dims)}, true)
+	q := x.MatMul(layer.wq).Add(layer.bq) // (batch, steps, dims)
+	k := x.MatMul(layer.wk).Add(layer.bk) // (batch, steps, dims)
+	v := x.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
+	y := q.MatMul(k.Transpose(2, 1))      // (batch, steps, steps)
+	y = y.Div(layer.scale)                // (batch, steps, steps)
+	y = y.Softmax(-1)                     // (batch, steps, steps)
+	y = y.MatMul(v)                       // (batch, steps, dims)
+	return y
 }
 
 func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
