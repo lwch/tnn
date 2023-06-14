@@ -17,9 +17,7 @@ func (m *Model) Evaluate(str string) string {
 		dx = append(dx, m.vocabsIdx[string(ch)])
 		size++
 	}
-	// dx = append(dx, 1) // </s>
 	dy := make([]int, 0, len(str))
-	// dy = append(dy, 0) // <s>
 	for i := 0; i < size; i++ {
 		x, _, paddingMask := sample.New(append(dx, dy...), 0).Embedding(paddingSize, m.embedding)
 		pred := m.forward(

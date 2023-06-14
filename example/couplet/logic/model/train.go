@@ -157,7 +157,6 @@ func (m *Model) buildSamples() {
 		j := idx % (paddingSize / 2)
 		dx := m.trainX[int(i)]
 		dy := m.trainY[int(i)]
-		// dy = append([]int{0}, dy...) // <s> ...
 		var dz int
 		if j < len(dy) {
 			dz = dy[j]
