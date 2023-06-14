@@ -180,7 +180,7 @@ func (m *Model) showModelInfo() {
 		table.Append([]string{attn.dense.Name(), fmt.Sprintf("%d", cnt)})
 		cnt = paramSize(attn.output.Params())
 		total += cnt
-		table.Append([]string{attn.dense.Name(), fmt.Sprintf("%d", cnt)})
+		table.Append([]string{attn.output.Name(), fmt.Sprintf("%d", cnt)})
 	}
 	cnt := paramSize(m.output.Params())
 	total += cnt
