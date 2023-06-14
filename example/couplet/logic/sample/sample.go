@@ -24,20 +24,17 @@ func onehot(x, size int) []float32 {
 	return ret
 }
 
-// Embedding 生成一个样本，输出: sequence, next word, padding mask
-func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, []float32, []bool) {
+// Embedding 生成一个样本，输出: sequence, next word
+func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, []float32) {
 	embeddingSize := len(embedding[0])
 	dx := make([]float32, 0, paddingSize*embeddingSize)
-	paddingMask := make([]bool, 0, paddingSize)
 	for _, v := range s.x {
 		dx = append(dx, embedding[v]...)
-		paddingMask = append(paddingMask, false)
 	}
 	for i := len(s.x); i < paddingSize; i++ {
 		for j := 0; j < embeddingSize; j++ {
 			dx = append(dx, 0)
 		}
-		paddingMask = append(paddingMask, true)
 	}
-	return dx, onehot(s.y, len(embedding)), paddingMask
+	return dx, onehot(s.y, len(embedding))
 }

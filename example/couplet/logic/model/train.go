@@ -70,16 +70,14 @@ func (m *Model) Train(sampleDir, modelDir string) {
 func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 	x := make([]float32, 0, len(samples)*unitSize)
 	y := make([]float32, 0, len(samples)*embeddingDim)
-	paddingMask := make([][]bool, 0, batchSize)
 	for _, s := range samples {
-		xTrain, zTrain, pm := s.Embedding(paddingSize, m.embedding)
+		xTrain, zTrain := s.Embedding(paddingSize, m.embedding)
 		x = append(x, xTrain...)
 		y = append(y, zTrain...)
-		paddingMask = append(paddingMask, pm)
 	}
 	xIn := tensor.FromFloat32(storage, x, int64(len(samples)), paddingSize, embeddingDim)
 	zOut := tensor.FromFloat32(storage, y, int64(len(samples)), int64(len(m.vocabs)))
-	pred := m.forward(xIn, buildPaddingMasks(paddingMask), true)
+	pred := m.forward(xIn, true)
 	loss := lossFunc(pred, zOut)
 	loss.Backward()
 	m.current.Add(uint64(len(samples)))
