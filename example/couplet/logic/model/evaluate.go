@@ -21,9 +21,7 @@ func (m *Model) Evaluate(str string) string {
 	dy := make([]int, 0, len(str))
 	dy = append(dy, 0) // <s>
 	for i := 0; i < size; i++ {
-		x, _, paddingMask := sample.Build(
-			sample.New(append(dx, dy...), 0),
-			paddingSize, m.embedding, m.vocabs)
+		x, _, paddingMask := sample.New(append(dx, dy...), 0).Embedding(paddingSize, m.embedding)
 		pred := m.forward(
 			tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim),
 			buildPaddingMasks([][]bool{paddingMask}),

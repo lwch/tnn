@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"os"
 	"path/filepath"
 	rt "runtime"
@@ -73,7 +72,7 @@ func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 	y := make([]float32, 0, len(samples)*embeddingDim)
 	paddingMask := make([][]bool, 0, batchSize)
 	for _, s := range samples {
-		xTrain, zTrain, pm := sample.Build(s, paddingSize, m.embedding, m.vocabs)
+		xTrain, zTrain, pm := s.Embedding(paddingSize, m.embedding)
 		x = append(x, xTrain...)
 		y = append(y, zTrain...)
 		paddingMask = append(paddingMask, pm)
@@ -92,10 +91,10 @@ func (m *Model) trainBatch(b []batch) float64 {
 	wg.Add(len(b))
 	var sum float64
 	for i := 0; i < len(b); i++ {
-		go func(i int) {
+		go func(samples []*sample.Sample) {
 			defer wg.Done()
-			sum += m.trainWorker(b[i].data)
-		}(i)
+			sum += m.trainWorker(samples)
+		}(b[i].data)
 	}
 	wg.Wait()
 	m.optimizer.Step(m.params())
@@ -113,9 +112,9 @@ func (m *Model) trainEpoch() float64 {
 	for i := 0; i < len(idx); i++ {
 		idx[i] = i
 	}
-	rand.Shuffle(len(idx), func(i, j int) {
-		idx[i], idx[j] = idx[j], idx[i]
-	})
+	// rand.Shuffle(len(idx), func(i, j int) {
+	// 	idx[i], idx[j] = idx[j], idx[i]
+	// })
 
 	// 创建训练协程并行训练
 	workerCount := rt.NumCPU() * 2
