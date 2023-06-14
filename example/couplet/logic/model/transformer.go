@@ -34,10 +34,10 @@ func newTransformer(i int) *transformer {
 	}
 }
 
-func (t *transformer) forward(x *tensor.Tensor) *tensor.Tensor {
-	batchSize := x.Shapes()[0]
-	y := t.attn.Forward(x)
-	y = y.Add(x)
+func (t *transformer) forward(q, k *tensor.Tensor) *tensor.Tensor {
+	batchSize := q.Shapes()[0]
+	y := t.attn.Forward(q, k)
+	y = y.Add(q)
 	selfOut := t.nor.Forward(y)
 	y = t.flatten.Forward(y)
 	y = t.dense.Forward(y)

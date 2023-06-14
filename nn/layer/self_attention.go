@@ -44,7 +44,7 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 	return &layer
 }
 
-func (layer *SelfAttention) Forward(x *tensor.Tensor) *tensor.Tensor {
+func (layer *SelfAttention) Forward(q, k *tensor.Tensor) *tensor.Tensor {
 	if layer.scale == nil {
 		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, 1)
 	}
@@ -66,9 +66,9 @@ func (layer *SelfAttention) Forward(x *tensor.Tensor) *tensor.Tensor {
 	if layer.bv == nil {
 		layer.bv = initB(int64(layer.steps), int64(layer.dims))
 	}
-	q := x.MatMul(layer.wq).Add(layer.bq)                               // (batch, steps, dims)
-	k := x.MatMul(layer.wk).Add(layer.bk)                               // (batch, steps, dims)
-	v := x.MatMul(layer.wv).Add(layer.bv)                               // (batch, steps, dims)
+	q = q.MatMul(layer.wq).Add(layer.bq)                                // (batch, steps, dims)
+	k = k.MatMul(layer.wk).Add(layer.bk)                                // (batch, steps, dims)
+	v := k.MatMul(layer.wv).Add(layer.bv)                               // (batch, steps, dims)
 	q = layer.split(q)                                                  // (batch, heads, steps, dims/heads)
 	k = layer.split(k)                                                  // (batch, heads, steps, dims/heads)
 	v = layer.split(v)                                                  // (batch, heads, steps, dims/heads)
