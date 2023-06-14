@@ -27,7 +27,7 @@ func (m *Model) Evaluate(str string) string {
 		label := lookup(predProb, m.vocabs)
 		dy = append(dy, label)
 	}
-	return values(m.vocabs, dy[1:])
+	return values(m.vocabs, dy)
 }
 
 func lookup(prob []float32, vocabs []string) int {
