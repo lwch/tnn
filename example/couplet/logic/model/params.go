@@ -14,9 +14,9 @@ package model
 // +------------------------+---------+
 // 以下参数配置总计824万个参数
 
-const embeddingDim = 8 // 8个float32表示一个字向量
+const embeddingDim = 2 // 8个float32表示一个字向量
 const paddingSize = 74 // 最长为34*2，因此padding长度必须大于68+2
-const heads = 4
+const heads = 1
 const unitSize = paddingSize * embeddingDim
 const maskSize = paddingSize * paddingSize
 const batchSize = 128
