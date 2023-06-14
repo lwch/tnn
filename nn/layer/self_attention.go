@@ -9,18 +9,22 @@ import (
 
 type SelfAttention struct {
 	*base
-	steps, dims int
-	scale       *tensor.Tensor
+	steps, dims, heads int
+	scale              *tensor.Tensor
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
 }
 
-func NewSelfAttention(steps, dims int) *SelfAttention {
+func NewSelfAttention(steps, dims, heads int) *SelfAttention {
 	var layer SelfAttention
 	layer.base = new("self_attention")
 	layer.steps = steps
 	layer.dims = dims
+	layer.heads = heads
+	if layer.dims%layer.heads != 0 {
+		panic("dims must be divisible by heads")
+	}
 	return &layer
 }
 
@@ -30,6 +34,7 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 	layer.name = name
 	layer.steps = int(args["steps"])
 	layer.dims = int(args["dims"])
+	layer.heads = int(args["heads"])
 	layer.wq = loadParam(params["Wq"])
 	layer.wk = loadParam(params["Wk"])
 	layer.wv = loadParam(params["Wv"])
@@ -61,14 +66,25 @@ func (layer *SelfAttention) Forward(x *tensor.Tensor) *tensor.Tensor {
 	if layer.bv == nil {
 		layer.bv = initB(int64(layer.steps), int64(layer.dims))
 	}
-	q := x.MatMul(layer.wq).Add(layer.bq) // (batch, steps, dims)
-	k := x.MatMul(layer.wk).Add(layer.bk) // (batch, steps, dims)
-	v := x.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
-	y := q.MatMul(k.Transpose(2, 1))      // (batch, steps, steps)
-	y = y.Div(layer.scale)                // (batch, steps, steps)
-	y = y.Softmax(-1)                     // (batch, steps, steps)
-	y = y.MatMul(v)                       // (batch, steps, dims)
+	q := x.MatMul(layer.wq).Add(layer.bq)                               // (batch, steps, dims)
+	k := x.MatMul(layer.wk).Add(layer.bk)                               // (batch, steps, dims)
+	v := x.MatMul(layer.wv).Add(layer.bv)                               // (batch, steps, dims)
+	q = layer.split(q)                                                  // (batch, heads, steps, dims/heads)
+	k = layer.split(k)                                                  // (batch, heads, steps, dims/heads)
+	v = layer.split(v)                                                  // (batch, heads, steps, dims/heads)
+	y := q.MatMul(k.Transpose(-1, -2))                                  // (batch, heads, steps, steps)
+	y = y.Div(layer.scale)                                              // (batch, heads, steps, steps)
+	y = y.Softmax(-1)                                                   // (batch, heads, steps, steps)
+	y = y.MatMul(v)                                                     // (batch, heads, steps, dims/heads)
+	y = y.Permute(0, 2, 1, 3)                                           // (batch, steps, heads, dims/heads)
+	y = y.Reshape(y.Shapes()[0], int64(layer.steps), int64(layer.dims)) // (batch, steps, dims)
 	return y
+}
+
+func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
+	inputShape := x.Shapes()
+	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads), int64(layer.dims/layer.heads))
+	return v.Permute(0, 2, 1, 3)
 }
 
 func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
@@ -82,5 +98,6 @@ func (layer *SelfAttention) Args() map[string]float32 {
 	return map[string]float32{
 		"steps": float32(layer.steps),
 		"dims":  float32(layer.dims),
+		"heads": float32(layer.heads),
 	}
 }

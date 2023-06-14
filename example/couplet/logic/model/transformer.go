@@ -18,7 +18,7 @@ type transformer struct {
 }
 
 func newTransformer(i int) *transformer {
-	attn := layer.NewSelfAttention(paddingSize, embeddingDim)
+	attn := layer.NewSelfAttention(paddingSize, embeddingDim, heads)
 	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
 	dense := layer.NewDense(unitSize * 4)
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
