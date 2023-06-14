@@ -15,7 +15,6 @@ type transformer struct {
 	dense   *layer.Dense
 	relu    *activation.ReLU
 	output  *layer.Dense
-	dropout *layer.Dropout
 }
 
 func newTransformer(i int) *transformer {
@@ -32,7 +31,6 @@ func newTransformer(i int) *transformer {
 		dense:   dense,
 		relu:    activation.NewReLU(),
 		output:  output,
-		dropout: layer.NewDropout(0.1),
 	}
 }
 
@@ -48,7 +46,6 @@ func (t *transformer) forward(q, k *tensor.Tensor, train bool) *tensor.Tensor {
 	y = y.Reshape(batchSize, paddingSize, embeddingDim)
 	y = y.Add(selfOut)
 	y = t.nor.Forward(y)
-	y = t.dropout.Forward(y, train)
 	return y
 }
 
@@ -74,7 +71,6 @@ func (t *transformer) layers() []layer.Layer {
 		t.dense,
 		t.relu,
 		t.output,
-		t.dropout,
 	}
 }
 
@@ -90,8 +86,6 @@ func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
 	t.relu = layers[idx].(*activation.ReLU)
 	idx++
 	t.output = layers[idx].(*layer.Dense)
-	idx++
-	t.dropout = layers[idx].(*layer.Dropout)
 	idx++
 	return idx
 }
