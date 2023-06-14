@@ -18,6 +18,7 @@ func (m *Model) Evaluate(str string) string {
 		dx = append(dx, m.vocabsIdx[string(ch)])
 		size++
 	}
+	fmt.Printf("inputs: %v\n", dx)
 	dy := make([]int, 0, len(str))
 	for i := 0; i < size; i++ {
 		x, _ := sample.New(append(dx, dy...), 0).Embedding(paddingSize, m.embedding)
