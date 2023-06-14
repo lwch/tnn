@@ -32,7 +32,7 @@ func (m *Model) Evaluate(str string) string {
 }
 
 func lookup(prob []float32, vocabs []string) int {
-	max := float32(math.SmallestNonzeroFloat32)
+	max := float32(-math.MaxFloat32)
 	var idx int
 	for i := 0; i < len(prob); i++ {
 		if prob[i] > max {
