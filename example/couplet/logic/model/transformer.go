@@ -15,6 +15,7 @@ type transformer struct {
 	dense   *layer.Dense
 	relu    *activation.ReLU
 	output  *layer.Dense
+	dropout *layer.Dropout
 }
 
 func newTransformer(i int) *transformer {
@@ -31,10 +32,11 @@ func newTransformer(i int) *transformer {
 		dense:   dense,
 		relu:    activation.NewReLU(),
 		output:  output,
+		dropout: layer.NewDropout(0.1),
 	}
 }
 
-func (t *transformer) forward(q, k *tensor.Tensor) *tensor.Tensor {
+func (t *transformer) forward(q, k *tensor.Tensor, train bool) *tensor.Tensor {
 	batchSize := q.Shapes()[0]
 	y := t.attn.Forward(q, k)
 	y = y.Add(q)
@@ -46,6 +48,7 @@ func (t *transformer) forward(q, k *tensor.Tensor) *tensor.Tensor {
 	y = y.Reshape(batchSize, paddingSize, embeddingDim)
 	y = y.Add(selfOut)
 	y = t.nor.Forward(y)
+	y = t.dropout.Forward(y, train)
 	return y
 }
 

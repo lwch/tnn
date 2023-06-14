@@ -124,7 +124,7 @@ func (m *Model) copyVocabs(dir string) {
 func (m *Model) forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	y := x
 	for _, attn := range m.attn {
-		y = attn.forward(y, x)
+		y = attn.forward(y, x, train)
 	}
 	y = m.flatten.Forward(y) // flatten
 	y = m.relu.Forward(y)    // relu
