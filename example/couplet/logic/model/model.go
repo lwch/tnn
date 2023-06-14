@@ -129,7 +129,6 @@ func (m *Model) forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	y = m.flatten.Forward(y) // flatten
 	y = m.relu.Forward(y)    // relu
 	y = m.output.Forward(y)  // output
-	y = y.Softmax(-1)        // softmax
 	return y
 }
 
