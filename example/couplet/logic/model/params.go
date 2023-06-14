@@ -6,5 +6,5 @@ const unitSize = paddingSize * embeddingDim
 const maskSize = paddingSize * paddingSize
 const batchSize = 128
 const epoch = 10000
-const lr = 0.001
+const lr = 0.0001
 const transformerSize = 2
