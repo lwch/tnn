@@ -1,8 +1,8 @@
 package model
 
-const embeddingDim = 16 // 8个float64表示一个字向量
-const paddingSize = 74  // 最长为34*2，因此padding长度必须大于68+2
-const heads = 4
+const embeddingDim = 512 // 8个float64表示一个字向量
+const paddingSize = 74   // 最长为34*2，因此padding长度必须大于68+2
+const heads = 8
 const unitSize = paddingSize * embeddingDim
 const maskSize = paddingSize * paddingSize
 const batchSize = 512
