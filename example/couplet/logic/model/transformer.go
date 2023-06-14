@@ -74,6 +74,7 @@ func (t *transformer) layers() []layer.Layer {
 		t.dense,
 		t.relu,
 		t.output,
+		t.dropout,
 	}
 }
 
@@ -89,6 +90,8 @@ func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
 	t.relu = layers[idx].(*activation.ReLU)
 	idx++
 	t.output = layers[idx].(*layer.Dense)
+	idx++
+	t.dropout = layers[idx].(*layer.Dropout)
 	idx++
 	return idx
 }
