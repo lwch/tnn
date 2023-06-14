@@ -128,7 +128,7 @@ func (m *Model) forward(x *tensor.Tensor, paddingMask *tensor.Tensor, train bool
 	// x = x.Add(buildPositionEmbedding(batchSize)) // 添加位置信息
 	y := x
 	for _, attn := range m.attn {
-		y = attn.forward(y, paddingMask)
+		y = attn.forward(y, nil)
 	}
 	y = m.flatten.Forward(y) // flatten
 	y = m.relu.Forward(y)    // relu
