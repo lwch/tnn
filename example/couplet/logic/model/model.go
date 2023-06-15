@@ -119,8 +119,8 @@ func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Ten
 	for _, attn := range m.attn {
 		y = attn.forward(y, x, padding, train)
 	}
-	y = y.Softmax(-1)       // softmax
 	y = m.output.Forward(y) // output
+	y = y.Softmax(-1)       // softmax
 	return y
 }
 
