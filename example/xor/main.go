@@ -20,7 +20,7 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-const lr = 5e-5
+const lr = 1e-4
 const hiddenSize = 10
 const epoch = 10000
 const modelFile = "xor.model"
