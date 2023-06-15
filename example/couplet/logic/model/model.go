@@ -134,7 +134,7 @@ func init() {
 
 // forward 正向迭代
 func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
-	x = x.Add(positionEmbedding)
+	// x = x.Add(positionEmbedding)
 	y := x
 	for _, attn := range m.attn {
 		y = attn.forward(y, x, padding, train)
