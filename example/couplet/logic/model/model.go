@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"io"
+	"math"
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
@@ -116,8 +117,24 @@ func (m *Model) copyVocabs(dir string) {
 	runtime.Assert(err)
 }
 
+var positionEmbedding *tensor.Tensor
+
+func init() {
+	data := make([]float32, paddingSize*embeddingDim)
+	for k := 0; k < paddingSize; k++ {
+		start := k * embeddingDim
+		for i := 0; i < embeddingDim/2; i++ {
+			n := float32(k) / float32(math.Pow(10000, 2*float64(i)/float64(embeddingDim)))
+			data[start+i*2] = float32(math.Sin(float64(n)))
+			data[start+i*2+1] = float32(math.Cos(float64(n)))
+		}
+	}
+	positionEmbedding = tensor.FromFloat32(nil, data, 1, paddingSize, embeddingDim)
+}
+
 // forward 正向迭代
 func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
+	x = x.Add(positionEmbedding)
 	y := x
 	for _, attn := range m.attn {
 		y = attn.forward(y, x, padding, train)

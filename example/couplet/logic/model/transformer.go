@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
@@ -34,7 +33,6 @@ func newTransformer(i int) *transformer {
 }
 
 var featureMask *tensor.Tensor
-var positionEmbedding *tensor.Tensor
 
 func init() {
 	data := make([]float32, paddingSize*paddingSize)
@@ -44,20 +42,9 @@ func init() {
 		}
 	}
 	featureMask = tensor.FromFloat32(nil, data, 1, 1, paddingSize, paddingSize)
-	data = make([]float32, paddingSize*embeddingDim)
-	for k := 0; k < paddingSize; k++ {
-		start := k * embeddingDim
-		for i := 0; i < embeddingDim/2; i++ {
-			n := float32(k) / float32(math.Pow(10000, 2*float64(i)/float64(embeddingDim)))
-			data[start+i*2] = float32(math.Sin(float64(n)))
-			data[start+i*2+1] = float32(math.Cos(float64(n)))
-		}
-	}
-	positionEmbedding = tensor.FromFloat32(nil, data, paddingSize, embeddingDim)
 }
 
 func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
-	k = k.Add(positionEmbedding)
 	batchSize := q.Shapes()[0]
 	paddingData := make([]float32, batchSize*maskSize)
 	for i := 0; i < int(batchSize); i++ {
