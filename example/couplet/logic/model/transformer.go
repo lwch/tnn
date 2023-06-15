@@ -32,6 +32,20 @@ func newTransformer(i int) *transformer {
 	}
 }
 
+var featureMask *tensor.Tensor
+
+func init() {
+	data := make([]float32, paddingSize*paddingSize)
+	for i := 0; i < paddingSize; i++ {
+		for j := 0; j < paddingSize; j++ {
+			if i < j {
+				data[i*paddingSize+j] = -1e9
+			}
+		}
+	}
+	featureMask = tensor.FromFloat32(nil, data, 1, 1, paddingSize, paddingSize)
+}
+
 func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
 	batchSize := q.Shapes()[0]
 	paddingData := make([]float32, batchSize*maskSize)
@@ -45,7 +59,7 @@ func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *t
 		}
 	}
 	paddingMask := tensor.FromFloat32(q.Storage(), paddingData, batchSize, 1, paddingSize, paddingSize)
-	y := t.attn.Forward(q, k, paddingMask)
+	y := t.attn.Forward(q, k, paddingMask.Add(featureMask))
 	y = y.Add(q)
 	selfOut := t.nor.Forward(y)
 	y = t.dense.Forward(y)
