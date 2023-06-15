@@ -16,6 +16,7 @@ import (
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/example/couplet/logic/sample"
 	"github.com/lwch/tnn/nn/layer"
+	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/net"
 )
 
@@ -31,6 +32,7 @@ var storage = mmgr.New()
 type Model struct {
 	// 模型定义
 	attn   []*transformer
+	relu   *activation.ReLU
 	output *layer.Dense
 
 	// 运行时
@@ -60,6 +62,7 @@ func (m *Model) build() {
 	for i := 0; i < transformerSize; i++ {
 		m.attn = append(m.attn, newTransformer(i))
 	}
+	m.relu = activation.NewReLU()
 	m.output = layer.NewDense(len(m.vocabs))
 	m.output.SetName("output")
 }
@@ -95,7 +98,7 @@ func (m *Model) save() {
 	for _, attn := range m.attn {
 		net.Add(attn.layers()...)
 	}
-	net.Add(m.output)
+	net.Add(m.relu, m.output)
 	err := net.Save(filepath.Join(m.modelDir, "couplet.model"))
 	runtime.Assert(err)
 	fmt.Println("model saved")
@@ -119,6 +122,7 @@ func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Ten
 	for _, attn := range m.attn {
 		y = attn.forward(y, x, padding, train)
 	}
+	y = m.relu.Forward(y)   // relu
 	y = m.output.Forward(y) // output
 	y = y.Softmax(-1)       // softmax
 	return y
@@ -132,5 +136,7 @@ func (m *Model) loadFrom(net *net.Net) {
 		idx = attn.loadFrom(layers, idx)
 		m.attn = append(m.attn, &attn)
 	}
+	m.relu = layers[idx].(*activation.ReLU)
+	idx++
 	m.output = layers[idx].(*layer.Dense)
 }
