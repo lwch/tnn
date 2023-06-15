@@ -35,7 +35,7 @@ func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, [
 		for j := 0; j < embeddingSize; j++ {
 			dx = append(dx, 0)
 		}
-		dy = append(dy, 0)
+		dy = append(dy, -100)
 	}
 	return dx, dy, len(s.x)
 }
