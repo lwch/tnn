@@ -2,7 +2,7 @@
 
 该示例使用GPT模型来进行自动对对联，训练过程中使用开源数据集[couplet-dataset](https://github.com/wb14123/couplet-dataset)进行训练，最终效果如下
 
-```
+```shell
 $ go run main.go evaluate --model model7M 晚风摇树树还挺
 load embedding...
 model loaded
@@ -29,7 +29,7 @@ map[3.025545:[与] 3.2461479:[卷] 9.06726:[时]]
 map[4.250452:[时] 4.712057:[舟] 10.401218:[争]]
 闭门问卷与时争
 
-$ go run main.go evaluate --model model7M 我是谁        
+$ go run main.go evaluate --model model7M 我是谁
 load embedding...
 model loaded
 inputs: [85 62 191]
