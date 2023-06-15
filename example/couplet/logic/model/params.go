@@ -2,7 +2,7 @@ package model
 
 const embeddingDim = 32 // 32个float32表示一个字向量
 const paddingSize = 34  // 最长为34
-const heads = 4
+const heads = 16
 const maskSize = paddingSize * paddingSize
 const batchSize = 32
 const epoch = 200
