@@ -33,7 +33,7 @@ func LoadDense(name string, params map[string]*pb.Dense, args map[string]float32
 func (layer *Dense) Forward(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
 	if layer.w == nil {
-		layer.w = initW(inputShape[len(inputShape)-1], int64(layer.output))
+		layer.w = initW(inputShape[1], int64(layer.output))
 	}
 	if layer.b == nil {
 		layer.b = initB(int64(layer.output))

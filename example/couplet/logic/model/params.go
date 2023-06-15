@@ -1,7 +1,7 @@
 package model
 
-const embeddingDim = 32 // 32个float32表示一个字向量
-const paddingSize = 70  // 最长为34*2，因此padding长度必须大于68
+const embeddingDim = 8 // 8个float32表示一个字向量
+const paddingSize = 70 // 最长为34*2，因此padding长度必须大于68
 const heads = 4
 const unitSize = paddingSize * embeddingDim
 const maskSize = paddingSize * paddingSize

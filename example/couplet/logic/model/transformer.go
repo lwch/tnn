@@ -9,26 +9,28 @@ import (
 )
 
 type transformer struct {
-	attn   *layer.SelfAttention
-	nor    *layer.Nor
-	dense  *layer.Dense
-	relu   *activation.ReLU
-	output *layer.Dense
+	attn    *layer.SelfAttention
+	nor     *layer.Nor
+	flatten *layer.Flatten
+	dense   *layer.Dense
+	relu    *activation.ReLU
+	output  *layer.Dense
 }
 
 func newTransformer(i int) *transformer {
 	attn := layer.NewSelfAttention(paddingSize, embeddingDim, heads)
 	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
-	dense := layer.NewDense(embeddingDim * 4)
+	dense := layer.NewDense(unitSize * 4)
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
-	output := layer.NewDense(embeddingDim)
+	output := layer.NewDense(unitSize)
 	output.SetName(fmt.Sprintf("transformer%d_output", i))
 	return &transformer{
-		attn:   attn,
-		nor:    layer.NewNor(),
-		dense:  dense,
-		relu:   activation.NewReLU(),
-		output: output,
+		attn:    attn,
+		nor:     layer.NewNor(),
+		flatten: layer.NewFlatten(),
+		dense:   dense,
+		relu:    activation.NewReLU(),
+		output:  output,
 	}
 }
 
@@ -37,6 +39,7 @@ func (t *transformer) forward(q, k *tensor.Tensor, train bool) *tensor.Tensor {
 	y := t.attn.Forward(q, k)
 	y = y.Add(q)
 	selfOut := t.nor.Forward(y)
+	y = t.flatten.Forward(y)
 	y = t.dense.Forward(y)
 	y = t.relu.Forward(y)
 	y = t.output.Forward(y)
@@ -64,6 +67,7 @@ func (t *transformer) layers() []layer.Layer {
 	return []layer.Layer{
 		t.attn,
 		t.nor,
+		t.flatten,
 		t.dense,
 		t.relu,
 		t.output,
@@ -74,6 +78,8 @@ func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
 	t.attn = layers[idx].(*layer.SelfAttention)
 	idx++
 	t.nor = layers[idx].(*layer.Nor)
+	idx++
+	t.flatten = layers[idx].(*layer.Flatten)
 	idx++
 	t.dense = layers[idx].(*layer.Dense)
 	idx++
