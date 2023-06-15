@@ -28,8 +28,8 @@ func onehot(x, size int) []float32 {
 	return ret
 }
 
-// Embedding 生成一个样本
-func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, []float32) {
+// Embedding 生成一个样本，返回内容：x, y, paddingIdx
+func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, []float32, int) {
 	embeddingSize := len(embedding[0])
 	dx := make([]float32, 0, paddingSize*embeddingSize)
 	dy := make([]float32, 0, paddingSize*len(embedding))
@@ -45,5 +45,5 @@ func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, [
 			dy = append(dy, 0)
 		}
 	}
-	return dx, dy
+	return dx, dy, len(s.x)
 }

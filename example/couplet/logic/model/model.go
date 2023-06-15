@@ -117,10 +117,10 @@ func (m *Model) copyVocabs(dir string) {
 }
 
 // forward 正向迭代
-func (m *Model) forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
 	y := x
 	for _, attn := range m.attn {
-		y = attn.forward(y, x, train)
+		y = attn.forward(y, x, padding, train)
 	}
 	y = m.relu.Forward(y)   // relu
 	y = m.output.Forward(y) // output

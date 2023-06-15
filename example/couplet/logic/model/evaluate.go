@@ -20,10 +20,10 @@ func (m *Model) Evaluate(str string) string {
 	}
 	fmt.Printf("inputs: %v\n", dx)
 	dy := make([]int, len(dx))
-	x, _ := sample.New(dx, dy).Embedding(paddingSize, m.embedding)
+	x, _, p := sample.New(dx, dy).Embedding(paddingSize, m.embedding)
 	pred := m.forward(
 		tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim),
-		false)
+		[]int{p}, false)
 	predProbs := pred.Float32Value()
 	dy = dy[:0]
 	for i := 0; i < size; i++ {
