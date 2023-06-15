@@ -40,6 +40,8 @@ func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, [
 	for i := len(s.x); i < paddingSize; i++ {
 		for j := 0; j < embeddingSize; j++ {
 			dx = append(dx, 0)
+		}
+		for j := 0; j < len(embedding); j++ {
 			dy = append(dy, 0)
 		}
 	}
