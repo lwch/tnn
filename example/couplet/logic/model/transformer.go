@@ -37,10 +37,8 @@ var featureMask *tensor.Tensor
 func init() {
 	data := make([]float32, paddingSize*paddingSize)
 	for i := 0; i < paddingSize; i++ {
-		for j := 0; j < paddingSize; j++ {
-			if i < j {
-				data[i*paddingSize+j] = -1e9
-			}
+		for j := i; j < paddingSize; j++ {
+			data[i*paddingSize+j] = -1e9
 		}
 	}
 	featureMask = tensor.FromFloat32(nil, data, 1, 1, paddingSize, paddingSize)
