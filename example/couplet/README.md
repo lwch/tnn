@@ -92,7 +92,7 @@ go build
 ## 模型推理
 
 ```shell
-$ go run main.go evaluate --model ./model7M 丹枫江冷人初去
+$ ./couplet evaluate --model ./model7M 丹枫江冷人初去
 load embedding...
 model loaded
 inputs: [338 756 51 394 6 543 155]
