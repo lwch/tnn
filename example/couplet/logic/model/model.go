@@ -124,6 +124,7 @@ func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Ten
 	}
 	y = m.relu.Forward(y)   // relu
 	y = m.output.Forward(y) // output
+	y = y.Softmax(-1)       // softmax
 	return y
 }
 
