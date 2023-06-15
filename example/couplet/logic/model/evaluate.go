@@ -19,14 +19,16 @@ func (m *Model) Evaluate(str string) string {
 		size++
 	}
 	fmt.Printf("inputs: %v\n", dx)
-	dy := make([]int, 0, len(str))
+	dy := make([]int, len(dx))
+	x, _ := sample.New(dx, dy).Embedding(paddingSize, m.embedding)
+	pred := m.forward(
+		tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim),
+		false)
+	predProbs := pred.Float32Value()
+	dy = dy[:0]
 	for i := 0; i < size; i++ {
-		x, _ := sample.New(append(dx, dy...), 0).Embedding(paddingSize, m.embedding)
-		pred := m.forward(
-			tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim),
-			false)
-		predProb := pred.Float32Value()
-		label := lookup(predProb, m.vocabs)
+		start := i * len(m.vocabs)
+		label := lookup(predProbs[start:start+len(m.vocabs)], m.vocabs)
 		dy = append(dy, label)
 	}
 	return values(m.vocabs, dy)

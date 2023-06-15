@@ -31,10 +31,9 @@ var storage = mmgr.New()
 // Model 模型
 type Model struct {
 	// 模型定义
-	attn    []*transformer
-	flatten *layer.Flatten
-	relu    *activation.ReLU
-	output  *layer.Dense
+	attn   []*transformer
+	relu   *activation.ReLU
+	output *layer.Dense
 
 	// 运行时
 	epoch    int           // 当前训练到第几个迭代
@@ -46,8 +45,6 @@ type Model struct {
 
 	vocabs    []string
 	vocabsIdx map[string]int
-	trainX    [][]int
-	trainY    [][]int
 	samples   []*sample.Sample
 	embedding [][]float32
 	optimizer optimizer.Optimizer
@@ -65,7 +62,6 @@ func (m *Model) build() {
 	for i := 0; i < transformerSize; i++ {
 		m.attn = append(m.attn, newTransformer(i))
 	}
-	m.flatten = layer.NewFlatten()
 	m.relu = activation.NewReLU()
 	m.output = layer.NewDense(len(m.vocabs))
 	m.output.SetName("output")
@@ -102,7 +98,7 @@ func (m *Model) save() {
 	for _, attn := range m.attn {
 		net.Add(attn.layers()...)
 	}
-	net.Add(m.flatten, m.relu, m.output)
+	net.Add(m.relu, m.output)
 	err := net.Save(filepath.Join(m.modelDir, "couplet.model"))
 	runtime.Assert(err)
 	fmt.Println("model saved")
@@ -126,9 +122,8 @@ func (m *Model) forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	for _, attn := range m.attn {
 		y = attn.forward(y, x, train)
 	}
-	y = m.flatten.Forward(y) // flatten
-	y = m.relu.Forward(y)    // relu
-	y = m.output.Forward(y)  // output
+	y = m.relu.Forward(y)   // relu
+	y = m.output.Forward(y) // output
 	return y
 }
 
@@ -140,8 +135,6 @@ func (m *Model) loadFrom(net *net.Net) {
 		idx = attn.loadFrom(layers, idx)
 		m.attn = append(m.attn, &attn)
 	}
-	m.flatten = layers[idx].(*layer.Flatten)
-	idx++
 	m.relu = layers[idx].(*activation.ReLU)
 	idx++
 	m.output = layers[idx].(*layer.Dense)

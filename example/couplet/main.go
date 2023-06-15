@@ -47,7 +47,7 @@ const modelDir = "./model"
 var evaluateModelDir string
 
 func main() {
-	evaluateCmd.Flags().StringVar(&evaluateModelDir, "model", "", "model directory")
+	evaluateCmd.Flags().StringVar(&evaluateModelDir, "model", modelDir, "model directory")
 
 	rootCmd.AddCommand(&downloadCmd)
 	rootCmd.AddCommand(&trainCmd)
