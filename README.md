@@ -18,18 +18,9 @@ go版本神经网络框架，支持模型训练和推理，libgotorch库的安�
 首先定义网络的每个层
 
 ```go
-var net net.Net
-net.Add(
-    layer.NewDense(16),
-    activation.NewSigmoid(),
-    layer.NewDense(8),
-    activation.NewSigmoid(),
-    layer.NewDense(4),
-    activation.NewSigmoid(),
-    layer.NewDense(2),
-    activation.NewSigmoid(),
-    layer.NewDense(1),
-)
+hiddenLayer := layer.NewDense(10)
+relu := activation.NewReLU()
+outputLayer := layer.NewDense(1)
 ```
 
 选定一个优化器
@@ -38,23 +29,33 @@ net.Add(
 optimizer := optimizer.NewAdam()
 ```
 
+定义forward函数
+
+```go
+func forward(x *tensor.Tensor) *tensor.Tensor {
+    y := hiddenLayer.Forward(x)
+    y = relu.Forward(y)
+    y = outputLayer.Forward(y)
+    return y
+}
+```
+
 最后构造出模型并进行模型训练
 
 ```go
 for i := 0; i < 10; i++ {
-    pred := net.Forward(input, true)
-    loss := loss.NewMse(pred, output)
+    loss := loss.NewMse(forward(input), output)
     loss.Backward()
     optimizer.Step(net.Params())
-    m.Apply()
-    fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss.Float32Value()[0])
+    fmt.Printf("Epoch: %d, Loss: %.05f\n", i, loss.Value())
 }
 ```
 
-模型预测方法如下
+模型推理方法如下
 
 ```go
-pred := model.Forward(input, false)
+pred := forward(input)
+fmt.Println(pred.Float32Value())
 ```
 
 ## 感谢
@@ -62,3 +63,4 @@ pred := model.Forward(input, false)
 - [tinynn](https://github.com/borgwang/tinynn)
 - [gonum](https://github.com/gonum/gonum)
 - [pytorch](https://pytorch.org)
+- [cobra](github.com/spf13/cobra)
