@@ -44,14 +44,12 @@ func (n *Net) Add(layers ...layer.Layer) {
 	n.layers = append(n.layers, layers...)
 }
 
-func (n *Net) Params() []map[string]*tensor.Tensor {
-	var ret []map[string]*tensor.Tensor
+func (n *Net) Params() []*tensor.Tensor {
+	var ret []*tensor.Tensor
 	for _, l := range n.layers {
-		params := make(map[string]*tensor.Tensor)
-		for name, p := range l.Params() {
-			params[name] = p
+		for _, p := range l.Params() {
+			ret = append(ret, p)
 		}
-		ret = append(ret, params)
 	}
 	return ret
 }

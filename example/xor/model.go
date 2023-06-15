@@ -38,7 +38,7 @@ func (m *model) Train(x, y *tensor.Tensor) float32 {
 	l := lossFunc(pred, y)
 	l.Backward()
 	value := l.Value()
-	m.optimizer.Step(m.Params())
+	m.optimizer.Step(m.net.Params())
 	storage.GC()
 	return float32(value)
 }
@@ -51,14 +51,4 @@ func (m *model) Loss(x, y *tensor.Tensor) float32 {
 	pred := m.Forward(x)
 	loss := lossFunc(y, pred)
 	return float32(loss.Value())
-}
-
-func (m *model) Params() []*tensor.Tensor {
-	var ret []*tensor.Tensor
-	for _, ps := range m.net.Params() {
-		for _, p := range ps {
-			ret = append(ret, p)
-		}
-	}
-	return ret
 }

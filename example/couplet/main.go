@@ -44,7 +44,11 @@ const dataDir = "./data"
 const sampleDir = "./sample"
 const modelDir = "./model"
 
+var evaluateModelDir string
+
 func main() {
+	evaluateCmd.Flags().StringVar(&evaluateModelDir, "model", "", "model directory")
+
 	rootCmd.AddCommand(&downloadCmd)
 	rootCmd.AddCommand(&trainCmd)
 	rootCmd.AddCommand(&evaluateCmd)
@@ -92,6 +96,6 @@ func runTrain(*cobra.Command, []string) {
 
 func runEvaluate(_ *cobra.Command, args []string) {
 	var m model.Model
-	m.Load(modelDir)
+	m.Load(evaluateModelDir)
 	fmt.Println(m.Evaluate(args[0]))
 }
