@@ -27,7 +27,7 @@ func newTransformer(i int) *transformer {
 		attn:   attn,
 		nor:    layer.NewNor(),
 		dense:  dense,
-		gelu:   activation.NewGeLU(true),
+		gelu:   activation.NewGeLU(false),
 		output: output,
 	}
 }
