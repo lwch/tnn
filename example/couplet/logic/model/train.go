@@ -56,18 +56,18 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		m.epoch = i + 1
-		lr := m.scheduler.Get()
+		// lr := m.scheduler.Get()
 		loss := m.trainEpoch()
 		// m.optimizer.SetLr(m.scheduler.Get())
 		m.optimizer.Step(m.params())
-		m.scheduler.Step()
 		m.save()
 		fmt.Printf("train %d, cost=%s, lr=%f, loss=%f\n",
 			i+1, time.Since(begin).String(),
-			lr, loss)
+			m.optimizer.GetLr(), loss)
 		if i == 0 {
 			m.showModelInfo()
 		}
+		// m.scheduler.Step()
 	}
 	m.save()
 }
