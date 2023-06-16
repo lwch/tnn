@@ -48,7 +48,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 
 	m.total = len(m.samples)
 
-	m.optimizer = optimizer.NewAdam(optimizer.WithAdamLr(m.scheduler.Get()))
+	m.optimizer = optimizer.NewAdam(optimizer.WithAdamLr(lr))
 	// optimizer := optimizer.NewSGD(lr, 0)
 
 	go m.showProgress()
@@ -58,7 +58,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		m.epoch = i + 1
 		lr := m.scheduler.Get()
 		loss := m.trainEpoch()
-		m.optimizer.SetLr(m.scheduler.Get())
+		// m.optimizer.SetLr(m.scheduler.Get())
 		m.optimizer.Step(m.params())
 		m.scheduler.Step()
 		m.save()

@@ -6,5 +6,6 @@ const heads = 8
 const maskSize = paddingSize * paddingSize
 const batchSize = 32
 const epoch = 1000
+const lr = 0.001
 const warmup = 200
 const transformerSize = 2
