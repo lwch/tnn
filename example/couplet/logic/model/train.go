@@ -56,10 +56,10 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	begin := time.Now()
 	for i := 0; i < epoch; i++ {
 		m.epoch = i + 1
-		// lr := m.scheduler.Get()
 		loss := m.trainEpoch()
+		// lr := m.scheduler.Get()
 		// m.optimizer.SetLr(m.scheduler.Get())
-		m.optimizer.Step(m.params())
+		// m.optimizer.Step(m.params())
 		m.save()
 		fmt.Printf("train %d, cost=%s, lr=%f, loss=%f\n",
 			i+1, time.Since(begin).String(),
@@ -104,6 +104,7 @@ func (m *Model) trainBatch(b []batch) float64 {
 	}
 	wg.Wait()
 	storage.GC()
+	m.optimizer.Step(m.params())
 	return sum / float64(len(b))
 }
 
