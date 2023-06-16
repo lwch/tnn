@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	rt "runtime"
@@ -118,9 +117,9 @@ func (m *Model) trainEpoch() float64 {
 	for i := 0; i < len(idx); i++ {
 		idx[i] = i
 	}
-	rand.Shuffle(len(idx), func(i, j int) {
-		idx[i], idx[j] = idx[j], idx[i]
-	})
+	// rand.Shuffle(len(idx), func(i, j int) {
+	// 	idx[i], idx[j] = idx[j], idx[i]
+	// })
 
 	// 创建训练协程并行训练
 	workerCount := rt.NumCPU() * 2
