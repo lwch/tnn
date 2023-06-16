@@ -138,7 +138,7 @@ func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Ten
 	x = x.Add(positionEncoding)
 	y := x
 	for _, attn := range m.attn {
-		y = attn.forward(y, x, padding, train)
+		y = attn.forward(y, y, padding, train)
 	}
 	y = m.relu.Forward(y)   // relu
 	y = m.output.Forward(y) // output
