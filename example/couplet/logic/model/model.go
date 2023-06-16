@@ -16,6 +16,7 @@ import (
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/example/couplet/logic/sample"
+	"github.com/lwch/tnn/example/couplet/logic/schedule"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/net"
@@ -41,7 +42,6 @@ type Model struct {
 	current  atomic.Uint64 // 当前迭代已训练多少个样本
 	total    int           // 样本总数
 	status   int           // 当前运行状态
-	chUpdate chan struct{} // 梯度更新信号
 	modelDir string        // 模型保存路径
 
 	vocabs    []string
@@ -49,12 +49,13 @@ type Model struct {
 	samples   []*sample.Sample
 	embedding [][]float32
 	optimizer optimizer.Optimizer
+	scheduler schedule.Schedule // lr优化器
 }
 
 // New 创建空模型
 func New() *Model {
 	return &Model{
-		chUpdate: make(chan struct{}),
+		scheduler: *schedule.New(embeddingDim, warmup),
 	}
 }
 
