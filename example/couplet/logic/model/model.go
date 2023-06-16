@@ -34,7 +34,7 @@ var storage = mmgr.New()
 type Model struct {
 	// 模型定义
 	attn   []*transformer
-	gelu   *activation.GeLU
+	relu   *activation.ReLU
 	output *layer.Dense
 
 	// 运行时
@@ -64,7 +64,7 @@ func (m *Model) build() {
 	for i := 0; i < transformerSize; i++ {
 		m.attn = append(m.attn, newTransformer(i))
 	}
-	m.gelu = activation.NewGeLU(false)
+	m.relu = activation.NewReLU()
 	m.output = layer.NewDense(len(m.vocabs))
 	m.output.SetName("output")
 }
@@ -100,7 +100,7 @@ func (m *Model) save() {
 	for _, attn := range m.attn {
 		net.Add(attn.layers()...)
 	}
-	net.Add(m.gelu, m.output)
+	net.Add(m.relu, m.output)
 	err := net.Save(filepath.Join(m.modelDir, "couplet.model"))
 	runtime.Assert(err)
 	fmt.Println("model saved")
@@ -140,7 +140,7 @@ func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Ten
 	for _, attn := range m.attn {
 		y = attn.forward(y, x, padding, train)
 	}
-	y = m.gelu.Forward(y)   // relu
+	y = m.relu.Forward(y)   // relu
 	y = m.output.Forward(y) // output
 	return y
 }
@@ -153,7 +153,7 @@ func (m *Model) loadFrom(net *net.Net) {
 		idx = attn.loadFrom(layers, idx)
 		m.attn = append(m.attn, &attn)
 	}
-	m.gelu = layers[idx].(*activation.GeLU)
+	m.relu = layers[idx].(*activation.ReLU)
 	idx++
 	m.output = layers[idx].(*layer.Dense)
 }

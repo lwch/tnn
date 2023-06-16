@@ -12,7 +12,7 @@ type transformer struct {
 	attn   *layer.SelfAttention
 	nor    *layer.Nor
 	dense  *layer.Dense
-	gelu   *activation.GeLU
+	relu   *activation.ReLU
 	output *layer.Dense
 }
 
@@ -27,7 +27,7 @@ func newTransformer(i int) *transformer {
 		attn:   attn,
 		nor:    layer.NewNor(),
 		dense:  dense,
-		gelu:   activation.NewGeLU(false),
+		relu:   activation.NewReLU(),
 		output: output,
 	}
 }
@@ -61,7 +61,7 @@ func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *t
 	y = y.Add(q)
 	selfOut := t.nor.Forward(y)
 	y = t.dense.Forward(y)
-	y = t.gelu.Forward(y)
+	y = t.relu.Forward(y)
 	y = t.output.Forward(y)
 	y = y.Add(selfOut)
 	y = t.nor.Forward(y)
@@ -87,7 +87,7 @@ func (t *transformer) layers() []layer.Layer {
 		t.attn,
 		t.nor,
 		t.dense,
-		t.gelu,
+		t.relu,
 		t.output,
 	}
 }
@@ -99,7 +99,7 @@ func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
 	idx++
 	t.dense = layers[idx].(*layer.Dense)
 	idx++
-	t.gelu = layers[idx].(*activation.GeLU)
+	t.relu = layers[idx].(*activation.ReLU)
 	idx++
 	t.output = layers[idx].(*layer.Dense)
 	idx++
