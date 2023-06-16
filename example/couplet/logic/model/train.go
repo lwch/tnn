@@ -58,7 +58,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	for i := 0; i < epoch; i++ {
 		m.epoch = i + 1
 		loss := m.trainEpoch()
-		m.optimizer.SetLr(m.scheduler.Get())
+		// m.optimizer.SetLr(m.scheduler.Get())
 		// m.optimizer.Step(m.params())
 		m.save()
 		fmt.Printf("train %d, cost=%s, lr=%f, loss=%f\n",
@@ -124,7 +124,7 @@ func (m *Model) trainEpoch() float64 {
 
 	// 创建训练协程并行训练
 	workerCount := rt.NumCPU() * 2
-	workerCount = 1
+	workerCount = 2
 
 	var batches []batch
 	for i := 0; i < len(m.samples); i += batchSize {
