@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	rt "runtime"
 	"sync"
 	"time"
 
@@ -120,9 +119,7 @@ func (m *Model) trainEpoch() float64 {
 		idx[i], idx[j] = idx[j], idx[i]
 	})
 
-	// 创建训练协程并行训练
-	workerCount := rt.NumCPU()
-	workerCount = 2
+	workerCount := 2 // 可能由于超线程技术，此处2个并发速度最快
 
 	var batches []batch
 	for i := 0; i < len(m.samples); i += batchSize {
