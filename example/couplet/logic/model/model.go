@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"io"
+	"math"
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
@@ -31,23 +32,19 @@ var storage = mmgr.New()
 // Model 模型
 type Model struct {
 	// 模型定义
-	attn    []*transformer
-	flatten *layer.Flatten
-	relu    *activation.ReLU
-	output  *layer.Dense
+	attn   []*transformer
+	relu   *activation.ReLU
+	output *layer.Dense
 
 	// 运行时
 	epoch    int           // 当前训练到第几个迭代
 	current  atomic.Uint64 // 当前迭代已训练多少个样本
 	total    int           // 样本总数
 	status   int           // 当前运行状态
-	chUpdate chan struct{} // 梯度更新信号
 	modelDir string        // 模型保存路径
 
 	vocabs    []string
 	vocabsIdx map[string]int
-	trainX    [][]int
-	trainY    [][]int
 	samples   []*sample.Sample
 	embedding [][]float32
 	optimizer optimizer.Optimizer
@@ -55,9 +52,7 @@ type Model struct {
 
 // New 创建空模型
 func New() *Model {
-	return &Model{
-		chUpdate: make(chan struct{}),
-	}
+	return &Model{}
 }
 
 // build 生成模型
@@ -65,7 +60,6 @@ func (m *Model) build() {
 	for i := 0; i < transformerSize; i++ {
 		m.attn = append(m.attn, newTransformer(i))
 	}
-	m.flatten = layer.NewFlatten()
 	m.relu = activation.NewReLU()
 	m.output = layer.NewDense(len(m.vocabs))
 	m.output.SetName("output")
@@ -102,7 +96,7 @@ func (m *Model) save() {
 	for _, attn := range m.attn {
 		net.Add(attn.layers()...)
 	}
-	net.Add(m.flatten, m.relu, m.output)
+	net.Add(m.relu, m.output)
 	err := net.Save(filepath.Join(m.modelDir, "couplet.model"))
 	runtime.Assert(err)
 	fmt.Println("model saved")
@@ -120,15 +114,30 @@ func (m *Model) copyVocabs(dir string) {
 	runtime.Assert(err)
 }
 
+var positionEncoding *tensor.Tensor
+
+func init() {
+	data := make([]float32, paddingSize*embeddingDim)
+	for k := 0; k < paddingSize; k++ {
+		start := k * embeddingDim
+		for i := 0; i < embeddingDim/2; i++ {
+			n := float64(k) / math.Pow(10000, 2*float64(i)/float64(embeddingDim))
+			data[start+i*2] = float32(math.Sin(n))
+			data[start+i*2+1] = float32(math.Cos(n))
+		}
+	}
+	positionEncoding = tensor.FromFloat32(nil, data, 1, paddingSize, embeddingDim)
+}
+
 // forward 正向迭代
-func (m *Model) forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+func (m *Model) forward(x *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
+	// x = x.Add(positionEncoding)
 	y := x
 	for _, attn := range m.attn {
-		y = attn.forward(y, x, train)
+		y = attn.forward(y, x, padding, train)
 	}
-	y = m.flatten.Forward(y) // flatten
-	y = m.relu.Forward(y)    // relu
-	y = m.output.Forward(y)  // output
+	y = m.relu.Forward(y)   // relu
+	y = m.output.Forward(y) // output
 	return y
 }
 
@@ -140,8 +149,6 @@ func (m *Model) loadFrom(net *net.Net) {
 		idx = attn.loadFrom(layers, idx)
 		m.attn = append(m.attn, &attn)
 	}
-	m.flatten = layers[idx].(*layer.Flatten)
-	idx++
 	m.relu = layers[idx].(*activation.ReLU)
 	idx++
 	m.output = layers[idx].(*layer.Dense)

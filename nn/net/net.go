@@ -29,7 +29,7 @@ var loadFuncs = map[string]loadFunc{
 	// "softplus": activation.Load("softplus"),
 	// "tanh":     activation.Load("tanh"),
 	"relu": activation.LoadRelu,
-	// "gelu": activation.Load("gelu"),
+	"gelu": activation.LoadGelu,
 }
 
 type Net struct {

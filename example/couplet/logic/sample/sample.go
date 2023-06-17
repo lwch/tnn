@@ -2,10 +2,10 @@ package sample
 
 type Sample struct {
 	x []int
-	y int
+	y []int
 }
 
-func New(x []int, y int) *Sample {
+func New(x, y []int) *Sample {
 	return &Sample{x: x, y: y}
 }
 
@@ -15,26 +15,27 @@ func (s *Sample) Encode(vocabs []string) (string, string) {
 	for _, idx := range s.x {
 		x += vocabs[idx]
 	}
-	return x, vocabs[s.y]
+	var y string
+	for _, idx := range s.y {
+		y += vocabs[idx]
+	}
+	return x, y
 }
 
-func onehot(x, size int) []float32 {
-	ret := make([]float32, size)
-	ret[x] = 1
-	return ret
-}
-
-// Embedding 生成一个样本，输出: sequence, next word
-func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, []float32) {
+// Embedding 生成一个样本，返回内容：x, y, paddingIdx
+func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, []int64, int) {
 	embeddingSize := len(embedding[0])
 	dx := make([]float32, 0, paddingSize*embeddingSize)
-	for _, v := range s.x {
-		dx = append(dx, embedding[v]...)
+	dy := make([]int64, 0, paddingSize*len(embedding))
+	for i := range s.x {
+		dx = append(dx, embedding[s.x[i]]...)
+		dy = append(dy, int64(s.y[i]))
 	}
 	for i := len(s.x); i < paddingSize; i++ {
 		for j := 0; j < embeddingSize; j++ {
 			dx = append(dx, 0)
 		}
+		dy = append(dy, -100)
 	}
-	return dx, onehot(s.y, len(embedding))
+	return dx, dy, len(s.x)
 }

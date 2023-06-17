@@ -2,10 +2,9 @@ package model
 
 import (
 	"fmt"
-	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
-	rt "runtime"
 	"sync"
 	"time"
 
@@ -28,8 +27,11 @@ func (m *Model) Train(sampleDir, modelDir string) {
 
 	// 加载样本
 	m.vocabs, m.vocabsIdx = feature.LoadVocab(filepath.Join(sampleDir, "vocabs"))
-	m.trainX = feature.LoadData(filepath.Join(sampleDir, "in.txt"), m.vocabsIdx, -1)
-	m.trainY = feature.LoadData(filepath.Join(sampleDir, "out.txt"), m.vocabsIdx, -1)
+	trainX := feature.LoadData(filepath.Join(sampleDir, "in.txt"), m.vocabsIdx, -1)
+	trainY := feature.LoadData(filepath.Join(sampleDir, "out.txt"), m.vocabsIdx, -1)
+	for i := 0; i < len(trainX); i++ {
+		m.samples = append(m.samples, sample.New(trainX[i], trainY[i]))
+	}
 
 	// 加载embedding
 	if _, err := os.Stat(filepath.Join(modelDir, "embedding")); os.IsNotExist(err) {
@@ -43,7 +45,6 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		m.embedding = m.loadEmbedding(filepath.Join(modelDir, "embedding"))
 		m.build()
 	}
-	m.buildSamples()
 
 	m.total = len(m.samples)
 
@@ -56,8 +57,9 @@ func (m *Model) Train(sampleDir, modelDir string) {
 	for i := 0; i < epoch; i++ {
 		m.epoch = i + 1
 		loss := m.trainEpoch()
+		// m.optimizer.Step(m.params())
 		m.save()
-		fmt.Printf("train %d, cost=%s, loss=%e\n",
+		fmt.Printf("train %d, cost=%s, loss=%f\n",
 			i+1, time.Since(begin).String(),
 			loss)
 		if i == 0 {
@@ -68,17 +70,20 @@ func (m *Model) Train(sampleDir, modelDir string) {
 }
 
 func (m *Model) trainWorker(samples []*sample.Sample) float64 {
-	x := make([]float32, 0, len(samples)*unitSize)
-	y := make([]float32, 0, len(samples)*embeddingDim)
+	x := make([]float32, 0, len(samples)*paddingSize*embeddingDim)
+	y := make([]int64, 0, len(samples)*paddingSize)
+	padding := make([]int, 0, len(samples))
 	for _, s := range samples {
-		xTrain, zTrain := s.Embedding(paddingSize, m.embedding)
+		xTrain, yTrain, p := s.Embedding(paddingSize, m.embedding)
 		x = append(x, xTrain...)
-		y = append(y, zTrain...)
+		y = append(y, yTrain...)
+		padding = append(padding, p)
 	}
 	xIn := tensor.FromFloat32(storage, x, int64(len(samples)), paddingSize, embeddingDim)
-	zOut := tensor.FromFloat32(storage, y, int64(len(samples)), int64(len(m.vocabs)))
-	pred := m.forward(xIn, true)
-	loss := lossFunc(pred, zOut)
+	yOut := tensor.FromInt64(storage, y, int64(len(samples)), paddingSize)
+	pred := m.forward(xIn, padding, true)
+	pred = pred.Permute(0, 2, 1)
+	loss := lossFunc(pred, yOut)
 	loss.Backward()
 	m.current.Add(uint64(len(samples)))
 	return loss.Value()
@@ -95,8 +100,8 @@ func (m *Model) trainBatch(b []batch) float64 {
 		}(b[i].data)
 	}
 	wg.Wait()
-	m.optimizer.Step(m.params())
 	storage.GC()
+	m.optimizer.Step(m.params())
 	return sum / float64(len(b))
 }
 
@@ -110,13 +115,11 @@ func (m *Model) trainEpoch() float64 {
 	for i := 0; i < len(idx); i++ {
 		idx[i] = i
 	}
-	// rand.Shuffle(len(idx), func(i, j int) {
-	// 	idx[i], idx[j] = idx[j], idx[i]
-	// })
+	rand.Shuffle(len(idx), func(i, j int) {
+		idx[i], idx[j] = idx[j], idx[i]
+	})
 
-	// 创建训练协程并行训练
-	workerCount := rt.NumCPU() * 2
-	// workerCount = 1
+	workerCount := 2 // 可能由于超线程技术，此处2个并发速度最快
 
 	var batches []batch
 	for i := 0; i < len(m.samples); i += batchSize {
@@ -146,24 +149,6 @@ func (m *Model) trainEpoch() float64 {
 		size++
 	}
 	return sum / size
-}
-
-func (m *Model) buildSamples() {
-	size := len(m.trainX) * paddingSize / 2
-	for idx := 0; idx < size; idx++ {
-		i := math.Floor(float64(idx) / float64(paddingSize/2))
-		j := idx % (paddingSize / 2)
-		dx := m.trainX[int(i)]
-		dy := m.trainY[int(i)]
-		var dz int
-		if j < len(dy) {
-			dz = dy[j]
-			dy = dy[:j]
-		} else {
-			continue
-		}
-		m.samples = append(m.samples, sample.New(append(dx, dy...), dz))
-	}
 }
 
 func (m *Model) showModelInfo() {

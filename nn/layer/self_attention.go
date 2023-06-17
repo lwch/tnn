@@ -44,7 +44,7 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 	return &layer
 }
 
-func (layer *SelfAttention) Forward(q, k *tensor.Tensor) *tensor.Tensor {
+func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor) *tensor.Tensor {
 	if layer.scale == nil {
 		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, 1)
 	}
@@ -66,14 +66,17 @@ func (layer *SelfAttention) Forward(q, k *tensor.Tensor) *tensor.Tensor {
 	if layer.bv == nil {
 		layer.bv = initB(int64(layer.steps), int64(layer.dims))
 	}
-	q = q.MatMul(layer.wq).Add(layer.bq)                                // (batch, steps, dims)
-	k = k.MatMul(layer.wk).Add(layer.bk)                                // (batch, steps, dims)
-	v := k.MatMul(layer.wv).Add(layer.bv)                               // (batch, steps, dims)
-	q = layer.split(q)                                                  // (batch, heads, steps, dims/heads)
-	k = layer.split(k)                                                  // (batch, heads, steps, dims/heads)
-	v = layer.split(v)                                                  // (batch, heads, steps, dims/heads)
-	y := q.MatMul(k.Transpose(-1, -2))                                  // (batch, heads, steps, steps)
-	y = y.Div(layer.scale)                                              // (batch, heads, steps, steps)
+	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims)
+	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims)
+	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
+	q = layer.split(q)                    // (batch, heads, steps, dims/heads)
+	k = layer.split(k)                    // (batch, heads, steps, dims/heads)
+	v = layer.split(v)                    // (batch, heads, steps, dims/heads)
+	y := q.MatMul(k.Transpose(-1, -2))    // (batch, heads, steps, steps)
+	y = y.Div(layer.scale)                // (batch, heads, steps, steps)
+	if mask != nil {
+		y = y.Add(mask) // (batch, heads, steps, steps)
+	}
 	y = y.Softmax(-1)                                                   // (batch, heads, steps, steps)
 	y = y.MatMul(v)                                                     // (batch, heads, steps, dims/heads)
 	y = y.Permute(0, 2, 1, 3)                                           // (batch, steps, heads, dims/heads)
