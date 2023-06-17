@@ -59,9 +59,9 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		loss := m.trainEpoch()
 		m.optimizer.Step(m.params())
 		m.save()
-		fmt.Printf("train %d, cost=%s, lr=%f, loss=%f\n",
+		fmt.Printf("train %d, cost=%s, loss=%f\n",
 			i+1, time.Since(begin).String(),
-			m.optimizer.GetLr(), loss)
+			loss)
 		if i == 0 {
 			m.showModelInfo()
 		}
