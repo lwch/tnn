@@ -7,5 +7,4 @@ const maskSize = paddingSize * paddingSize
 const batchSize = 128
 const epoch = 1000
 const lr = 0.001
-const warmup = 20
 const transformerSize = 4

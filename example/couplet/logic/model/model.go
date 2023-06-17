@@ -16,7 +16,6 @@ import (
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/example/couplet/logic/sample"
-	"github.com/lwch/tnn/example/couplet/logic/schedule"
 	"github.com/lwch/tnn/nn/layer"
 	"github.com/lwch/tnn/nn/layer/activation"
 	"github.com/lwch/tnn/nn/net"
@@ -49,14 +48,11 @@ type Model struct {
 	samples   []*sample.Sample
 	embedding [][]float32
 	optimizer optimizer.Optimizer
-	scheduler schedule.Schedule // lr优化器
 }
 
 // New 创建空模型
 func New() *Model {
-	return &Model{
-		scheduler: *schedule.New(embeddingDim, warmup),
-	}
+	return &Model{}
 }
 
 // build 生成模型
