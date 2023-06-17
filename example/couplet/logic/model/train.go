@@ -59,7 +59,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 		m.epoch = i + 1
 		loss := m.trainEpoch()
 		// m.optimizer.SetLr(m.scheduler.Get())
-		// m.optimizer.Step(m.params())
+		m.optimizer.Step(m.params())
 		m.save()
 		fmt.Printf("train %d, cost=%s, lr=%f, loss=%f\n",
 			i+1, time.Since(begin).String(),
@@ -104,7 +104,7 @@ func (m *Model) trainBatch(b []batch) float64 {
 	}
 	wg.Wait()
 	storage.GC()
-	m.optimizer.Step(m.params())
+	//m.optimizer.Step(m.params())
 	return sum / float64(len(b))
 }
 
@@ -123,7 +123,7 @@ func (m *Model) trainEpoch() float64 {
 	})
 
 	// 创建训练协程并行训练
-	workerCount := rt.NumCPU() * 2
+	workerCount := rt.NumCPU()
 	workerCount = 2
 
 	var batches []batch
