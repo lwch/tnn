@@ -27,7 +27,7 @@ func NewReader(r io.ReadSeeker) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret.labelPrefix = ret.featurePrefix + int64(ret.hdr.BatchSize*ret.hdr.FeatureSize*8)
+	ret.labelPrefix = ret.featurePrefix + int64(ret.hdr.BatchSize*ret.hdr.FeatureSize*4)
 	return &ret, nil
 }
 
@@ -50,7 +50,7 @@ func (r *Reader) LabelSize() uint32 {
 func (r *Reader) ReadFeature(idx uint32, data []float32) error {
 	r.m.Lock()
 	defer r.m.Unlock()
-	_, err := r.r.Seek(r.featurePrefix+int64(idx)*int64(r.hdr.FeatureSize)*8, io.SeekStart)
+	_, err := r.r.Seek(r.featurePrefix+int64(idx)*int64(r.hdr.FeatureSize)*4, io.SeekStart)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (r *Reader) ReadFeature(idx uint32, data []float32) error {
 func (r *Reader) ReadLabel(idx uint32, data []float32) error {
 	r.m.Lock()
 	defer r.m.Unlock()
-	_, err := r.r.Seek(r.labelPrefix+int64(idx)*int64(r.hdr.LabelSize)*8, io.SeekStart)
+	_, err := r.r.Seek(r.labelPrefix+int64(idx)*int64(r.hdr.LabelSize)*4, io.SeekStart)
 	if err != nil {
 		return err
 	}
