@@ -47,7 +47,7 @@ func (r *Reader) LabelSize() uint32 {
 }
 
 // ReadFeature read feature data
-func (r *Reader) ReadFeature(idx uint32, data []float64) error {
+func (r *Reader) ReadFeature(idx uint32, data []float32) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 	_, err := r.r.Seek(r.featurePrefix+int64(idx)*int64(r.hdr.FeatureSize)*8, io.SeekStart)
@@ -58,7 +58,7 @@ func (r *Reader) ReadFeature(idx uint32, data []float64) error {
 }
 
 // ReadLabel read label data
-func (r *Reader) ReadLabel(idx uint32, data []float64) error {
+func (r *Reader) ReadLabel(idx uint32, data []float32) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 	_, err := r.r.Seek(r.labelPrefix+int64(idx)*int64(r.hdr.LabelSize)*8, io.SeekStart)
