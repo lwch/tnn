@@ -10,18 +10,20 @@ import (
 type SelfAttention struct {
 	*base
 	steps, dims, heads int
+	dropout            float64
 	scale              *tensor.Tensor
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
 }
 
-func NewSelfAttention(steps, dims, heads int) *SelfAttention {
+func NewSelfAttention(steps, dims, heads int, dropout float64) *SelfAttention {
 	var layer SelfAttention
 	layer.base = new("self_attention")
 	layer.steps = steps
 	layer.dims = dims
 	layer.heads = heads
+	layer.dropout = dropout
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
@@ -35,6 +37,7 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 	layer.steps = int(args["steps"])
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
+	layer.dropout = float64(args["dropout"])
 	layer.wq = loadParam(params["Wq"])
 	layer.wk = loadParam(params["Wk"])
 	layer.wv = loadParam(params["Wv"])
@@ -44,7 +47,7 @@ func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string
 	return &layer
 }
 
-func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor) *tensor.Tensor {
+func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tensor.Tensor {
 	if layer.scale == nil {
 		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, 1)
 	}
@@ -78,6 +81,7 @@ func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor) *tensor.Tensor {
 		y = y.Add(mask) // (batch, heads, steps, steps)
 	}
 	y = y.Softmax(-1)                                                   // (batch, heads, steps, steps)
+	y = y.Dropout(layer.dropout, train)                                 // (batch, heads, steps, steps)
 	y = y.MatMul(v)                                                     // (batch, heads, steps, dims/heads)
 	y = y.Permute(0, 2, 1, 3)                                           // (batch, steps, heads, dims/heads)
 	y = y.Reshape(y.Shapes()[0], int64(layer.steps), int64(layer.dims)) // (batch, steps, dims)
@@ -99,8 +103,9 @@ func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
 
 func (layer *SelfAttention) Args() map[string]float32 {
 	return map[string]float32{
-		"steps": float32(layer.steps),
-		"dims":  float32(layer.dims),
-		"heads": float32(layer.heads),
+		"steps":   float32(layer.steps),
+		"dims":    float32(layer.dims),
+		"heads":   float32(layer.heads),
+		"dropout": float32(layer.dropout),
 	}
 }

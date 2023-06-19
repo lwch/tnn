@@ -17,7 +17,7 @@ type transformer struct {
 
 func newTransformer() *transformer {
 	return &transformer{
-		attn:    layer.NewSelfAttention(steps, dims, 1),
+		attn:    layer.NewSelfAttention(steps, dims, 1, 0),
 		nor:     layer.NewNor(),
 		flatten: layer.NewFlatten(),
 		dense:   layer.NewDense(unitSize * 4),
@@ -27,7 +27,7 @@ func newTransformer() *transformer {
 }
 
 func (t *transformer) Forward(x *tensor.Tensor) *tensor.Tensor {
-	y := t.attn.Forward(x, x, nil)
+	y := t.attn.Forward(x, x, nil, true)
 	y = y.Add(x)
 	selfOut := t.nor.Forward(y)
 	y = t.flatten.Forward(y)
