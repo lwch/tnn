@@ -27,7 +27,7 @@ func NewReader(r io.ReadSeeker) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret.labelPrefix = ret.featurePrefix + int64(ret.hdr.BatchSize*ret.hdr.FeatureSize*4)
+	ret.labelPrefix = ret.featurePrefix + int64(ret.hdr.BatchSize)*int64(ret.hdr.FeatureSize)*4
 	return &ret, nil
 }
 
