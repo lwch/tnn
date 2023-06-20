@@ -42,6 +42,10 @@ func New(device consts.DeviceType) *Net {
 	return &Net{device: device}
 }
 
+func (n *Net) SetDevice(device consts.DeviceType) {
+	n.device = device
+}
+
 func (n *Net) Add(layers ...layer.Layer) {
 	n.layers = append(n.layers, layers...)
 }
