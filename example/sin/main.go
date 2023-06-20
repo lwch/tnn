@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/loss"
 	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/optimizer"
@@ -22,6 +23,7 @@ const steps = 8
 const featureSize = 16
 const unitSize = steps * featureSize
 const hiddenSize = 64
+const device = consts.KCPU
 
 var lossFunc = loss.NewMse
 var storage = mmgr.New()
@@ -104,8 +106,12 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor, []float3
 	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
 	// 	copy(y[j*1:(j+1)*1], dy)
 	// })
-	xs := tensor.FromFloat32(storage, x, batchSize, steps, featureSize)
-	ys := tensor.FromFloat32(storage, y, batchSize, 1)
+	xs := tensor.FromFloat32(storage, x,
+		tensor.WithShapes(batchSize, steps, featureSize),
+		tensor.WithDevice(device))
+	ys := tensor.FromFloat32(storage, y,
+		tensor.WithShapes(batchSize, 1),
+		tensor.WithDevice(device))
 	return xs, ys, y
 }
 

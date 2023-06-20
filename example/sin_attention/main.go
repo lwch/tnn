@@ -7,6 +7,7 @@ import (
 	rt "runtime"
 	"sync"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/loss"
 	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/optimizer"
@@ -25,6 +26,7 @@ const steps = 32
 const dims = 8
 const unitSize = steps * dims
 const transformerSize = 2
+const device = consts.KCPU
 
 var lossFunc = loss.NewMse
 var storage = mmgr.New()
@@ -121,8 +123,11 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor) {
 		copy(x[j*unitSize:(j+1)*unitSize], dx)
 		copy(y[j*1:(j+1)*1], dy)
 	})
-	return tensor.FromFloat32(storage, x, batchSize, steps, dims),
-		tensor.FromFloat32(storage, y, batchSize, 1)
+	return tensor.FromFloat32(storage, x,
+			tensor.WithShapes(batchSize, steps, dims),
+			tensor.WithDevice(device)),
+		tensor.FromFloat32(storage, y, tensor.WithShapes(batchSize, 1),
+			tensor.WithDevice(device))
 }
 
 func accuracy(y, pred []float32) float32 {

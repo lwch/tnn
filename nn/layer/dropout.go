@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
 )
@@ -12,14 +13,14 @@ type Dropout struct {
 
 func NewDropout(keep float64) *Dropout {
 	var layer Dropout
-	layer.base = new("dropout")
+	layer.base = new("dropout", consts.KCPU)
 	layer.keep = keep
 	return &layer
 }
 
-func LoadDropout(name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDropout(_ consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dropout
-	layer.base = new("dropout")
+	layer.base = new("dropout", consts.KCPU)
 	layer.name = name
 	layer.keep = float64(args["keep"])
 	return &layer

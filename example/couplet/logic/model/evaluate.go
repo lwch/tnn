@@ -22,7 +22,7 @@ func (m *Model) Evaluate(str string) string {
 	dy := make([]int, len(dx))
 	x, _, p := sample.New(dx, dy).Embedding(paddingSize, m.embedding)
 	pred := m.forward(
-		tensor.FromFloat32(storage, x, 1, paddingSize, embeddingDim),
+		tensor.FromFloat32(storage, x, tensor.WithShapes(1, paddingSize, embeddingDim)),
 		[]int{p}, false)
 	predProbs := pred.Float32Value()
 	dy = dy[:0]

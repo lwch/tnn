@@ -79,8 +79,12 @@ func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 		y = append(y, yTrain...)
 		padding = append(padding, p)
 	}
-	xIn := tensor.FromFloat32(storage, x, int64(len(samples)), paddingSize, embeddingDim)
-	yOut := tensor.FromInt64(storage, y, int64(len(samples)), paddingSize)
+	xIn := tensor.FromFloat32(storage, x,
+		tensor.WithShapes(int64(len(samples)), paddingSize, embeddingDim),
+		tensor.WithDevice(device))
+	yOut := tensor.FromInt64(storage, y,
+		tensor.WithShapes(int64(len(samples)), paddingSize),
+		tensor.WithDevice(device))
 	pred := m.forward(xIn, padding, true)
 	pred = pred.Permute(0, 2, 1)
 	loss := lossFunc(pred, yOut)

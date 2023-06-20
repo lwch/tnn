@@ -16,64 +16,68 @@ type Lstm struct {
 	Wo, Bo             *tensor.Tensor
 }
 
-func NewLstm(featureSize, steps, hidden int) *Lstm {
+func NewLstm(featureSize, steps, hidden int, device consts.DeviceType) *Lstm {
 	var layer Lstm
-	layer.base = new("lstm")
+	layer.base = new("lstm", device)
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
 	return &layer
 }
 
-func LoadLstm(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadLstm(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Lstm
-	layer.base = new("lstm")
+	layer.base = new("lstm", device)
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
-	layer.Wi = loadParam(params["Wi"])
-	layer.Wf = loadParam(params["Wf"])
-	layer.Wg = loadParam(params["Wg"])
-	layer.Wo = loadParam(params["Wo"])
-	layer.Bi = loadParam(params["Bi"])
-	layer.Bf = loadParam(params["Bf"])
-	layer.Bg = loadParam(params["Bg"])
-	layer.Bo = loadParam(params["Bo"])
+	layer.Wi = layer.loadParam(params["Wi"])
+	layer.Wf = layer.loadParam(params["Wf"])
+	layer.Wg = layer.loadParam(params["Wg"])
+	layer.Wo = layer.loadParam(params["Wo"])
+	layer.Bi = layer.loadParam(params["Bi"])
+	layer.Bf = layer.loadParam(params["Bf"])
+	layer.Bg = layer.loadParam(params["Bg"])
+	layer.Bo = layer.loadParam(params["Bo"])
 	return &layer
 }
 
 func (layer *Lstm) Forward(x, h, c *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if layer.Wi == nil {
-		layer.Wi = initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
+		layer.Wi = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Wf == nil {
-		layer.Wf = initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
+		layer.Wf = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Wg == nil {
-		layer.Wg = initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
+		layer.Wg = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Wo == nil {
-		layer.Wo = initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
+		layer.Wo = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.Bi == nil {
-		layer.Bi = initB(int64(layer.hidden))
+		layer.Bi = layer.initB(int64(layer.hidden))
 	}
 	if layer.Bf == nil {
-		layer.Bf = initB(int64(layer.hidden))
+		layer.Bf = layer.initB(int64(layer.hidden))
 	}
 	if layer.Bg == nil {
-		layer.Bg = initB(int64(layer.hidden))
+		layer.Bg = layer.initB(int64(layer.hidden))
 	}
 	if layer.Bo == nil {
-		layer.Bo = initB(int64(layer.hidden))
+		layer.Bo = layer.initB(int64(layer.hidden))
 	}
 	if h == nil {
-		h = tensor.Zeros(nil, consts.KFloat, int64(inputShape[0]), int64(layer.hidden))
+		h = tensor.Zeros(nil, consts.KFloat,
+			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
+			tensor.WithDevice(layer.device))
 	}
 	if c == nil {
-		c = tensor.Zeros(nil, consts.KFloat, int64(inputShape[0]), int64(layer.hidden))
+		c = tensor.Zeros(nil, consts.KFloat,
+			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
+			tensor.WithDevice(layer.device))
 	}
 	x = x.Transpose(1, 0) // (steps, batch, feature)
 	var result *tensor.Tensor

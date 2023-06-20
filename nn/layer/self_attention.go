@@ -3,6 +3,7 @@ package layer
 import (
 	"math"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
 )
@@ -17,9 +18,9 @@ type SelfAttention struct {
 	bq, bk, bv *tensor.Tensor
 }
 
-func NewSelfAttention(steps, dims, heads int, dropout float64) *SelfAttention {
+func NewSelfAttention(steps, dims, heads int, dropout float64, device consts.DeviceType) *SelfAttention {
 	var layer SelfAttention
-	layer.base = new("self_attention")
+	layer.base = new("self_attention", device)
 	layer.steps = steps
 	layer.dims = dims
 	layer.heads = heads
@@ -30,44 +31,44 @@ func NewSelfAttention(steps, dims, heads int, dropout float64) *SelfAttention {
 	return &layer
 }
 
-func LoadSelfAttention(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadSelfAttention(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer SelfAttention
-	layer.base = new("self_attention")
+	layer.base = new("self_attention", device)
 	layer.name = name
 	layer.steps = int(args["steps"])
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
-	layer.wq = loadParam(params["Wq"])
-	layer.wk = loadParam(params["Wk"])
-	layer.wv = loadParam(params["Wv"])
-	layer.bq = loadParam(params["Bq"])
-	layer.bk = loadParam(params["Bk"])
-	layer.bv = loadParam(params["Bv"])
+	layer.wq = layer.loadParam(params["Wq"])
+	layer.wk = layer.loadParam(params["Wk"])
+	layer.wv = layer.loadParam(params["Wv"])
+	layer.bq = layer.loadParam(params["Bq"])
+	layer.bk = layer.loadParam(params["Bk"])
+	layer.bv = layer.loadParam(params["Bv"])
 	return &layer
 }
 
 func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tensor.Tensor {
 	if layer.scale == nil {
-		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, 1)
+		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, tensor.WithShapes(1))
 	}
 	if layer.wq == nil {
-		layer.wq = initW(int64(layer.dims), int64(layer.dims))
+		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wk == nil {
-		layer.wk = initW(int64(layer.dims), int64(layer.dims))
+		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wv == nil {
-		layer.wv = initW(int64(layer.dims), int64(layer.dims))
+		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.bq == nil {
-		layer.bq = initB(int64(layer.steps), int64(layer.dims))
+		layer.bq = layer.initB(int64(layer.steps), int64(layer.dims))
 	}
 	if layer.bk == nil {
-		layer.bk = initB(int64(layer.steps), int64(layer.dims))
+		layer.bk = layer.initB(int64(layer.steps), int64(layer.dims))
 	}
 	if layer.bv == nil {
-		layer.bv = initB(int64(layer.steps), int64(layer.dims))
+		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims))
 	}
 	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims)
 	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims)

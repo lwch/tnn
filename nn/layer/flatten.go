@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
 )
@@ -11,13 +12,13 @@ type Flatten struct {
 
 func NewFlatten() *Flatten {
 	var layer Flatten
-	layer.base = new("flatten")
+	layer.base = new("flatten", consts.KCPU)
 	return &layer
 }
 
-func LoadFlatten(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadFlatten(_ consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Flatten
-	layer.base = new("flatten")
+	layer.base = new("flatten", consts.KCPU)
 	layer.name = name
 	return &layer
 }

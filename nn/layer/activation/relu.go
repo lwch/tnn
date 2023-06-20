@@ -1,6 +1,7 @@
 package activation
 
 import (
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
@@ -16,7 +17,7 @@ func NewReLU() *ReLU {
 	return &layer
 }
 
-func LoadRelu(name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
+func LoadRelu(_ consts.DeviceType, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
 	var layer ReLU
 	layer.base = new("relu")
 	layer.name = name

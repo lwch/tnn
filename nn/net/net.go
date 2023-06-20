@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
@@ -12,7 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type loadFunc func(name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
+type loadFunc func(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"dense":   layer.LoadDense,
@@ -34,10 +35,11 @@ var loadFuncs = map[string]loadFunc{
 
 type Net struct {
 	layers []layer.Layer
+	device consts.DeviceType
 }
 
-func New() *Net {
-	return &Net{}
+func New(device consts.DeviceType) *Net {
+	return &Net{device: device}
 }
 
 func (n *Net) Add(layers ...layer.Layer) {
@@ -129,7 +131,7 @@ func (n *Net) ReadFrom(r io.Reader) (int64, error) {
 			panic("unsupported " + class + " layer")
 		}
 		name := layers[i].GetName()
-		n.layers[i] = fn(name, layers[i].GetParams(), layers[i].GetArgs())
+		n.layers[i] = fn(n.device, name, layers[i].GetParams(), layers[i].GetArgs())
 	}
 	return int64(len(data)), nil
 }

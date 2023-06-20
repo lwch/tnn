@@ -16,13 +16,15 @@ type Layer interface {
 }
 
 type base struct {
-	name  string
-	class string
+	name   string
+	class  string
+	device consts.DeviceType
 }
 
-func new(class string) *base {
+func new(class string, device consts.DeviceType) *base {
 	return &base{
-		class: class,
+		class:  class,
+		device: device,
 	}
 }
 
@@ -46,7 +48,7 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func loadParam(data *pb.Dense) *tensor.Tensor {
+func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
 	if data == nil {
 		return nil
 	}
@@ -54,21 +56,27 @@ func loadParam(data *pb.Dense) *tensor.Tensor {
 	for _, v := range data.Shape {
 		shape = append(shape, int64(v))
 	}
-	t := tensor.FromFloat32(nil, data.GetData(), shape...)
+	t := tensor.FromFloat32(nil, data.GetData(),
+		tensor.WithShapes(shape...),
+		tensor.WithDevice(b.device))
 	t.SetRequiresGrad(true)
 	return t
 }
 
 var wInitializer = initializer.NewXavierUniform(1)
 
-func initW(shapes ...int64) *tensor.Tensor {
-	t := tensor.FromFloat32(nil, wInitializer.RandShape(shapes...), shapes...)
+func (b *base) initW(shapes ...int64) *tensor.Tensor {
+	t := tensor.FromFloat32(nil, wInitializer.RandShape(shapes...),
+		tensor.WithDevice(b.device),
+		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)
 	return t
 }
 
-func initB(shapes ...int64) *tensor.Tensor {
-	t := tensor.Zeros(nil, consts.KFloat, shapes...)
+func (b *base) initB(shapes ...int64) *tensor.Tensor {
+	t := tensor.Zeros(nil, consts.KFloat,
+		tensor.WithDevice(b.device),
+		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)
 	return t
 }

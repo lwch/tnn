@@ -61,7 +61,7 @@ func (m *Model) build() {
 		m.attn = append(m.attn, newTransformer(i))
 	}
 	m.relu = activation.NewReLU()
-	m.output = layer.NewDense(len(m.vocabs))
+	m.output = layer.NewDense(len(m.vocabs), device)
 	m.output.SetName("output")
 }
 
@@ -126,7 +126,9 @@ func init() {
 			data[start+i*2+1] = float32(math.Cos(n))
 		}
 	}
-	positionEncoding = tensor.FromFloat32(nil, data, 1, paddingSize, embeddingDim)
+	positionEncoding = tensor.FromFloat32(nil, data,
+		tensor.WithShapes(1, paddingSize, embeddingDim),
+		tensor.WithDevice(device))
 }
 
 // forward 正向迭代

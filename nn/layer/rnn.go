@@ -15,41 +15,41 @@ type Rnn struct {
 	b *tensor.Tensor
 }
 
-func NewRnn(featureSize, steps, hidden int) *Rnn {
+func NewRnn(featureSize, steps, hidden int, device consts.DeviceType) *Rnn {
 	var layer Rnn
-	layer.base = new("rnn")
+	layer.base = new("rnn", device)
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
 	return &layer
 }
 
-func LoadRnn(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadRnn(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Rnn
-	layer.base = new("rnn")
+	layer.base = new("rnn", device)
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
-	layer.w = loadParam(params["w"])
-	layer.b = loadParam(params["b"])
+	layer.w = layer.loadParam(params["w"])
+	layer.b = layer.loadParam(params["b"])
 	return &layer
 }
 
 func copyState(s *tensor.Tensor) *tensor.Tensor {
-	return tensor.FromFloat32(nil, s.Float32Value(), s.Shapes()...)
+	return tensor.FromFloat32(nil, s.Float32Value(), tensor.WithShapes(s.Shapes()...))
 }
 
 func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if layer.w == nil {
-		layer.w = initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
+		layer.w = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
 	}
 	if layer.b == nil {
-		layer.b = initB(int64(layer.hidden))
+		layer.b = layer.initB(int64(layer.hidden))
 	}
 	if h == nil {
-		h = tensor.Zeros(x.Storage(), consts.KFloat, inputShape[0], int64(layer.hidden))
+		h = tensor.Zeros(x.Storage(), consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
 	}
 	x = x.Transpose(1, 0) // (steps, batch, feature)
 	var result *tensor.Tensor

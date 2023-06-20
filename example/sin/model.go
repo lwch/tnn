@@ -18,10 +18,10 @@ type model struct {
 
 func newModel(optimizer optimizer.Optimizer) *model {
 	return &model{
-		rnn: layer.NewRnn(featureSize, steps, hiddenSize),
+		rnn: layer.NewRnn(featureSize, steps, hiddenSize, device),
 		// lstm:        layer.NewLstm(featureSize, steps, hiddenSize),
 		flatten:     layer.NewFlatten(),
-		outputLayer: layer.NewDense(1),
+		outputLayer: layer.NewDense(1, device),
 		optimizer:   optimizer,
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/loss"
 	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/optimizer"
@@ -24,6 +25,7 @@ const lr = 1e-4
 const hiddenSize = 10
 const epoch = 10000
 const modelFile = "xor.model"
+const device = consts.KCPU
 
 var lossFunc = loss.NewMse
 var storage = mmgr.New()
@@ -39,12 +41,12 @@ func main() {
 }
 
 func train() {
-	hidden := layer.NewDense(hiddenSize)
+	hidden := layer.NewDense(hiddenSize, device)
 	hidden.SetName("hidden")
-	outputLayer := layer.NewDense(1)
+	outputLayer := layer.NewDense(1, device)
 	outputLayer.SetName("output")
 
-	net := net.New()
+	net := net.New(device)
 	net.Add(hidden)
 	net.Add(activation.NewReLU())
 	net.Add(outputLayer)
@@ -90,7 +92,7 @@ func train() {
 }
 
 func loadModel() *model {
-	net := net.New()
+	net := net.New(device)
 	runtime.Assert(net.Load(modelFile))
 
 	optimizer := optimizer.NewAdam(optimizer.WithAdamLr(lr))
@@ -142,12 +144,12 @@ func getBatch() (*tensor.Tensor, *tensor.Tensor) {
 		0, 1,
 		1, 0,
 		1, 1,
-	}, 4, 2)
+	}, tensor.WithShapes(4, 2), tensor.WithDevice(device))
 	y := tensor.FromFloat32(storage, []float32{
 		0,
 		1,
 		1,
 		0,
-	}, 4, 1)
+	}, tensor.WithShapes(4, 1), tensor.WithDevice(device))
 	return x, y
 }

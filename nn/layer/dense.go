@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
 )
@@ -13,30 +14,30 @@ type Dense struct {
 	b *tensor.Tensor
 }
 
-func NewDense(output int) *Dense {
+func NewDense(output int, device consts.DeviceType) *Dense {
 	var layer Dense
-	layer.base = new("dense")
+	layer.base = new("dense", device)
 	layer.output = output
 	return &layer
 }
 
-func LoadDense(name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDense(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dense
-	layer.base = new("dense")
+	layer.base = new("dense", device)
 	layer.name = name
 	layer.output = int(args["output"])
-	layer.w = loadParam(params["w"])
-	layer.b = loadParam(params["b"])
+	layer.w = layer.loadParam(params["w"])
+	layer.b = layer.loadParam(params["b"])
 	return &layer
 }
 
 func (layer *Dense) Forward(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
 	if layer.w == nil {
-		layer.w = initW(inputShape[len(inputShape)-1], int64(layer.output))
+		layer.w = layer.initW(inputShape[len(inputShape)-1], int64(layer.output))
 	}
 	if layer.b == nil {
-		layer.b = initB(int64(layer.output))
+		layer.b = layer.initB(int64(layer.output))
 	}
 	return x.MatMul(layer.w).Add(layer.b)
 }
