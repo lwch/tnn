@@ -71,8 +71,8 @@ func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tens
 		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims*4))
 	}
 	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims)
-	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims)
 	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
+	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims)
 	q = layer.split(q)                    // (batch, heads, steps, dims/heads)
 	k = layer.split(k)                    // (batch, heads, steps, dims/heads)
 	v = layer.split(v)                    // (batch, heads, steps, dims/heads)
