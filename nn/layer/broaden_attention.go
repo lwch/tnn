@@ -16,6 +16,7 @@ type BroadenAttention struct {
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
+	wt         *tensor.Tensor
 }
 
 func NewBroadenAttention(steps, dims, multiple, heads int, dropout float64, device consts.DeviceType) *BroadenAttention {
@@ -47,6 +48,7 @@ func LoadBroadenAttention(device consts.DeviceType, name string, params map[stri
 	layer.bq = layer.loadParam(params["Bq"])
 	layer.bk = layer.loadParam(params["Bk"])
 	layer.bv = layer.loadParam(params["Bv"])
+	layer.wt = layer.loadParam(params["Wt"])
 	return &layer
 }
 
@@ -61,7 +63,7 @@ func (layer *BroadenAttention) Forward(q, k, mask *tensor.Tensor, train bool) *t
 		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims*layer.multiple))
 	}
 	if layer.wv == nil {
-		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
+		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims*layer.multiple))
 	}
 	if layer.bq == nil {
 		layer.bq = layer.initB(int64(layer.steps), int64(layer.dims*layer.multiple))
@@ -70,30 +72,34 @@ func (layer *BroadenAttention) Forward(q, k, mask *tensor.Tensor, train bool) *t
 		layer.bk = layer.initB(int64(layer.steps), int64(layer.dims*layer.multiple))
 	}
 	if layer.bv == nil {
-		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims))
+		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims*layer.multiple))
+	}
+	if layer.wt == nil {
+		layer.wt = layer.initW(int64(layer.heads*layer.multiple), int64(layer.heads))
 	}
 	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims*multiple)
-	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
+	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims*multiple)
 	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims*multiple)
-	q = layer.split(q, layer.multiple)    // (batch, heads*multiple, steps, dims/heads)
-	k = layer.split(k, layer.multiple)    // (batch, heads*multiple, steps, dims/heads)
-	v = layer.split(v, 1)                 // (batch, heads, steps, dims/heads)
-	y := q.MatMul(k.Transpose(-1, -2))    // (batch, heads, steps, steps)
-	y = y.Div(layer.scale)                // (batch, heads, steps, steps)
+	q = layer.split(q)                    // (batch, heads*multiple, steps, dims/heads)
+	k = layer.split(k)                    // (batch, heads*multiple, steps, dims/heads)
+	v = layer.split(v)                    // (batch, heads*multiple, steps, dims/heads)
+	y := q.MatMul(k.Transpose(-1, -2))    // (batch, heads*multiple, steps, steps)
+	y = y.Div(layer.scale)                // (batch, heads*multiple, steps, steps)
 	if mask != nil {
-		y = y.Add(mask) // (batch, heads, steps, steps)
+		y = y.Add(mask) // (batch, heads*multiple, steps, steps)
 	}
-	y = y.Softmax(-1)                                                   // (batch, heads, steps, steps)
-	y = y.Dropout(layer.dropout, train)                                 // (batch, heads, steps, steps)
-	y = y.MatMul(v)                                                     // (batch, heads, steps, dims/heads)
-	y = y.Permute(0, 2, 1, 3)                                           // (batch, steps, heads, dims/heads)
+	y = y.Softmax(-1)                                                   // (batch, heads*multiple, steps, steps)
+	y = y.Dropout(layer.dropout, train)                                 // (batch, heads*multiple, steps, steps)
+	y = y.MatMul(v)                                                     // (batch, heads*multiple, steps, dims/heads)
+	y = y.Permute(0, 2, 3, 1)                                           // (batch, steps, dims/heads, heads*multiple)
+	y = y.MatMul(layer.wt)                                              // (batch, steps, dims/heads, heads)
 	y = y.Reshape(y.Shapes()[0], int64(layer.steps), int64(layer.dims)) // (batch, steps, dims)
 	return y
 }
 
-func (layer *BroadenAttention) split(x *tensor.Tensor, multiple int) *tensor.Tensor {
+func (layer *BroadenAttention) split(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
-	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads*multiple), int64(layer.dims/layer.heads))
+	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads*layer.multiple), int64(layer.dims/layer.heads))
 	return v.Permute(0, 2, 1, 3)
 }
 
@@ -101,6 +107,7 @@ func (layer *BroadenAttention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv,
 		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv,
+		"Wt": layer.wt,
 	}
 }
 
