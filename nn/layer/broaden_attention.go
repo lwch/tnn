@@ -106,9 +106,10 @@ func (layer *BroadenAttention) Params() map[string]*tensor.Tensor {
 
 func (layer *BroadenAttention) Args() map[string]float32 {
 	return map[string]float32{
-		"steps":   float32(layer.steps),
-		"dims":    float32(layer.dims),
-		"heads":   float32(layer.heads),
-		"dropout": float32(layer.dropout),
+		"steps":    float32(layer.steps),
+		"dims":     float32(layer.dims),
+		"multiple": float32(layer.multiple),
+		"heads":    float32(layer.heads),
+		"dropout":  float32(layer.dropout),
 	}
 }
