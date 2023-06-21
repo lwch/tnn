@@ -75,8 +75,8 @@ func (layer *BroadenAttention) Forward(q, k, mask *tensor.Tensor, train bool) *t
 	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims*multiple)
 	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
 	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims*multiple)
-	q = layer.split(q, layer.multiple)    // (batch, heads, steps, dims/heads*multiple)
-	k = layer.split(k, layer.multiple)    // (batch, heads, steps, dims/heads*multiple)
+	q = layer.split(q, layer.multiple)    // (batch, heads*multiple, steps, dims/heads)
+	k = layer.split(k, layer.multiple)    // (batch, heads*multiple, steps, dims/heads)
 	v = layer.split(v, 1)                 // (batch, heads, steps, dims/heads)
 	y := q.MatMul(k.Transpose(-1, -2))    // (batch, heads, steps, steps)
 	y = y.Div(layer.scale)                // (batch, heads, steps, steps)
@@ -93,7 +93,7 @@ func (layer *BroadenAttention) Forward(q, k, mask *tensor.Tensor, train bool) *t
 
 func (layer *BroadenAttention) split(x *tensor.Tensor, multiple int) *tensor.Tensor {
 	inputShape := x.Shapes()
-	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads), int64(layer.dims/layer.heads*multiple))
+	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads*multiple), int64(layer.dims/layer.heads))
 	return v.Permute(0, 2, 1, 3)
 }
 
