@@ -34,7 +34,7 @@ func NewBroadenAttention(steps, dims, multiple, heads int, dropout float64, devi
 
 func LoadBroadenAttention(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer BroadenAttention
-	layer.base = new("self_attention", device)
+	layer.base = new("broaden_attention", device)
 	layer.name = name
 	layer.steps = int(args["steps"])
 	layer.dims = int(args["dims"])
