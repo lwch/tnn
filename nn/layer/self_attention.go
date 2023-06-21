@@ -53,22 +53,22 @@ func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tens
 		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, tensor.WithShapes(1))
 	}
 	if layer.wq == nil {
-		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims*4))
+		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wk == nil {
-		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims*4))
+		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wv == nil {
-		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims*4))
+		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.bq == nil {
-		layer.bq = layer.initB(int64(layer.steps), int64(layer.dims*4))
+		layer.bq = layer.initB(int64(layer.steps), int64(layer.dims))
 	}
 	if layer.bk == nil {
-		layer.bk = layer.initB(int64(layer.steps), int64(layer.dims*4))
+		layer.bk = layer.initB(int64(layer.steps), int64(layer.dims))
 	}
 	if layer.bv == nil {
-		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims*4))
+		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims))
 	}
 	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims)
 	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
