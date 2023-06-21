@@ -59,7 +59,7 @@ func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tens
 		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims*4))
 	}
 	if layer.wv == nil {
-		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims*4))
+		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.bq == nil {
 		layer.bq = layer.initB(int64(layer.steps), int64(layer.dims*4))
@@ -68,14 +68,14 @@ func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tens
 		layer.bk = layer.initB(int64(layer.steps), int64(layer.dims*4))
 	}
 	if layer.bv == nil {
-		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims*4))
+		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims))
 	}
 	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims)
 	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
 	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims)
-	q = layer.split(q)                    // (batch, heads, steps, dims/heads)
-	k = layer.split(k)                    // (batch, heads, steps, dims/heads)
-	v = layer.split(v)                    // (batch, heads, steps, dims/heads)
+	q = layer.split(q, true)              // (batch, heads, steps, dims/heads)
+	k = layer.split(k, true)              // (batch, heads, steps, dims/heads)
+	v = layer.split(v, false)             // (batch, heads, steps, dims/heads)
 	y := q.MatMul(k.Transpose(-1, -2))    // (batch, heads, steps, steps)
 	y = y.Div(layer.scale)                // (batch, heads, steps, steps)
 	if mask != nil {
@@ -89,9 +89,13 @@ func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tens
 	return y
 }
 
-func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
+func (layer *SelfAttention) split(x *tensor.Tensor, more bool) *tensor.Tensor {
 	inputShape := x.Shapes()
-	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads), int64(layer.dims/layer.heads*4))
+	n := 1
+	if more {
+		n = 4
+	}
+	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads), int64(layer.dims/layer.heads*n))
 	return v.Permute(0, 2, 1, 3)
 }
 
