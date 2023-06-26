@@ -59,7 +59,8 @@ func lastDim(t *tensor.Tensor) int64 {
 func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *tensor.Tensor {
 	outputShape := v.Shapes()
 	if layer.scale == nil {
-		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.hidden)))}, tensor.WithShapes(1))
+		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.hidden)))},
+			tensor.WithShapes(1), tensor.WithDevice(layer.device))
 	}
 	if layer.wq == nil {
 		layer.wq = layer.initW(lastDim(q), int64(layer.hidden))
