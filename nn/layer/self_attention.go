@@ -10,22 +10,21 @@ import (
 
 type SelfAttention struct {
 	*base
-	steps, dims, heads int
-	dropout            float64
-	scale              *tensor.Tensor
+	hidden, heads int
+	dropout       float64
+	scale         *tensor.Tensor
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
 }
 
-func NewSelfAttention(steps, dims, heads int, dropout float64, device consts.DeviceType) *SelfAttention {
+func NewSelfAttention(hidden, heads int, dropout float64, device consts.DeviceType) *SelfAttention {
 	var layer SelfAttention
 	layer.base = new("self_attention", device)
-	layer.steps = steps
-	layer.dims = dims
+	layer.hidden = hidden
 	layer.heads = heads
 	layer.dropout = dropout
-	if layer.dims%layer.heads != 0 {
+	if layer.hidden%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
 	return &layer
@@ -35,8 +34,7 @@ func LoadSelfAttention(device consts.DeviceType, name string, params map[string]
 	var layer SelfAttention
 	layer.base = new("self_attention", device)
 	layer.name = name
-	layer.steps = int(args["steps"])
-	layer.dims = int(args["dims"])
+	layer.hidden = int(args["hidden"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
 	layer.wq = layer.loadParam(params["Wq"])
@@ -48,50 +46,61 @@ func LoadSelfAttention(device consts.DeviceType, name string, params map[string]
 	return &layer
 }
 
-func (layer *SelfAttention) Forward(q, k, mask *tensor.Tensor, train bool) *tensor.Tensor {
+func stepDim(t *tensor.Tensor) int64 {
+	shapes := t.Shapes()
+	return shapes[len(shapes)-2]
+}
+
+func lastDim(t *tensor.Tensor) int64 {
+	shapes := t.Shapes()
+	return shapes[len(shapes)-1]
+}
+
+func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *tensor.Tensor {
+	outputShape := v.Shapes()
 	if layer.scale == nil {
-		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))}, tensor.WithShapes(1))
+		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.hidden)))}, tensor.WithShapes(1))
 	}
 	if layer.wq == nil {
-		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
+		layer.wq = layer.initW(lastDim(q), int64(layer.hidden))
 	}
 	if layer.wk == nil {
-		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
+		layer.wk = layer.initW(lastDim(k), int64(layer.hidden))
 	}
 	if layer.wv == nil {
-		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
+		layer.wv = layer.initW(lastDim(v), lastDim(v))
 	}
 	if layer.bq == nil {
-		layer.bq = layer.initB(int64(layer.steps), int64(layer.dims))
+		layer.bq = layer.initB(int64(layer.hidden))
 	}
 	if layer.bk == nil {
-		layer.bk = layer.initB(int64(layer.steps), int64(layer.dims))
+		layer.bk = layer.initB(int64(layer.hidden))
 	}
 	if layer.bv == nil {
-		layer.bv = layer.initB(int64(layer.steps), int64(layer.dims))
+		layer.bv = layer.initB(lastDim(v))
 	}
-	q = q.MatMul(layer.wq).Add(layer.bq)  // (batch, steps, dims)
-	v := k.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
-	k = k.MatMul(layer.wk).Add(layer.bk)  // (batch, steps, dims)
-	q = layer.split(q)                    // (batch, heads, steps, dims/heads)
-	k = layer.split(k)                    // (batch, heads, steps, dims/heads)
-	v = layer.split(v)                    // (batch, heads, steps, dims/heads)
-	y := q.MatMul(k.Transpose(-1, -2))    // (batch, heads, steps, steps)
-	y = y.Div(layer.scale)                // (batch, heads, steps, steps)
+	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
+	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
+	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
+	q = layer.split(q)                   // (batch, heads, steps, hidden/heads)
+	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
+	v = layer.split(v)                   // (batch, heads, steps, dims/heads)
+	y := q.MatMul(k.Transpose(-1, -2))   // (batch, heads, steps, steps)
+	y = y.Div(layer.scale)               // (batch, heads, steps, steps)
 	if mask != nil {
 		y = y.Add(mask) // (batch, heads, steps, steps)
 	}
-	y = y.Softmax(-1)                                                   // (batch, heads, steps, steps)
-	y = y.Dropout(layer.dropout, train)                                 // (batch, heads, steps, steps)
-	y = y.MatMul(v)                                                     // (batch, heads, steps, dims/heads)
-	y = y.Permute(0, 2, 1, 3)                                           // (batch, steps, heads, dims/heads)
-	y = y.Reshape(y.Shapes()[0], int64(layer.steps), int64(layer.dims)) // (batch, steps, dims)
+	y = y.Softmax(-1)                   // (batch, heads, steps, steps)
+	y = y.Dropout(layer.dropout, train) // (batch, heads, steps, steps)
+	y = y.MatMul(v)                     // (batch, heads, steps, dims/heads)
+	y = y.Permute(0, 2, 1, 3)           // (batch, steps, heads, dims/heads)
+	y = y.Reshape(outputShape...)       // (batch, steps, dims)
 	return y
 }
 
 func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
-	v := x.View(inputShape[0], int64(layer.steps), int64(layer.heads), int64(layer.dims/layer.heads))
+	v := x.View(inputShape[0], stepDim(x), int64(layer.heads), lastDim(x)/int64(layer.heads))
 	return v.Permute(0, 2, 1, 3)
 }
 
@@ -104,8 +113,7 @@ func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
 
 func (layer *SelfAttention) Args() map[string]float32 {
 	return map[string]float32{
-		"steps":   float32(layer.steps),
-		"dims":    float32(layer.dims),
+		"hidden":  float32(layer.hidden),
 		"heads":   float32(layer.heads),
 		"dropout": float32(layer.dropout),
 	}
