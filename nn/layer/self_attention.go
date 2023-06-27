@@ -1,8 +1,6 @@
 package layer
 
 import (
-	"math"
-
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
@@ -12,19 +10,20 @@ type SelfAttention struct {
 	*base
 	hidden, heads int
 	dropout       float64
-	scale         *tensor.Tensor
+	isCausal      bool
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
 	wo         *tensor.Tensor
 }
 
-func NewSelfAttention(hidden, heads int, dropout float64, device consts.DeviceType) *SelfAttention {
+func NewSelfAttention(hidden, heads int, dropout float64, isCausal bool, device consts.DeviceType) *SelfAttention {
 	var layer SelfAttention
 	layer.base = new("self_attention", device)
 	layer.hidden = hidden
 	layer.heads = heads
 	layer.dropout = dropout
+	layer.isCausal = isCausal
 	if layer.hidden%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
@@ -38,6 +37,7 @@ func LoadSelfAttention(device consts.DeviceType, name string, params map[string]
 	layer.hidden = int(args["hidden"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
+	layer.isCausal = args["is_causal"] != 0
 	layer.wq = layer.loadParam(params["Wq"])
 	layer.wk = layer.loadParam(params["Wk"])
 	layer.wv = layer.loadParam(params["Wv"])
@@ -60,9 +60,6 @@ func lastDim(t *tensor.Tensor) int64 {
 
 func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *tensor.Tensor {
 	inputShape := v.Shapes()
-	if layer.scale == nil {
-		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.hidden)))}, tensor.WithShapes(1))
-	}
 	if layer.wq == nil {
 		layer.wq = layer.initW(lastDim(q), int64(layer.hidden))
 	}
@@ -84,23 +81,16 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 	if layer.wo == nil {
 		layer.wo = layer.initW(int64(layer.hidden), lastDim(q))
 	}
-	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
-	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
-	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, hidden)
-	q = layer.split(q)                   // (batch, heads, steps, hidden/heads)
-	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
-	v = layer.split(v)                   // (batch, heads, steps, hidden/heads)
-	y := q.MatMul(k.Transpose(-1, -2))   // (batch, heads, steps, steps)
-	y = y.Div(layer.scale)               // (batch, heads, steps, steps)
-	if mask != nil {
-		y = y.Add(mask) // (batch, heads, steps, steps)
-	}
-	y = y.Softmax(-1)                                                // (batch, heads, steps, steps)
-	y = y.Dropout(layer.dropout, train)                              // (batch, heads, steps, steps)
-	y = y.MatMul(v)                                                  // (batch, heads, steps, hidden/heads)
-	y = y.Permute(0, 2, 1, 3)                                        // (batch, steps, heads, hidden/heads)
-	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)) // (batch, steps, hidden)
-	return y.MatMul(layer.wo)                                        // (batch, steps, dims)
+	q = q.MatMul(layer.wq).Add(layer.bq)                                                // (batch, steps, hidden)
+	k = k.MatMul(layer.wk).Add(layer.bk)                                                // (batch, steps, hidden)
+	v = v.MatMul(layer.wv).Add(layer.bv)                                                // (batch, steps, hidden)
+	q = layer.split(q)                                                                  // (batch, heads, steps, hidden/heads)
+	k = layer.split(k)                                                                  // (batch, heads, steps, hidden/heads)
+	v = layer.split(v)                                                                  // (batch, heads, steps, hidden/heads)
+	y := tensor.ScaledDotProductAttention(q, k, v, mask, layer.dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
+	y = y.Permute(0, 2, 1, 3)                                                           // (batch, steps, heads, hidden/heads)
+	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.hidden))                    // (batch, steps, hidden)
+	return y.MatMul(layer.wo)                                                           // (batch, steps, dims)
 }
 
 func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
@@ -118,9 +108,14 @@ func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
 }
 
 func (layer *SelfAttention) Args() map[string]float32 {
+	var isCausal float32
+	if layer.isCausal {
+		isCausal = 1
+	}
 	return map[string]float32{
-		"hidden":  float32(layer.hidden),
-		"heads":   float32(layer.heads),
-		"dropout": float32(layer.dropout),
+		"hidden":    float32(layer.hidden),
+		"heads":     float32(layer.heads),
+		"dropout":   float32(layer.dropout),
+		"is_causal": isCausal,
 	}
 }
