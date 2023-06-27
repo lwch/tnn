@@ -16,6 +16,7 @@ type SelfAttention struct {
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
+	wo         *tensor.Tensor
 }
 
 func NewSelfAttention(hidden, heads int, dropout float64, device consts.DeviceType) *SelfAttention {
@@ -43,6 +44,7 @@ func LoadSelfAttention(device consts.DeviceType, name string, params map[string]
 	layer.bq = layer.loadParam(params["Bq"])
 	layer.bk = layer.loadParam(params["Bk"])
 	layer.bv = layer.loadParam(params["Bv"])
+	layer.wo = layer.loadParam(params["Wo"])
 	return &layer
 }
 
@@ -57,7 +59,7 @@ func lastDim(t *tensor.Tensor) int64 {
 }
 
 func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *tensor.Tensor {
-	outputShape := v.Shapes()
+	inputShape := v.Shapes()
 	if layer.scale == nil {
 		layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.hidden)))}, tensor.WithShapes(1))
 	}
@@ -68,7 +70,7 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 		layer.wk = layer.initW(lastDim(k), int64(layer.hidden))
 	}
 	if layer.wv == nil {
-		layer.wv = layer.initW(lastDim(v), lastDim(v))
+		layer.wv = layer.initW(lastDim(v), int64(layer.hidden))
 	}
 	if layer.bq == nil {
 		layer.bq = layer.initB(int64(layer.hidden))
@@ -77,25 +79,28 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 		layer.bk = layer.initB(int64(layer.hidden))
 	}
 	if layer.bv == nil {
-		layer.bv = layer.initB(lastDim(v))
+		layer.bv = layer.initB(int64(layer.hidden))
+	}
+	if layer.wo == nil {
+		layer.wo = layer.initW(int64(layer.hidden), lastDim(q))
 	}
 	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
 	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
-	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, dims)
+	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, hidden)
 	q = layer.split(q)                   // (batch, heads, steps, hidden/heads)
 	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
-	v = layer.split(v)                   // (batch, heads, steps, dims/heads)
+	v = layer.split(v)                   // (batch, heads, steps, hidden/heads)
 	y := q.MatMul(k.Transpose(-1, -2))   // (batch, heads, steps, steps)
 	y = y.Div(layer.scale)               // (batch, heads, steps, steps)
 	if mask != nil {
 		y = y.Add(mask) // (batch, heads, steps, steps)
 	}
-	y = y.Softmax(-1)                   // (batch, heads, steps, steps)
-	y = y.Dropout(layer.dropout, train) // (batch, heads, steps, steps)
-	y = y.MatMul(v)                     // (batch, heads, steps, dims/heads)
-	y = y.Permute(0, 2, 1, 3)           // (batch, steps, heads, dims/heads)
-	y = y.Reshape(outputShape...)       // (batch, steps, dims)
-	return y
+	y = y.Softmax(-1)                                                // (batch, heads, steps, steps)
+	y = y.Dropout(layer.dropout, train)                              // (batch, heads, steps, steps)
+	y = y.MatMul(v)                                                  // (batch, heads, steps, hidden/heads)
+	y = y.Permute(0, 2, 1, 3)                                        // (batch, steps, heads, hidden/heads)
+	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)) // (batch, steps, hidden)
+	return y.MatMul(layer.wo)                                        // (batch, steps, dims)
 }
 
 func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
@@ -108,6 +113,7 @@ func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv,
 		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv,
+		"Wo": layer.wo,
 	}
 }
 
