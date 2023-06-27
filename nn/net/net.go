@@ -95,7 +95,7 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 			for j := 0; j < len(shape); j++ {
 				dense.Shape[j] = int32(shape[j])
 			}
-			dense.Data = p.Float32Value()
+			dense.Data = p.ToDevice(consts.KCPU).Float32Value()
 			net.Layers[i].Params[name] = &dense
 		}
 		net.Layers[i].Args = n.layers[i].Args()

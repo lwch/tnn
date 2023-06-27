@@ -25,7 +25,7 @@ func newTransformer(i int) *transformer {
 	output.SetName(fmt.Sprintf("transformer%d_output", i))
 	return &transformer{
 		attn:   attn,
-		nor:    layer.NewNor(),
+		nor:    layer.NewNor(device),
 		dense:  dense,
 		relu:   activation.NewReLU(),
 		output: output,
