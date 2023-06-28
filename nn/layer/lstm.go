@@ -127,3 +127,57 @@ func (layer *Lstm) Args() map[string]float32 {
 		"hidden":       float32(layer.hidden),
 	}
 }
+
+func (layer *Lstm) Freeze() {
+	if layer.Wi != nil {
+		layer.Wi.SetRequiresGrad(false)
+	}
+	if layer.Wf != nil {
+		layer.Wf.SetRequiresGrad(false)
+	}
+	if layer.Wg != nil {
+		layer.Wg.SetRequiresGrad(false)
+	}
+	if layer.Wo != nil {
+		layer.Wo.SetRequiresGrad(false)
+	}
+	if layer.Bi != nil {
+		layer.Bi.SetRequiresGrad(false)
+	}
+	if layer.Bf != nil {
+		layer.Bf.SetRequiresGrad(false)
+	}
+	if layer.Bg != nil {
+		layer.Bg.SetRequiresGrad(false)
+	}
+	if layer.Bo != nil {
+		layer.Bo.SetRequiresGrad(false)
+	}
+}
+
+func (layer *Lstm) Unfreeze() {
+	if layer.Wi != nil {
+		layer.Wi.SetRequiresGrad(true)
+	}
+	if layer.Wf != nil {
+		layer.Wf.SetRequiresGrad(true)
+	}
+	if layer.Wg != nil {
+		layer.Wg.SetRequiresGrad(true)
+	}
+	if layer.Wo != nil {
+		layer.Wo.SetRequiresGrad(true)
+	}
+	if layer.Bi != nil {
+		layer.Bi.SetRequiresGrad(true)
+	}
+	if layer.Bf != nil {
+		layer.Bf.SetRequiresGrad(true)
+	}
+	if layer.Bg != nil {
+		layer.Bg.SetRequiresGrad(true)
+	}
+	if layer.Bo != nil {
+		layer.Bo.SetRequiresGrad(true)
+	}
+}

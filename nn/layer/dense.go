@@ -54,3 +54,21 @@ func (layer *Dense) Args() map[string]float32 {
 		"output": float32(layer.output),
 	}
 }
+
+func (layer *Dense) Freeze() {
+	if layer.w != nil {
+		layer.w.SetRequiresGrad(false)
+	}
+	if layer.b != nil {
+		layer.b.SetRequiresGrad(false)
+	}
+}
+
+func (layer *Dense) Unfreeze() {
+	if layer.w != nil {
+		layer.w.SetRequiresGrad(true)
+	}
+	if layer.b != nil {
+		layer.b.SetRequiresGrad(true)
+	}
+}

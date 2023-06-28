@@ -35,3 +35,11 @@ func (layer *base) Params() map[string]*tensor.Tensor {
 func (*base) Args() map[string]float32 {
 	return nil
 }
+
+func (*base) Freeze() {
+	// activation have no params
+}
+
+func (*base) Unfreeze() {
+	// activation have no params
+}

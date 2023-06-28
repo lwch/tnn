@@ -13,6 +13,8 @@ type Layer interface {
 	SetName(name string)
 	Name() string
 	Args() map[string]float32
+	Freeze()
+	Unfreeze()
 }
 
 type base struct {
@@ -79,4 +81,12 @@ func (b *base) initB(shapes ...int64) *tensor.Tensor {
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)
 	return t
+}
+
+func (b *base) Freeze() {
+	panic("not implemented")
+}
+
+func (b *base) Unfreeze() {
+	panic("not implemented")
 }

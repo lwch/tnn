@@ -82,3 +82,21 @@ func (layer *Rnn) Args() map[string]float32 {
 		"hidden":       float32(layer.hidden),
 	}
 }
+
+func (layer *Rnn) Freeze() {
+	if layer.w != nil {
+		layer.w.SetRequiresGrad(false)
+	}
+	if layer.b != nil {
+		layer.b.SetRequiresGrad(false)
+	}
+}
+
+func (layer *Rnn) Unfreeze() {
+	if layer.w != nil {
+		layer.w.SetRequiresGrad(true)
+	}
+	if layer.b != nil {
+		layer.b.SetRequiresGrad(true)
+	}
+}

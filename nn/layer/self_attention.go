@@ -119,3 +119,51 @@ func (layer *SelfAttention) Args() map[string]float32 {
 		"is_causal": isCausal,
 	}
 }
+
+func (layer *SelfAttention) Freeze() {
+	if layer.wq != nil {
+		layer.wq.SetRequiresGrad(false)
+	}
+	if layer.wk != nil {
+		layer.wk.SetRequiresGrad(false)
+	}
+	if layer.wv != nil {
+		layer.wv.SetRequiresGrad(false)
+	}
+	if layer.bq != nil {
+		layer.bq.SetRequiresGrad(false)
+	}
+	if layer.bk != nil {
+		layer.bk.SetRequiresGrad(false)
+	}
+	if layer.bv != nil {
+		layer.bv.SetRequiresGrad(false)
+	}
+	if layer.wo != nil {
+		layer.wo.SetRequiresGrad(false)
+	}
+}
+
+func (layer *SelfAttention) Unfreeze() {
+	if layer.wq != nil {
+		layer.wq.SetRequiresGrad(true)
+	}
+	if layer.wk != nil {
+		layer.wk.SetRequiresGrad(true)
+	}
+	if layer.wv != nil {
+		layer.wv.SetRequiresGrad(true)
+	}
+	if layer.bq != nil {
+		layer.bq.SetRequiresGrad(true)
+	}
+	if layer.bk != nil {
+		layer.bk.SetRequiresGrad(true)
+	}
+	if layer.bv != nil {
+		layer.bv.SetRequiresGrad(true)
+	}
+	if layer.wo != nil {
+		layer.wo.SetRequiresGrad(true)
+	}
+}
