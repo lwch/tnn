@@ -1,6 +1,11 @@
 package initializer
 
-import "gonum.org/v1/gonum/stat/distuv"
+import (
+	"time"
+
+	"golang.org/x/exp/rand"
+	"gonum.org/v1/gonum/stat/distuv"
+)
 
 type Normal struct {
 	n distuv.Normal
@@ -13,6 +18,7 @@ func NewNormal(mean, stddev float64) *Normal {
 		n: distuv.Normal{
 			Mu:    mean,
 			Sigma: stddev,
+			Src:   rand.NewSource(uint64(time.Now().UnixNano())),
 		},
 	}
 }

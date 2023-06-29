@@ -2,7 +2,9 @@ package initializer
 
 import (
 	"math"
+	"time"
 
+	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
@@ -18,6 +20,7 @@ func NewXavierUniform(gain float64) *XavierUniform {
 		n: distuv.Uniform{
 			Min: 0,
 			Max: 1,
+			Src: rand.NewSource(uint64(time.Now().UnixNano())),
 		},
 		gain: gain,
 	}

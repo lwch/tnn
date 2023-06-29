@@ -7,6 +7,7 @@ require (
 	github.com/lwch/runtime v1.0.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0
+	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 	gonum.org/v1/gonum v0.13.0
 	gonum.org/v1/plot v0.13.0
 	google.golang.org/protobuf v1.30.0
@@ -25,7 +26,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/image v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
