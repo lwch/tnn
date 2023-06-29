@@ -27,7 +27,7 @@ func NewXavierUniform(gain float64) *XavierUniform {
 }
 
 func (rand *XavierUniform) Rand() float32 {
-	a := rand.gain * math.Sqrt(6/(rand.n.Min+rand.n.Max))
+	a := rand.gain * math.Sqrt(6/(rand.n.Min+rand.n.Max+1e-9))
 	rand.n.Min = -a
 	rand.n.Max = a
 	return float32(rand.n.Rand())
