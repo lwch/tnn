@@ -8,20 +8,22 @@ import (
 
 type transformer struct {
 	attn    *layer.SelfAttention
-	nor     *layer.Nor
 	flatten *layer.Flatten
 	dense   *layer.Dense
 	sigmoid *activation.Sigmoid
+	norm1   *layer.LayerNorm
+	norm2   *layer.LayerNorm
 	output  *layer.Dense
 }
 
 func newTransformer() *transformer {
 	return &transformer{
 		attn:    layer.NewSelfAttention(dims, 1, 0.1, true, device),
-		nor:     layer.NewNor(device),
 		flatten: layer.NewFlatten(),
 		dense:   layer.NewDense(unitSize*4, device),
 		sigmoid: activation.NewSigmoid(),
+		norm1:   layer.NewLayerNorm(device),
+		norm2:   layer.NewLayerNorm(device),
 		output:  layer.NewDense(unitSize, device),
 	}
 }
@@ -29,14 +31,14 @@ func newTransformer() *transformer {
 func (t *transformer) Forward(x *tensor.Tensor) *tensor.Tensor {
 	y := t.attn.Forward(x, x, x, nil, true)
 	y = y.Add(x)
-	selfOut := t.nor.Forward(y)
+	selfOut := t.norm1.Forward(y)
 	y = t.flatten.Forward(y)
 	y = t.dense.Forward(y)
 	y = t.sigmoid.Forward(y)
 	y = t.output.Forward(y)
 	y = y.Reshape(batchSize, steps, dims)
 	y = y.Add(selfOut)
-	y = t.nor.Forward(y)
+	y = t.norm2.Forward(y)
 	return y
 }
 
@@ -49,6 +51,12 @@ func (t *transformer) params() []*tensor.Tensor {
 		ret = append(ret, p)
 	}
 	for _, p := range t.output.Params() {
+		ret = append(ret, p)
+	}
+	for _, p := range t.norm1.Params() {
+		ret = append(ret, p)
+	}
+	for _, p := range t.norm2.Params() {
 		ret = append(ret, p)
 	}
 	return ret

@@ -10,24 +10,30 @@ import (
 
 type transformer struct {
 	attn   *layer.SelfAttention
-	nor    *layer.Nor
 	dense  *layer.Dense
 	relu   *activation.ReLU
+	norm1  *layer.LayerNorm
+	norm2  *layer.LayerNorm
 	output *layer.Dense
 }
 
 func newTransformer(i int) *transformer {
-	attn := layer.NewSelfAttention(embeddingDim, heads, 0, true, device)
+	attn := layer.NewSelfAttention(embeddingDim, heads, 0, false, device)
 	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
 	dense := layer.NewDense(embeddingDim*4, device)
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
 	output := layer.NewDense(embeddingDim, device)
 	output.SetName(fmt.Sprintf("transformer%d_output", i))
+	norm1 := layer.NewLayerNorm(device)
+	norm1.SetName(fmt.Sprintf("transformer%d_norm1", i))
+	norm2 := layer.NewLayerNorm(device)
+	norm2.SetName(fmt.Sprintf("transformer%d_norm2", i))
 	return &transformer{
 		attn:   attn,
-		nor:    layer.NewNor(device),
 		dense:  dense,
 		relu:   activation.NewReLU(),
+		norm1:  norm1,
+		norm2:  norm2,
 		output: output,
 	}
 }
@@ -49,12 +55,12 @@ func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *t
 		tensor.WithDevice(device))
 	y := t.attn.Forward(q, k, k, paddingMask, train)
 	y = y.Add(q)
-	selfOut := t.nor.Forward(y)
+	selfOut := t.norm1.Forward(y)
 	y = t.dense.Forward(y)
 	y = t.relu.Forward(y)
 	y = t.output.Forward(y)
 	y = y.Add(selfOut)
-	y = t.nor.Forward(y)
+	y = t.norm2.Forward(y)
 	return y
 }
 
@@ -69,15 +75,22 @@ func (t *transformer) params() []*tensor.Tensor {
 	for _, p := range t.output.Params() {
 		ret = append(ret, p)
 	}
+	for _, p := range t.norm1.Params() {
+		ret = append(ret, p)
+	}
+	for _, p := range t.norm2.Params() {
+		ret = append(ret, p)
+	}
 	return ret
 }
 
 func (t *transformer) layers() []layer.Layer {
 	return []layer.Layer{
 		t.attn,
-		t.nor,
 		t.dense,
 		t.relu,
+		t.norm1,
+		t.norm2,
 		t.output,
 	}
 }
@@ -85,11 +98,13 @@ func (t *transformer) layers() []layer.Layer {
 func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
 	t.attn = layers[idx].(*layer.SelfAttention)
 	idx++
-	t.nor = layers[idx].(*layer.Nor)
-	idx++
 	t.dense = layers[idx].(*layer.Dense)
 	idx++
 	t.relu = layers[idx].(*activation.ReLU)
+	idx++
+	t.norm1 = layers[idx].(*layer.LayerNorm)
+	idx++
+	t.norm2 = layers[idx].(*layer.LayerNorm)
 	idx++
 	t.output = layers[idx].(*layer.Dense)
 	idx++

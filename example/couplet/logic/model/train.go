@@ -170,6 +170,12 @@ func (m *Model) showModelInfo() {
 		cnt = paramSize(attn.output.Params())
 		total += cnt
 		table.Append([]string{attn.output.Name(), fmt.Sprintf("%d", cnt)})
+		cnt = paramSize(attn.norm1.Params())
+		total += cnt
+		table.Append([]string{attn.norm1.Name(), fmt.Sprintf("%d", cnt)})
+		cnt = paramSize(attn.norm2.Params())
+		total += cnt
+		table.Append([]string{attn.norm2.Name(), fmt.Sprintf("%d", cnt)})
 	}
 	cnt := paramSize(m.output.Params())
 	total += cnt
