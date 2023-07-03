@@ -28,7 +28,7 @@ var loadFuncs = map[string]loadFunc{
 	// activation
 	"sigmoid": activation.LoadSigmoid,
 	// "softplus": activation.Load("softplus"),
-	// "tanh":     activation.Load("tanh"),
+	"tanh": activation.LoadTanh,
 	"relu": activation.LoadRelu,
 	"gelu": activation.LoadGelu,
 }
