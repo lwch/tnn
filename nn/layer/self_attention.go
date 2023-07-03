@@ -81,16 +81,20 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 	if layer.wo == nil {
 		layer.wo = layer.initW(int64(layer.hidden), lastDim(q))
 	}
-	q = q.MatMul(layer.wq).Add(layer.bq)                                                // (batch, steps, hidden)
-	k = k.MatMul(layer.wk).Add(layer.bk)                                                // (batch, steps, hidden)
-	v = v.MatMul(layer.wv).Add(layer.bv)                                                // (batch, steps, hidden)
-	q = layer.split(q)                                                                  // (batch, heads, steps, hidden/heads)
-	k = layer.split(k)                                                                  // (batch, heads, steps, hidden/heads)
-	v = layer.split(v)                                                                  // (batch, heads, steps, hidden/heads)
-	y := tensor.ScaledDotProductAttention(q, k, v, mask, layer.dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
-	y = y.Permute(0, 2, 1, 3)                                                           // (batch, steps, heads, hidden/heads)
-	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.hidden))                    // (batch, steps, hidden)
-	return y.MatMul(layer.wo)                                                           // (batch, steps, dims)
+	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
+	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
+	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, hidden)
+	q = layer.split(q)                   // (batch, heads, steps, hidden/heads)
+	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
+	v = layer.split(v)                   // (batch, heads, steps, hidden/heads)
+	dropout := layer.dropout
+	if train {
+		dropout = 0
+	}
+	y := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
+	y = y.Permute(0, 2, 1, 3)                                                     // (batch, steps, heads, hidden/heads)
+	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.hidden))              // (batch, steps, hidden)
+	return y.MatMul(layer.wo)                                                     // (batch, steps, dims)
 }
 
 func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
