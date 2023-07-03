@@ -88,7 +88,7 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
 	v = layer.split(v)                   // (batch, heads, steps, hidden/heads)
 	dropout := layer.dropout
-	if train {
+	if !train {
 		dropout = 0
 	}
 	y := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
