@@ -16,10 +16,10 @@ import (
 type loadFunc func(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
-	"dense":   layer.LoadDense,
-	"dropout": layer.LoadDropout,
-	// "conv2d":  layer.LoadConv2D,
-	// "maxpool": layer.LoadMaxPool,
+	"dense":          layer.LoadDense,
+	"dropout":        layer.LoadDropout,
+	"conv1d":         layer.LoadConv1D,
+	"maxpool1d":      layer.LoadMaxPool1D,
 	"rnn":            layer.LoadRnn,
 	"lstm":           layer.LoadLstm,
 	"self_attention": layer.LoadSelfAttention,
@@ -27,10 +27,9 @@ var loadFuncs = map[string]loadFunc{
 	"flatten":        layer.LoadFlatten,
 	// activation
 	"sigmoid": activation.LoadSigmoid,
-	// "softplus": activation.Load("softplus"),
-	"tanh": activation.LoadTanh,
-	"relu": activation.LoadRelu,
-	"gelu": activation.LoadGelu,
+	"tanh":    activation.LoadTanh,
+	"relu":    activation.LoadRelu,
+	"gelu":    activation.LoadGelu,
 }
 
 type Net struct {
