@@ -75,8 +75,10 @@ func (b *base) initW(shapes ...int64) *tensor.Tensor {
 	return t
 }
 
+var bInitializer = initializer.NewNormal(0, 0.01)
+
 func (b *base) initB(shapes ...int64) *tensor.Tensor {
-	t := tensor.Zeros(nil, consts.KFloat,
+	t := tensor.FromFloat32(nil, bInitializer.RandShape(shapes...),
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)
