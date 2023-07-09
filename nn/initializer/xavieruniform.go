@@ -34,7 +34,7 @@ func (rand *XavierUniform) Rand() float32 {
 }
 
 func (rand *XavierUniform) RandN(n int) []float32 {
-	a := rand.gain * math.Sqrt(6/(rand.n.Min+rand.n.Max))
+	a := rand.gain * math.Sqrt(6/(rand.n.Min+rand.n.Max+1e-9))
 	rand.n.Min = -a
 	rand.n.Max = a
 	ret := make([]float32, n)
@@ -49,7 +49,7 @@ func (rand *XavierUniform) RandShape(shapes ...int64) []float32 {
 	for _, s := range shapes {
 		size *= s
 	}
-	a := rand.gain * math.Sqrt(6/float64(size))
+	a := rand.gain * math.Sqrt(6/float64(rand.n.Min+rand.n.Max+1e-9))
 	rand.n.Min = -a
 	rand.n.Max = a
 	ret := make([]float32, size)
