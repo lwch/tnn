@@ -65,7 +65,7 @@ func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
 	return t
 }
 
-var wInitializer = initializer.NewNormal(0, 0.001)
+var wInitializer = initializer.NewNormal(0, 0.0001)
 
 func (b *base) initW(shapes ...int64) *tensor.Tensor {
 	t := tensor.FromFloat32(nil, wInitializer.RandShape(shapes...),
@@ -75,7 +75,7 @@ func (b *base) initW(shapes ...int64) *tensor.Tensor {
 	return t
 }
 
-var bInitializer = initializer.NewNormal(0, 0.001)
+var bInitializer = initializer.NewNormal(0, 0.0001)
 
 func (b *base) initB(shapes ...int64) *tensor.Tensor {
 	t := tensor.FromFloat32(nil, bInitializer.RandShape(shapes...),
