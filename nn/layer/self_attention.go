@@ -14,7 +14,6 @@ type SelfAttention struct {
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
-	wo         *tensor.Tensor
 }
 
 func NewSelfAttention(hidden, heads int, dropout float64, isCausal bool, device consts.DeviceType) *SelfAttention {
@@ -44,7 +43,6 @@ func LoadSelfAttention(device consts.DeviceType, name string, params map[string]
 	layer.bq = layer.loadParam(params["Bq"])
 	layer.bk = layer.loadParam(params["Bk"])
 	layer.bv = layer.loadParam(params["Bv"])
-	layer.wo = layer.loadParam(params["Wo"])
 	return &layer
 }
 
@@ -78,9 +76,6 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 	if layer.bv == nil {
 		layer.bv = layer.initB(int64(layer.hidden))
 	}
-	if layer.wo == nil {
-		layer.wo = layer.initW(int64(layer.hidden), lastDim(q))
-	}
 	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
 	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
 	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, hidden)
@@ -94,7 +89,7 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 	y := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
 	y = y.Permute(0, 2, 1, 3)                                                     // (batch, steps, heads, hidden/heads)
 	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.hidden))              // (batch, steps, hidden)
-	return y.MatMul(layer.wo)                                                     // (batch, steps, dims)
+	return y
 }
 
 func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
@@ -107,7 +102,6 @@ func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv,
 		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv,
-		"Wo": layer.wo,
 	}
 }
 
@@ -143,9 +137,6 @@ func (layer *SelfAttention) Freeze() {
 	if layer.bv != nil {
 		layer.bv.SetRequiresGrad(false)
 	}
-	if layer.wo != nil {
-		layer.wo.SetRequiresGrad(false)
-	}
 }
 
 func (layer *SelfAttention) Unfreeze() {
@@ -166,8 +157,5 @@ func (layer *SelfAttention) Unfreeze() {
 	}
 	if layer.bv != nil {
 		layer.bv.SetRequiresGrad(true)
-	}
-	if layer.wo != nil {
-		layer.wo.SetRequiresGrad(true)
 	}
 }
