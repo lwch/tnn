@@ -18,13 +18,13 @@ type transformer struct {
 
 func newTransformer() *transformer {
 	return &transformer{
-		attn:    layer.NewSelfAttention(dims, 1, 0.1, true, device),
+		attn:    layer.NewSelfAttention(dims, 1, 0.1, true, layer.WithDevice(device)),
 		flatten: layer.NewFlatten(),
-		dense:   layer.NewDense(unitSize*4, device),
+		dense:   layer.NewDense(unitSize*4, layer.WithDevice(device)),
 		sigmoid: activation.NewSigmoid(),
-		norm1:   layer.NewLayerNorm(device),
-		norm2:   layer.NewLayerNorm(device),
-		output:  layer.NewDense(unitSize, device),
+		norm1:   layer.NewLayerNorm(layer.WithDevice(device)),
+		norm2:   layer.NewLayerNorm(layer.WithDevice(device)),
+		output:  layer.NewDense(unitSize, layer.WithDevice(device)),
 	}
 }
 

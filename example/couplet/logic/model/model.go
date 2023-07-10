@@ -61,7 +61,7 @@ func (m *Model) build() {
 		m.attn = append(m.attn, newTransformer(i))
 	}
 	m.relu = activation.NewReLU()
-	m.output = layer.NewDense(len(m.vocabs), device)
+	m.output = layer.NewDense(len(m.vocabs), layer.WithDevice(device))
 	m.output.SetName("output")
 }
 

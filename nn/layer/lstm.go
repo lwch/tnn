@@ -7,7 +7,7 @@ import (
 )
 
 type Lstm struct {
-	*base
+	base
 	featureSize, steps int
 	hidden             int
 	Wi, Bi             *tensor.Tensor
@@ -16,9 +16,9 @@ type Lstm struct {
 	Wo, Bo             *tensor.Tensor
 }
 
-func NewLstm(featureSize, steps, hidden int, device consts.DeviceType) *Lstm {
+func NewLstm(featureSize, steps, hidden int, opts ...LayerCreateOption) *Lstm {
 	var layer Lstm
-	layer.base = new("lstm", device)
+	layer.new("lstm", opts...)
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
@@ -27,7 +27,7 @@ func NewLstm(featureSize, steps, hidden int, device consts.DeviceType) *Lstm {
 
 func LoadLstm(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Lstm
-	layer.base = new("lstm", device)
+	layer.new("lstm", WithDevice(device))
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])

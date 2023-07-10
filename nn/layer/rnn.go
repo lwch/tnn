@@ -7,7 +7,7 @@ import (
 )
 
 type Rnn struct {
-	*base
+	base
 	featureSize, steps int
 	hidden             int
 	// params
@@ -15,9 +15,9 @@ type Rnn struct {
 	b *tensor.Tensor
 }
 
-func NewRnn(featureSize, steps, hidden int, device consts.DeviceType) *Rnn {
+func NewRnn(featureSize, steps, hidden int, opts ...LayerCreateOption) *Rnn {
 	var layer Rnn
-	layer.base = new("rnn", device)
+	layer.new("rnn", opts...)
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
@@ -26,7 +26,7 @@ func NewRnn(featureSize, steps, hidden int, device consts.DeviceType) *Rnn {
 
 func LoadRnn(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Rnn
-	layer.base = new("rnn", device)
+	layer.new("rnn", WithDevice(device))
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])

@@ -22,7 +22,7 @@ func newModel(optimizer optimizer.Optimizer) *model {
 	}
 	m.flatten = layer.NewFlatten()
 	m.sigmoid = activation.NewSigmoid()
-	m.outputLayer = layer.NewDense(1, device)
+	m.outputLayer = layer.NewDense(1, layer.WithDevice(device))
 	m.optimizer = optimizer
 	return &m
 }

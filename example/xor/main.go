@@ -41,9 +41,9 @@ func main() {
 }
 
 func train() {
-	hidden := layer.NewDense(hiddenSize, device)
+	hidden := layer.NewDense(hiddenSize, layer.WithDevice(device))
 	hidden.SetName("hidden")
-	outputLayer := layer.NewDense(1, device)
+	outputLayer := layer.NewDense(1, layer.WithDevice(device))
 	outputLayer.SetName("output")
 
 	net := net.New(device)

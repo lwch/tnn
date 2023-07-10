@@ -18,15 +18,15 @@ type transformer struct {
 }
 
 func newTransformer(i int) *transformer {
-	attn := layer.NewSelfAttention(embeddingDim, heads, 0, false, device)
+	attn := layer.NewSelfAttention(embeddingDim, heads, 0, false, layer.WithDevice(device))
 	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
-	dense := layer.NewDense(embeddingDim*4, device)
+	dense := layer.NewDense(embeddingDim*4, layer.WithDevice(device))
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
-	output := layer.NewDense(embeddingDim, device)
+	output := layer.NewDense(embeddingDim, layer.WithDevice(device))
 	output.SetName(fmt.Sprintf("transformer%d_output", i))
-	norm1 := layer.NewLayerNorm(device)
+	norm1 := layer.NewLayerNorm(layer.WithDevice(device))
 	norm1.SetName(fmt.Sprintf("transformer%d_norm1", i))
-	norm2 := layer.NewLayerNorm(device)
+	norm2 := layer.NewLayerNorm(layer.WithDevice(device))
 	norm2.SetName(fmt.Sprintf("transformer%d_norm2", i))
 	return &transformer{
 		attn:   attn,

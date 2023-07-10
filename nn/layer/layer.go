@@ -18,15 +18,32 @@ type Layer interface {
 }
 
 type base struct {
+	init   initializer.Initializer
 	name   string
 	class  string
 	device consts.DeviceType
 }
 
-func new(class string, device consts.DeviceType) *base {
-	return &base{
-		class:  class,
-		device: device,
+type LayerCreateOption func(*base)
+
+func WithInitializer(init initializer.Initializer) LayerCreateOption {
+	return func(b *base) {
+		b.init = init
+	}
+}
+
+func WithDevice(device consts.DeviceType) LayerCreateOption {
+	return func(b *base) {
+		b.device = device
+	}
+}
+
+func (b *base) new(class string, opts ...LayerCreateOption) {
+	b.class = class
+	b.device = consts.KCPU
+	b.init = initializer.NewXavierUniform(1)
+	for _, opt := range opts {
+		opt(b)
 	}
 }
 
@@ -65,20 +82,16 @@ func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
 	return t
 }
 
-var wInitializer = initializer.NewNormal(0, 0.0001)
-
 func (b *base) initW(shapes ...int64) *tensor.Tensor {
-	t := tensor.FromFloat32(nil, wInitializer.RandShape(shapes...),
+	t := tensor.FromFloat32(nil, b.init.RandShape(shapes...),
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)
 	return t
 }
 
-var bInitializer = initializer.NewNormal(0, 0.0001)
-
 func (b *base) initB(shapes ...int64) *tensor.Tensor {
-	t := tensor.FromFloat32(nil, bInitializer.RandShape(shapes...),
+	t := tensor.Zeros(nil, consts.KFloat,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)

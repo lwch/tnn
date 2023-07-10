@@ -7,20 +7,20 @@ import (
 )
 
 type Dropout struct {
-	*base
+	base
 	keep float64
 }
 
 func NewDropout(keep float64) *Dropout {
 	var layer Dropout
-	layer.base = new("dropout", consts.KCPU)
+	layer.new("dropout")
 	layer.keep = keep
 	return &layer
 }
 
 func LoadDropout(_ consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dropout
-	layer.base = new("dropout", consts.KCPU)
+	layer.new("dropout")
 	layer.name = name
 	layer.keep = float64(args["keep"])
 	return &layer

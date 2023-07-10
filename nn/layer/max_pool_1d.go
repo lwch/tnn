@@ -7,7 +7,7 @@ import (
 )
 
 type MaxPool1D struct {
-	*base
+	base
 	kernel   int
 	stride   int
 	padding  int
@@ -15,9 +15,9 @@ type MaxPool1D struct {
 	ceil     bool
 }
 
-func NewMaxPool1D(kernel int, device consts.DeviceType) *MaxPool1D {
+func NewMaxPool1D(kernel int, opts ...LayerCreateOption) *MaxPool1D {
 	var layer MaxPool1D
-	layer.base = new("maxpool1d", device)
+	layer.new("maxpool1d", opts...)
 	layer.kernel = kernel
 	layer.stride = -1
 	layer.padding = 0
@@ -44,7 +44,7 @@ func (layer *MaxPool1D) SetCeil(ceil bool) {
 
 func LoadMaxPool1D(device consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer MaxPool1D
-	layer.base = new("maxpool1d", device)
+	layer.new("maxpool1d", WithDevice(device))
 	layer.name = name
 	layer.kernel = int(args["kernel"])
 	layer.stride = int(args["stride"])
