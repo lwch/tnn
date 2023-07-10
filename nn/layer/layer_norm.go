@@ -25,6 +25,7 @@ func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*pb.
 	layer.new("layer_norm", WithDevice(device))
 	layer.name = name
 	layer.w = layer.loadParam(params["w"])
+	layer.b = layer.loadParam(params["b"])
 	return &layer
 }
 
