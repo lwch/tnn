@@ -48,13 +48,13 @@ func (m *model) Apply() {
 	m.optimizer.Step(m.params())
 }
 
-func (m *model) Predict(x *tensor.Tensor) []float32 {
-	return m.Forward(x).Float32Value()
+func (m *model) Predict(x *tensor.Tensor) []float64 {
+	return m.Forward(x).Float64Value()
 }
 
-func (m *model) Loss(x, y *tensor.Tensor) float32 {
+func (m *model) Loss(x, y *tensor.Tensor) float64 {
 	pred := m.Forward(x)
-	return float32(lossFunc(pred, y).Value())
+	return lossFunc(pred, y).Value()
 }
 
 func (m *model) params() []*tensor.Tensor {

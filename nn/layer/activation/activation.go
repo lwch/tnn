@@ -32,7 +32,7 @@ func (layer *base) Params() map[string]*tensor.Tensor {
 	return nil
 }
 
-func (*base) Args() map[string]float32 {
+func (*base) Args() map[string]float64 {
 	return nil
 }
 

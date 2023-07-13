@@ -23,14 +23,14 @@ func (m *Model) buildEmbedding(dir string) {
 }
 
 // loadEmbedding 加载每个词的embedding
-func (m *Model) loadEmbedding(dir string) [][]float32 {
+func (m *Model) loadEmbedding(dir string) [][]float64 {
 	fmt.Println("load embedding...")
 	f, err := os.Open(dir)
 	runtime.Assert(err)
 	defer f.Close()
-	var ret [][]float32
+	var ret [][]float64
 	for i := 0; i < len(m.vocabs); i++ {
-		data := make([]float32, embeddingDim)
+		data := make([]float64, embeddingDim)
 		runtime.Assert(binary.Read(f, binary.BigEndian, &data))
 		ret = append(ret, data)
 	}

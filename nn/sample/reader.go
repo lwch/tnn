@@ -41,7 +41,7 @@ func (r *Reader) LabelSize() uint32 {
 }
 
 // ReadSample read sample data
-func (r *Reader) ReadSample(idx uint32, features, labels []float32) error {
+func (r *Reader) ReadSample(idx uint32, features, labels []float64) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 	sampleSize := (r.hdr.FeatureSize + r.hdr.LabelSize) * 4
