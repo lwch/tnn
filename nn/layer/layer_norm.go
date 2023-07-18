@@ -20,7 +20,7 @@ func NewLayerNorm(opts ...LayerCreateOption) *LayerNorm {
 	return &layer
 }
 
-func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*pb.Dense, _ map[string]float64) Layer {
+func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer LayerNorm
 	layer.new("layer_norm", WithDevice(device))
 	layer.name = name
@@ -31,7 +31,7 @@ func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*pb.
 
 func (layer *LayerNorm) Forward(x *tensor.Tensor) *tensor.Tensor {
 	if layer.eps == nil {
-		layer.eps = tensor.FromFloat64(nil, []float64{1e-9}, tensor.WithShapes(1), tensor.WithDevice(layer.device))
+		layer.eps = tensor.FromFloat32(nil, []float32{1e-9}, tensor.WithShapes(1), tensor.WithDevice(layer.device))
 	}
 	if layer.w == nil {
 		layer.w = layer.initW(lastDim(x))

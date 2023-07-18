@@ -2,7 +2,7 @@ package model
 
 import "github.com/lwch/gotorch/consts"
 
-const embeddingDim = 128 // 128个float64表示一个字向量
+const embeddingDim = 128 // 128个float32表示一个字向量
 const paddingSize = 34   // 最长为34
 const heads = 8
 const maskSize = paddingSize * paddingSize

@@ -19,7 +19,7 @@ func NewGeLU(tanh bool) *GeLU {
 	return &layer
 }
 
-func LoadGelu(_ consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float64) layer.Layer {
+func LoadGelu(_ consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float32) layer.Layer {
 	var layer GeLU
 	layer.base = new("gelu")
 	layer.name = name
@@ -33,12 +33,12 @@ func (layer *GeLU) Forward(x *tensor.Tensor) *tensor.Tensor {
 	return x.Gelu(layer.tanh)
 }
 
-func (layer *GeLU) Args() map[string]float64 {
-	var tanh float64
+func (layer *GeLU) Args() map[string]float32 {
+	var tanh float32
 	if layer.tanh {
 		tanh = 1.
 	}
-	return map[string]float64{
+	return map[string]float32{
 		"tanh": tanh,
 	}
 }

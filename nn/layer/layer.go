@@ -12,7 +12,7 @@ type Layer interface {
 	Class() string
 	SetName(name string)
 	Name() string
-	Args() map[string]float64
+	Args() map[string]float32
 	Freeze()
 	Unfreeze()
 }
@@ -63,7 +63,7 @@ func (b *base) Params() map[string]*tensor.Tensor {
 	return nil
 }
 
-func (b *base) Args() map[string]float64 {
+func (b *base) Args() map[string]float32 {
 	return nil
 }
 
@@ -75,7 +75,7 @@ func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
 	for _, v := range data.Shape {
 		shape = append(shape, int64(v))
 	}
-	t := tensor.FromFloat64(nil, data.GetData(),
+	t := tensor.FromFloat32(nil, data.GetData(),
 		tensor.WithShapes(shape...),
 		tensor.WithDevice(b.device))
 	t.SetRequiresGrad(true)
@@ -83,7 +83,7 @@ func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
 }
 
 func (b *base) initW(shapes ...int64) *tensor.Tensor {
-	t := tensor.FromFloat64(nil, b.init.RandShape(shapes...),
+	t := tensor.FromFloat32(nil, b.init.RandShape(shapes...),
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)
@@ -91,7 +91,7 @@ func (b *base) initW(shapes ...int64) *tensor.Tensor {
 }
 
 func (b *base) initB(shapes ...int64) *tensor.Tensor {
-	t := tensor.Zeros(nil, consts.KDouble,
+	t := tensor.Zeros(nil, consts.KFloat,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)

@@ -17,7 +17,7 @@ func NewTanh() *Tanh {
 	return &layer
 }
 
-func LoadTanh(_ consts.DeviceType, name string, _ map[string]*pb.Dense, _ map[string]float64) layer.Layer {
+func LoadTanh(_ consts.DeviceType, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
 	var layer Tanh
 	layer.base = new("tanh")
 	layer.name = name

@@ -70,7 +70,7 @@ func (m *Model) Train(sampleDir, modelDir string) {
 }
 
 func (m *Model) trainWorker(samples []*sample.Sample) float64 {
-	x := make([]float64, 0, len(samples)*paddingSize*embeddingDim)
+	x := make([]float32, 0, len(samples)*paddingSize*embeddingDim)
 	y := make([]int64, 0, len(samples)*paddingSize)
 	padding := make([]int, 0, len(samples))
 	for _, s := range samples {
@@ -79,7 +79,7 @@ func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 		y = append(y, yTrain...)
 		padding = append(padding, p)
 	}
-	xIn := tensor.FromFloat64(storage, x,
+	xIn := tensor.FromFloat32(storage, x,
 		tensor.WithShapes(int64(len(samples)), paddingSize, embeddingDim),
 		tensor.WithDevice(device))
 	yOut := tensor.FromInt64(storage, y,

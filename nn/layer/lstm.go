@@ -25,7 +25,7 @@ func NewLstm(featureSize, steps, hidden int, opts ...LayerCreateOption) *Lstm {
 	return &layer
 }
 
-func LoadLstm(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float64) Layer {
+func LoadLstm(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Lstm
 	layer.new("lstm", WithDevice(device))
 	layer.name = name
@@ -120,11 +120,11 @@ func (layer *Lstm) Params() map[string]*tensor.Tensor {
 	}
 }
 
-func (layer *Lstm) Args() map[string]float64 {
-	return map[string]float64{
-		"feature_size": float64(layer.featureSize),
-		"steps":        float64(layer.steps),
-		"hidden":       float64(layer.hidden),
+func (layer *Lstm) Args() map[string]float32 {
+	return map[string]float32{
+		"feature_size": float32(layer.featureSize),
+		"steps":        float32(layer.steps),
+		"hidden":       float32(layer.hidden),
 	}
 }
 

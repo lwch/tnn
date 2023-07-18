@@ -46,7 +46,7 @@ type Model struct {
 	vocabs    []string
 	vocabsIdx map[string]int
 	samples   []*sample.Sample
-	embedding [][]float64
+	embedding [][]float32
 	optimizer optimizer.Optimizer
 }
 
@@ -117,16 +117,16 @@ func (m *Model) copyVocabs(dir string) {
 var positionEncoding *tensor.Tensor
 
 func init() {
-	data := make([]float64, paddingSize*embeddingDim)
+	data := make([]float32, paddingSize*embeddingDim)
 	for k := 0; k < paddingSize; k++ {
 		start := k * embeddingDim
 		for i := 0; i < embeddingDim/2; i++ {
 			n := float64(k) / math.Pow(10000, 2*float64(i)/float64(embeddingDim))
-			data[start+i*2] = math.Sin(n)
-			data[start+i*2+1] = math.Cos(n)
+			data[start+i*2] = float32(math.Sin(n))
+			data[start+i*2+1] = float32(math.Cos(n))
 		}
 	}
-	positionEncoding = tensor.FromFloat64(nil, data,
+	positionEncoding = tensor.FromFloat32(nil, data,
 		tensor.WithShapes(1, paddingSize, embeddingDim),
 		tensor.WithDevice(device))
 }

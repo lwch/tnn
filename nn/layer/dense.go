@@ -21,7 +21,7 @@ func NewDense(output int, opts ...LayerCreateOption) *Dense {
 	return &layer
 }
 
-func LoadDense(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float64) Layer {
+func LoadDense(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Dense
 	layer.new("dense", WithDevice(device))
 	layer.name = name
@@ -49,9 +49,9 @@ func (layer *Dense) Params() map[string]*tensor.Tensor {
 	}
 }
 
-func (layer *Dense) Args() map[string]float64 {
-	return map[string]float64{
-		"output": float64(layer.output),
+func (layer *Dense) Args() map[string]float32 {
+	return map[string]float32{
+		"output": float32(layer.output),
 	}
 }
 
