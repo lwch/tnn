@@ -16,7 +16,7 @@ func NewFlatten() *Flatten {
 	return &layer
 }
 
-func LoadFlatten(_ consts.DeviceType, name string, _ map[string]*pb.Dense, _ map[string]float64) Layer {
+func LoadFlatten(_ consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer Flatten
 	layer.new("flatten")
 	layer.name = name

@@ -33,7 +33,7 @@ func (w *Writer) Close() error {
 }
 
 // WriteSample write sample data
-func (w *Writer) WriteSample(features, labels []float64) error {
+func (w *Writer) WriteSample(features, labels []float32) error {
 	w.m.Lock()
 	defer w.m.Unlock()
 	_, err := w.w.Seek(0, io.SeekEnd)

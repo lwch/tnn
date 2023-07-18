@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type loadFunc func(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float64) layer.Layer
+type loadFunc func(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"dense":          layer.LoadDense,
@@ -94,7 +94,7 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 			for j := 0; j < len(shape); j++ {
 				dense.Shape[j] = int32(shape[j])
 			}
-			dense.Data = p.ToDevice(consts.KCPU).Float64Value()
+			dense.Data = p.ToDevice(consts.KCPU).Float32Value()
 			net.Layers[i].Params[name] = &dense
 		}
 		net.Layers[i].Args = n.layers[i].Args()

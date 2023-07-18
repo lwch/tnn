@@ -29,7 +29,7 @@ func NewSelfAttention(dims, heads int, dropout float64, isCausal bool, opts ...L
 	return &layer
 }
 
-func LoadSelfAttention(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float64) Layer {
+func LoadSelfAttention(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer SelfAttention
 	layer.new("self_attention", WithDevice(device))
 	layer.name = name
@@ -105,15 +105,15 @@ func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
 	}
 }
 
-func (layer *SelfAttention) Args() map[string]float64 {
-	var isCausal float64
+func (layer *SelfAttention) Args() map[string]float32 {
+	var isCausal float32
 	if layer.isCausal {
 		isCausal = 1
 	}
-	return map[string]float64{
-		"dims":      float64(layer.dims),
-		"heads":     float64(layer.heads),
-		"dropout":   float64(layer.dropout),
+	return map[string]float32{
+		"dims":      float32(layer.dims),
+		"heads":     float32(layer.heads),
+		"dropout":   float32(layer.dropout),
 		"is_causal": isCausal,
 	}
 }

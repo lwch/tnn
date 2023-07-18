@@ -42,7 +42,7 @@ func (layer *MaxPool1D) SetCeil(ceil bool) {
 	layer.ceil = ceil
 }
 
-func LoadMaxPool1D(device consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float64) Layer {
+func LoadMaxPool1D(device consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
 	var layer MaxPool1D
 	layer.new("maxpool1d", WithDevice(device))
 	layer.name = name
@@ -65,16 +65,16 @@ func (layer *MaxPool1D) Forward(x *tensor.Tensor) *tensor.Tensor {
 		tensor.PoolCeil(layer.ceil))
 }
 
-func (layer *MaxPool1D) Args() map[string]float64 {
-	var ceil float64
+func (layer *MaxPool1D) Args() map[string]float32 {
+	var ceil float32
 	if layer.ceil {
 		ceil = 1
 	}
-	return map[string]float64{
-		"kernel":   float64(layer.kernel),
-		"stride":   float64(layer.stride),
-		"padding":  float64(layer.padding),
-		"dilation": float64(layer.dilation),
+	return map[string]float32{
+		"kernel":   float32(layer.kernel),
+		"stride":   float32(layer.stride),
+		"padding":  float32(layer.padding),
+		"dilation": float32(layer.dilation),
 		"ceil":     ceil,
 	}
 }

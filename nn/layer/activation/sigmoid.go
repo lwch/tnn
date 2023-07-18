@@ -17,7 +17,7 @@ func NewSigmoid() *Sigmoid {
 	return &layer
 }
 
-func LoadSigmoid(_ consts.DeviceType, name string, _ map[string]*pb.Dense, _ map[string]float64) layer.Layer {
+func LoadSigmoid(_ consts.DeviceType, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
 	var layer Sigmoid
 	layer.base = new("sigmoid")
 	layer.name = name

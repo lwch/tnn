@@ -5,14 +5,14 @@ option go_package = ".;pb";
 
 message dense {
     repeated int32 shape = 1;
-    repeated double data = 2;
+    repeated float  data = 2;
 }
 
 message layer {
     string              class = 1;
     string               name = 2;
     map<string, dense> params = 3;
-    map<string, double>  args = 4;
+    map<string, float>   args = 4;
 }
 
 message net {

@@ -47,7 +47,7 @@ func TestSample(t *testing.T) {
 	w := NewWriter(&buf)
 	defer w.Close()
 	for i := 0; i < 10; i++ {
-		err := w.WriteSample([]float64{float64(i), float64(i + 1)}, []float64{float64(i + 2)})
+		err := w.WriteSample([]float32{float32(i), float32(i + 1)}, []float32{float32(i + 2)})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -71,19 +71,19 @@ func TestSample(t *testing.T) {
 		t.Fatal("invalid label size")
 	}
 	for i := 0; i < 10; i++ {
-		features := make([]float64, 2)
-		labels := make([]float64, 1)
+		features := make([]float32, 2)
+		labels := make([]float32, 1)
 		err := r.ReadSample(uint32(i), features, labels)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if features[0] != float64(i) {
+		if features[0] != float32(i) {
 			t.Fatal("invalid feature")
 		}
-		if features[1] != float64(i+1) {
+		if features[1] != float32(i+1) {
 			t.Fatal("invalid feature")
 		}
-		if labels[0] != float64(i+2) {
+		if labels[0] != float32(i+2) {
 			t.Fatal("invalid label")
 		}
 	}

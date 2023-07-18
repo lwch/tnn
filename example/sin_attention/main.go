@@ -32,10 +32,10 @@ var lossFunc = loss.NewMse
 var storage = mmgr.New()
 
 func main() {
-	var points []float64
+	var points []float32
 	i := 0.
 	for {
-		points = append(points, math.Sin(i))
+		points = append(points, float32(math.Sin(i)))
 		i += 0.0001
 		if i > 2*math.Pi {
 			break
@@ -72,7 +72,7 @@ func main() {
 		m.Apply()
 		x, y := getBatch(points, i)
 		pred := m.Predict(x)
-		ys := y.Float64Value()
+		ys := y.Float32Value()
 		for j := 0; j < len(pred); j += 200 {
 			real = append(real, plotter.XY{X: float64(i), Y: float64(ys[j])})
 			predict = append(predict, plotter.XY{X: float64(i), Y: float64(pred[j])})
@@ -102,9 +102,9 @@ func main() {
 	p.Save(16*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
-func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor) {
-	x := make([]float64, batchSize*unitSize)
-	y := make([]float64, batchSize)
+func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor) {
+	x := make([]float32, batchSize*unitSize)
+	y := make([]float32, batchSize)
 	for batch := 0; batch < batchSize; batch++ {
 		j := i + batch
 		for t := 0; t < unitSize; t++ {
@@ -114,8 +114,8 @@ func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor) {
 		y[batch] = points[(i*batchSize+batch)%len(points)]
 	}
 	rand.Shuffle(batchSize, func(i, j int) {
-		dx := make([]float64, unitSize)
-		dy := make([]float64, 1)
+		dx := make([]float32, unitSize)
+		dy := make([]float32, 1)
 		copy(dx, x[i*unitSize:(i+1)*unitSize])
 		copy(dy, y[i*1:(i+1)*1])
 		copy(x[i*unitSize:(i+1)*unitSize], x[j*unitSize:(j+1)*unitSize])
@@ -123,17 +123,17 @@ func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor) {
 		copy(x[j*unitSize:(j+1)*unitSize], dx)
 		copy(y[j*1:(j+1)*1], dy)
 	})
-	return tensor.FromFloat64(storage, x,
+	return tensor.FromFloat32(storage, x,
 			tensor.WithShapes(batchSize, steps, dims),
 			tensor.WithDevice(device)),
-		tensor.FromFloat64(storage, y, tensor.WithShapes(batchSize, 1),
+		tensor.FromFloat32(storage, y, tensor.WithShapes(batchSize, 1),
 			tensor.WithDevice(device))
 }
 
-func accuracy(y, pred []float64) float64 {
-	var correct float64
+func accuracy(y, pred []float32) float32 {
+	var correct float32
 	for i := 0; i < batchSize; i++ {
-		diff := 1 - math.Abs(float64(pred[i]-y[i]))
+		diff := 1 - float32(math.Abs(float64(pred[i]-y[i])))
 		if diff > 0 {
 			correct += diff
 		}

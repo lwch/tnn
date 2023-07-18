@@ -40,7 +40,7 @@ func newTransformer(i int) *transformer {
 
 func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
 	batchSize := q.Shapes()[0]
-	paddingData := make([]float64, batchSize*maskSize)
+	paddingData := make([]float32, batchSize*maskSize)
 	for i := 0; i < int(batchSize); i++ {
 		start := i * maskSize
 		for p := padding[i]; p < paddingSize; p++ {
@@ -50,7 +50,7 @@ func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *t
 			}
 		}
 	}
-	paddingMask := tensor.FromFloat64(q.Storage(), paddingData,
+	paddingMask := tensor.FromFloat32(q.Storage(), paddingData,
 		tensor.WithShapes(batchSize, 1, paddingSize, paddingSize),
 		tensor.WithDevice(device))
 	y := t.attn.Forward(q, k, k, paddingMask, train)
