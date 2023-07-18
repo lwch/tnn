@@ -18,8 +18,8 @@ type model struct {
 
 func newModel(optimizer optimizer.Optimizer) *model {
 	return &model{
-		rnn: layer.NewRnn(featureSize, steps, hiddenSize, layer.WithDevice(device)),
-		// lstm:        layer.NewLstm(featureSize, steps, hiddenSize, layer.WithDevice(device)),
+		// rnn:         layer.NewRnn(featureSize, steps, hiddenSize, layer.WithDevice(device)),
+		lstm:        layer.NewLstm(featureSize, steps, hiddenSize, layer.WithDevice(device)),
 		flatten:     layer.NewFlatten(),
 		outputLayer: layer.NewDense(1, layer.WithDevice(device)),
 		optimizer:   optimizer,
@@ -63,22 +63,22 @@ func (m *model) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	return m.outputLayer.Forward(output)
 }
 
-func (m *model) Train(epoch int, x, y *tensor.Tensor) float32 {
+func (m *model) Train(epoch int, x, y *tensor.Tensor) float64 {
 	pred := m.Forward(x, true)
 	l := lossFunc(pred, y)
 	l.Backward()
 	value := l.Value()
 	m.optimizer.Step(m.params())
-	return float32(value)
+	return value
 }
 
-func (m *model) Predict(x *tensor.Tensor) []float32 {
-	return m.Forward(x, false).Float32Value()
+func (m *model) Predict(x *tensor.Tensor) []float64 {
+	return m.Forward(x, false).Float64Value()
 }
 
-func (m *model) Loss(x, y *tensor.Tensor) float32 {
+func (m *model) Loss(x, y *tensor.Tensor) float64 {
 	pred := m.Forward(x, false)
-	return float32(lossFunc(pred, y).Value())
+	return lossFunc(pred, y).Value()
 }
 
 func (m *model) params() []*tensor.Tensor {

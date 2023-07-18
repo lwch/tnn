@@ -24,7 +24,7 @@ func NewRnn(featureSize, steps, hidden int, opts ...LayerCreateOption) *Rnn {
 	return &layer
 }
 
-func LoadRnn(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadRnn(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float64) Layer {
 	var layer Rnn
 	layer.new("rnn", WithDevice(device))
 	layer.name = name
@@ -37,7 +37,7 @@ func LoadRnn(device consts.DeviceType, name string, params map[string]*pb.Dense,
 }
 
 func copyState(s *tensor.Tensor) *tensor.Tensor {
-	return tensor.FromFloat32(nil, s.Float32Value(), tensor.WithShapes(s.Shapes()...))
+	return tensor.FromFloat64(nil, s.Float64Value(), tensor.WithShapes(s.Shapes()...))
 }
 
 func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
@@ -75,11 +75,11 @@ func (layer *Rnn) Params() map[string]*tensor.Tensor {
 	}
 }
 
-func (layer *Rnn) Args() map[string]float32 {
-	return map[string]float32{
-		"feature_size": float32(layer.featureSize),
-		"steps":        float32(layer.steps),
-		"hidden":       float32(layer.hidden),
+func (layer *Rnn) Args() map[string]float64 {
+	return map[string]float64{
+		"feature_size": float64(layer.featureSize),
+		"steps":        float64(layer.steps),
+		"hidden":       float64(layer.hidden),
 	}
 }
 

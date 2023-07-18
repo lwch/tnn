@@ -113,7 +113,7 @@ func nextTrain(m *model) {
 
 func predict(m *model) {
 	x, _ := getBatch()
-	xs := x.Float32Value()
+	xs := x.Float64Value()
 	ys := m.Predict(x)
 	for i := 0; i < 4; i++ {
 		start := i * 2
@@ -123,29 +123,29 @@ func predict(m *model) {
 	}
 }
 
-func accuracy(m *model) float32 {
+func accuracy(m *model) float64 {
 	x, y := getBatch()
 	pred := m.Predict(x)
-	values := y.Float32Value()
-	var correct float32
+	values := y.Float64Value()
+	var correct float64
 	for i := 0; i < 4; i++ {
-		diff := float32(math.Abs(float64(pred[i]) -
-			float64(values[i])))
+		diff := math.Abs(float64(pred[i]) -
+			float64(values[i]))
 		if diff < 1 {
 			correct += 1 - diff
 		}
 	}
-	return float32(correct) * 100 / 4
+	return correct * 100 / 4
 }
 
 func getBatch() (*tensor.Tensor, *tensor.Tensor) {
-	x := tensor.FromFloat32(storage, []float32{
+	x := tensor.FromFloat64(storage, []float64{
 		0, 0,
 		0, 1,
 		1, 0,
 		1, 1,
 	}, tensor.WithShapes(4, 2), tensor.WithDevice(device))
-	y := tensor.FromFloat32(storage, []float32{
+	y := tensor.FromFloat64(storage, []float64{
 		0,
 		1,
 		1,

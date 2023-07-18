@@ -22,9 +22,9 @@ func (m *Model) Evaluate(str string) string {
 	dy := make([]int, len(dx))
 	x, _, p := sample.New(dx, dy).Embedding(paddingSize, m.embedding)
 	pred := m.forward(
-		tensor.FromFloat32(storage, x, tensor.WithShapes(1, paddingSize, embeddingDim)),
+		tensor.FromFloat64(storage, x, tensor.WithShapes(1, paddingSize, embeddingDim)),
 		[]int{p}, false)
-	predProbs := pred.Float32Value()
+	predProbs := pred.Float64Value()
 	dy = dy[:0]
 	for i := 0; i < size; i++ {
 		start := i * len(m.vocabs)
@@ -34,8 +34,8 @@ func (m *Model) Evaluate(str string) string {
 	return values(m.vocabs, dy)
 }
 
-func lookup(prob []float32, vocabs []string) int {
-	max := float32(-math.MaxFloat32)
+func lookup(prob []float64, vocabs []string) int {
+	max := -math.MaxFloat64
 	var idx int
 	for i := 0; i < len(prob); i++ {
 		if prob[i] > max {
@@ -43,14 +43,14 @@ func lookup(prob []float32, vocabs []string) int {
 			idx = i
 		}
 	}
-	kv := make(map[float32][]string)
+	kv := make(map[float64][]string)
 	for i := 0; i < len(prob); i++ {
 		kv[prob[i]] = append(kv[prob[i]], vocabs[i])
 	}
 	sort.Slice(prob, func(i, j int) bool {
 		return prob[i] < prob[j]
 	})
-	left := make(map[float32][]string)
+	left := make(map[float64][]string)
 	for i := 0; i < 3; i++ {
 		idx := len(prob) - i - 1
 		left[prob[idx]] = kv[prob[idx]]

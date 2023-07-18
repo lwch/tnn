@@ -28,12 +28,12 @@ const device = consts.KCPU
 var lossFunc = loss.NewMse
 var storage = mmgr.New()
 
-var points []float32
+var points []float64
 
 func main() {
 	i := 0.
 	for {
-		points = append(points, float32(math.Sin(i)))
+		points = append(points, math.Sin(i))
 		i += 0.001
 		if i > 2*math.Pi {
 			break
@@ -85,9 +85,9 @@ func main() {
 	p.Save(16*vg.Inch, 4*vg.Inch, "sin.png")
 }
 
-func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor, []float32) {
-	x := make([]float32, batchSize*unitSize)
-	y := make([]float32, batchSize)
+func getBatch(points []float64, i int) (*tensor.Tensor, *tensor.Tensor, []float64) {
+	x := make([]float64, batchSize*unitSize)
+	y := make([]float64, batchSize)
 	for batch := 0; batch < batchSize; batch++ {
 		j := i + batch
 		for t := 0; t < unitSize; t++ {
@@ -97,8 +97,8 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor, []float3
 		y[batch] = points[(i*batchSize+batch)%len(points)]
 	}
 	// rand.Shuffle(batchSize, func(i, j int) {
-	// 	dx := make([]float32, unitSize)
-	// 	dy := make([]float32, 1)
+	// 	dx := make([]float64, unitSize)
+	// 	dy := make([]float64, 1)
 	// 	copy(dx, x[i*unitSize:(i+1)*unitSize])
 	// 	copy(dy, y[i*1:(i+1)*1])
 	// 	copy(x[i*unitSize:(i+1)*unitSize], x[j*unitSize:(j+1)*unitSize])
@@ -106,22 +106,22 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor, []float3
 	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
 	// 	copy(y[j*1:(j+1)*1], dy)
 	// })
-	xs := tensor.FromFloat32(storage, x,
+	xs := tensor.FromFloat64(storage, x,
 		tensor.WithShapes(batchSize, steps, featureSize),
 		tensor.WithDevice(device))
-	ys := tensor.FromFloat32(storage, y,
+	ys := tensor.FromFloat64(storage, y,
 		tensor.WithShapes(batchSize, 1),
 		tensor.WithDevice(device))
 	return xs, ys, y
 }
 
-func accuracy(m *model, i int) float32 {
+func accuracy(m *model, i int) float64 {
 	x, _, y := getBatch(points, i)
 	pred := m.Predict(x)
-	var correct float32
+	var correct float64
 	for i := 0; i < batchSize; i++ {
-		diff := 1 - float32(math.Abs(float64(y[i])-
-			float64(pred[i])))
+		diff := 1 - math.Abs(float64(y[i])-
+			float64(pred[i]))
 		if diff > 0 {
 			correct += diff
 		}

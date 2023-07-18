@@ -23,9 +23,9 @@ func (s *Sample) Encode(vocabs []string) (string, string) {
 }
 
 // Embedding 生成一个样本，返回内容：x, y, paddingIdx
-func (s *Sample) Embedding(paddingSize int, embedding [][]float32) ([]float32, []int64, int) {
+func (s *Sample) Embedding(paddingSize int, embedding [][]float64) ([]float64, []int64, int) {
 	embeddingSize := len(embedding[0])
-	dx := make([]float32, 0, paddingSize*embeddingSize)
+	dx := make([]float64, 0, paddingSize*embeddingSize)
 	dy := make([]int64, 0, paddingSize*len(embedding))
 	for i := range s.x {
 		dx = append(dx, embedding[s.x[i]]...)

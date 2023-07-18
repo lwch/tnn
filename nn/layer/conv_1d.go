@@ -48,7 +48,7 @@ func (layer *Conv1D) SetGroups(groups int) {
 	layer.groups = groups
 }
 
-func LoadConv1D(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadConv1D(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float64) Layer {
 	var layer Conv1D
 	layer.new("conv1d", WithDevice(device))
 	layer.name = name
@@ -85,15 +85,15 @@ func (layer *Conv1D) Params() map[string]*tensor.Tensor {
 	}
 }
 
-func (layer *Conv1D) Args() map[string]float32 {
-	return map[string]float32{
-		"inC":      float32(layer.inC),
-		"outC":     float32(layer.outC),
-		"kernel":   float32(layer.kernel),
-		"stride":   float32(layer.stride),
-		"padding":  float32(layer.padding),
-		"dilation": float32(layer.dilation),
-		"groups":   float32(layer.groups),
+func (layer *Conv1D) Args() map[string]float64 {
+	return map[string]float64{
+		"inC":      float64(layer.inC),
+		"outC":     float64(layer.outC),
+		"kernel":   float64(layer.kernel),
+		"stride":   float64(layer.stride),
+		"padding":  float64(layer.padding),
+		"dilation": float64(layer.dilation),
+		"groups":   float64(layer.groups),
 	}
 }
 

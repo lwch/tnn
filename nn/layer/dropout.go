@@ -18,11 +18,11 @@ func NewDropout(keep float64) *Dropout {
 	return &layer
 }
 
-func LoadDropout(_ consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadDropout(_ consts.DeviceType, name string, _ map[string]*pb.Dense, args map[string]float64) Layer {
 	var layer Dropout
 	layer.new("dropout")
 	layer.name = name
-	layer.keep = float64(args["keep"])
+	layer.keep = args["keep"]
 	return &layer
 }
 
@@ -30,8 +30,8 @@ func (layer *Dropout) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	return x.Dropout(layer.keep, train)
 }
 
-func (layer *Dropout) Args() map[string]float32 {
-	return map[string]float32{
-		"keep": float32(layer.keep),
+func (layer *Dropout) Args() map[string]float64 {
+	return map[string]float64{
+		"keep": layer.keep,
 	}
 }
