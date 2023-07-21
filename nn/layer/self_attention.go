@@ -1,6 +1,8 @@
 package layer
 
 import (
+	"math"
+
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
@@ -90,6 +92,61 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*
 	y = y.Permute(0, 2, 1, 3)                                                            // (batch, steps, heads, hidden/heads)
 	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.dims))                       // (batch, steps, hidden)
 	return y, score
+}
+
+func (layer *SelfAttention) Score(q, k, v, mask *tensor.Tensor) *tensor.Tensor {
+	if layer.wq == nil {
+		panic("missing Wq param")
+	}
+	if layer.wk == nil {
+		panic("missing Wk param")
+	}
+	if layer.wv == nil {
+		panic("missing Wv param")
+	}
+	if layer.bq == nil {
+		panic("missing Bq param")
+	}
+	if layer.bk == nil {
+		panic("missing Bk param")
+	}
+	if layer.bv == nil {
+		panic("missing Bv param")
+	}
+	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
+	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
+	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, hidden)
+	q = layer.split(q)                   // (batch, heads, steps, hidden/heads)
+	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
+	v = layer.split(v)                   // (batch, heads, steps, hidden/heads)
+	store := q.Storage()
+	if store == nil {
+		store = k.Storage()
+	}
+	if store == nil {
+		store = v.Storage()
+	}
+	if layer.isCausal {
+		l := int(stepDim(q))
+		s := int(stepDim(k))
+		data := make([]float32, l*s)
+		for i := 0; i < l; i++ {
+			for j := i + 1; j < s; j++ {
+				data[i*l+j] = float32(math.Inf(-1))
+			}
+		}
+		mask = tensor.FromFloat32(store, data,
+			tensor.WithShapes(1, 1, int64(l), int64(s)),
+			tensor.WithDevice(layer.device))
+	}
+	score := q.MatMul(k.Transpose(-2, -1)) // (batch, heads, steps, steps)
+	size := tensor.FromFloat32(store, []float32{float32(math.Sqrt(float64(q.Shapes()[3])))},
+		tensor.WithShapes(1), tensor.WithDevice(layer.device))
+	score = score.Div(size)
+	if mask != nil {
+		score = score.Add(mask)
+	}
+	return score.Softmax(-1)
 }
 
 func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
