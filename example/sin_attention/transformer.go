@@ -29,7 +29,7 @@ func newTransformer() *transformer {
 }
 
 func (t *transformer) Forward(x *tensor.Tensor) *tensor.Tensor {
-	y := t.attn.Forward(x, x, x, nil, true)
+	y, _ := t.attn.Forward(x, x, x, nil, true)
 	y = y.Add(x)
 	selfOut := t.norm1.Forward(y)
 	y = t.flatten.Forward(y)

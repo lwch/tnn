@@ -56,7 +56,7 @@ func lastDim(t *tensor.Tensor) int64 {
 	return shapes[len(shapes)-1]
 }
 
-func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *tensor.Tensor {
+func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := v.Shapes()
 	if layer.wq == nil {
 		layer.wq = layer.initW(lastDim(q), int64(layer.dims))
@@ -86,10 +86,10 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) *t
 	if !train {
 		dropout = 0
 	}
-	y := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
-	y = y.Permute(0, 2, 1, 3)                                                     // (batch, steps, heads, hidden/heads)
-	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.dims))                // (batch, steps, hidden)
-	return y
+	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
+	y = y.Permute(0, 2, 1, 3)                                                            // (batch, steps, heads, hidden/heads)
+	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.dims))                       // (batch, steps, hidden)
+	return y, score
 }
 
 func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
