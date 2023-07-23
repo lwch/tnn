@@ -59,7 +59,7 @@ func lastDim(t *tensor.Tensor) int64 {
 }
 
 func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
-	inputShape := v.Shapes()
+	inputShape := q.Shapes()
 	if layer.wq == nil {
 		layer.wq = layer.initW(lastDim(q), int64(layer.dims))
 	}
