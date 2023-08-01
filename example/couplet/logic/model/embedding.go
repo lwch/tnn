@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/lwch/gotorch/consts"
+	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/nn/initializer"
 )
@@ -14,7 +16,9 @@ import (
 func (m *Model) buildEmbedding(dir string) {
 	fmt.Println("build embedding...")
 	init := initializer.NewXavierUniform(1)
-	data := init.RandShape(int64(len(m.vocabs)), embeddingDim)
+	t := tensor.Zeros(nil, consts.KFloat, tensor.WithShapes(int64(len(m.vocabs)), embeddingDim))
+	init.Init(t)
+	data := t.Float32Value()
 	runtime.Assert(os.MkdirAll(filepath.Dir(dir), 0755))
 	f, err := os.Create(dir)
 	runtime.Assert(err)

@@ -83,9 +83,10 @@ func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
 }
 
 func (b *base) initW(shapes ...int64) *tensor.Tensor {
-	t := tensor.FromFloat32(nil, b.init.RandShape(shapes...),
+	t := tensor.Zeros(nil, consts.KFloat,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
+	b.init.Init(t)
 	t.SetRequiresGrad(true)
 	return t
 }
