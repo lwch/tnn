@@ -34,7 +34,8 @@ func (layer *LayerNorm) Forward(x *tensor.Tensor) *tensor.Tensor {
 		layer.eps = tensor.FromFloat32(nil, []float32{1e-9}, tensor.WithShapes(1), tensor.WithDevice(layer.device))
 	}
 	if layer.w == nil {
-		layer.w = layer.initW(lastDim(x))
+		layer.w = layer.Ones(lastDim(x))
+		layer.w.SetRequiresGrad(true)
 	}
 	if layer.b == nil {
 		layer.b = layer.initB(lastDim(x))

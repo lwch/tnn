@@ -82,6 +82,16 @@ func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
 	return t
 }
 
+func (b *base) Ones(size int64) *tensor.Tensor {
+	data := make([]float32, size)
+	for i := range data {
+		data[i] = 1
+	}
+	return tensor.FromFloat32(nil, data,
+		tensor.WithShapes(int64(size)),
+		tensor.WithDevice(b.device))
+}
+
 func (b *base) initW(shapes ...int64) *tensor.Tensor {
 	t := tensor.Zeros(nil, consts.KFloat,
 		tensor.WithDevice(b.device),
