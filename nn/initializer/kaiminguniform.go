@@ -1,6 +1,7 @@
 package initializer
 
 import (
+	tensorInit "github.com/lwch/gotorch/init"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -17,5 +18,5 @@ func NewKaimingUniform(a float64) *KaimingUniform {
 }
 
 func (rand *KaimingUniform) Init(t *tensor.Tensor) {
-	tensor.KaimingUniform(t, rand.a)
+	tensorInit.KaimingUniform(t, rand.a)
 }

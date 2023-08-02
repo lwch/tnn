@@ -91,10 +91,13 @@ func (b *base) initW(shapes ...int64) *tensor.Tensor {
 	return t
 }
 
+var zerosInit = initializer.NewZeros()
+
 func (b *base) initB(shapes ...int64) *tensor.Tensor {
 	t := tensor.Zeros(nil, consts.KFloat,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
+	zerosInit.Init(t)
 	t.SetRequiresGrad(true)
 	return t
 }

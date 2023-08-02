@@ -1,6 +1,9 @@
 package initializer
 
-import "github.com/lwch/gotorch/tensor"
+import (
+	tensorInit "github.com/lwch/gotorch/init"
+	"github.com/lwch/gotorch/tensor"
+)
 
 type Normal struct {
 	mean  float64
@@ -17,5 +20,5 @@ func NewNormal(mean, stddev float64) *Normal {
 }
 
 func (rand *Normal) Init(t *tensor.Tensor) {
-	tensor.Normal(t, rand.mean, rand.stdev)
+	tensorInit.Normal(t, rand.mean, rand.stdev)
 }

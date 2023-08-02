@@ -1,6 +1,7 @@
 package initializer
 
 import (
+	tensorInit "github.com/lwch/gotorch/init"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -17,5 +18,5 @@ func NewXavierUniform(gain float64) *XavierUniform {
 }
 
 func (rand *XavierUniform) Init(t *tensor.Tensor) {
-	tensor.XaiverUniform(t, rand.gain)
+	tensorInit.XaiverUniform(t, rand.gain)
 }
