@@ -1,6 +1,8 @@
 package layer
 
 import (
+	"math/rand"
+
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
@@ -101,10 +103,16 @@ func (b *base) initW(shapes ...int64) *tensor.Tensor {
 	return t
 }
 
-var zerosInit = initializer.NewZeros()
-
 func (b *base) initB(shapes ...int64) *tensor.Tensor {
-	t := tensor.Zeros(nil, consts.KFloat,
+	n := shapes[0]
+	for i := 1; i < len(shapes); i++ {
+		n *= shapes[i]
+	}
+	data := make([]float32, n)
+	for i := 0; i < len(data); i++ {
+		data[i] = float32(rand.NormFloat64())
+	}
+	t := tensor.FromFloat32(nil, data,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)
