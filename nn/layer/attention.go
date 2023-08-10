@@ -18,7 +18,7 @@ type Attention struct {
 	bq, bk, bv *tensor.Tensor
 }
 
-func NewSelfAttention(dims, heads int, dropout float64, isCausal bool, opts ...LayerCreateOption) *Attention {
+func NewAttention(dims, heads int, dropout float64, isCausal bool, opts ...LayerCreateOption) *Attention {
 	var layer Attention
 	layer.new("attention", opts...)
 	layer.dims = dims
