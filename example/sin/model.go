@@ -21,7 +21,7 @@ func newModel(optimizer optimizer.Optimizer) *model {
 		rnn: layer.NewRnn(featureSize, steps, hiddenSize, layer.WithDevice(device)),
 		// lstm:        layer.NewLstm(featureSize, steps, hiddenSize, layer.WithDevice(device)),
 		flatten:     layer.NewFlatten(),
-		outputLayer: layer.NewDense(1, true, layer.WithDevice(device)),
+		outputLayer: layer.NewDense(1, layer.WithDevice(device)),
 		optimizer:   optimizer,
 	}
 }
