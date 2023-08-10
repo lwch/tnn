@@ -20,9 +20,9 @@ type transformer struct {
 func newTransformer(i int) *transformer {
 	attn := layer.NewAttention(embeddingDim, heads, 0, false, layer.WithDevice(device))
 	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
-	dense := layer.NewDense(embeddingDim*4, layer.WithDevice(device))
+	dense := layer.NewDense(embeddingDim*4, true, layer.WithDevice(device))
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
-	output := layer.NewDense(embeddingDim, layer.WithDevice(device))
+	output := layer.NewDense(embeddingDim, true, layer.WithDevice(device))
 	output.SetName(fmt.Sprintf("transformer%d_output", i))
 	norm1 := layer.NewLayerNorm(layer.WithDevice(device))
 	norm1.SetName(fmt.Sprintf("transformer%d_norm1", i))

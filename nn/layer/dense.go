@@ -9,15 +9,17 @@ import (
 type Dense struct {
 	base
 	output int
+	bias   bool
 	// params
 	w *tensor.Tensor
 	b *tensor.Tensor
 }
 
-func NewDense(output int, opts ...LayerCreateOption) *Dense {
+func NewDense(output int, bias bool, opts ...LayerCreateOption) *Dense {
 	var layer Dense
 	layer.new("dense", opts...)
 	layer.output = output
+	layer.bias = bias
 	return &layer
 }
 
@@ -26,6 +28,7 @@ func LoadDense(device consts.DeviceType, name string, params map[string]*pb.Dens
 	layer.new("dense", WithDevice(device))
 	layer.name = name
 	layer.output = int(args["output"])
+	layer.bias = args["bias"] > 0
 	layer.w = layer.loadParam(params["w"])
 	layer.b = layer.loadParam(params["b"])
 	return &layer
@@ -39,7 +42,11 @@ func (layer *Dense) Forward(x *tensor.Tensor) *tensor.Tensor {
 	if layer.b == nil {
 		layer.b = layer.initB(int64(layer.output))
 	}
-	return x.MatMul(layer.w).Add(layer.b)
+	x = x.MatMul(layer.w)
+	if layer.bias {
+		x = x.Add(layer.b)
+	}
+	return x
 }
 
 func (layer *Dense) Params() map[string]*tensor.Tensor {
@@ -50,8 +57,13 @@ func (layer *Dense) Params() map[string]*tensor.Tensor {
 }
 
 func (layer *Dense) Args() map[string]float32 {
+	var bias float32
+	if layer.bias {
+		bias = 1
+	}
 	return map[string]float32{
 		"output": float32(layer.output),
+		"bias":   bias,
 	}
 }
 
