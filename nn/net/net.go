@@ -26,6 +26,7 @@ var loadFuncs = map[string]loadFunc{
 	"layer_norm": layer.LoadLayerNorm,
 	"flatten":    layer.LoadFlatten,
 	"embedding":  layer.LoadEmbedding,
+	"rezero":     layer.LoadReZero,
 	// activation
 	"sigmoid": activation.LoadSigmoid,
 	"tanh":    activation.LoadTanh,
