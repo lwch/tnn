@@ -16,16 +16,16 @@ import (
 type loadFunc func(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
-	"dense":          layer.LoadDense,
-	"dropout":        layer.LoadDropout,
-	"conv1d":         layer.LoadConv1D,
-	"maxpool1d":      layer.LoadMaxPool1D,
-	"rnn":            layer.LoadRnn,
-	"lstm":           layer.LoadLstm,
-	"self_attention": layer.LoadSelfAttention,
-	"layer_norm":     layer.LoadLayerNorm,
-	"flatten":        layer.LoadFlatten,
-	"embedding":      layer.LoadEmbedding,
+	"dense":      layer.LoadDense,
+	"dropout":    layer.LoadDropout,
+	"conv1d":     layer.LoadConv1D,
+	"maxpool1d":  layer.LoadMaxPool1D,
+	"rnn":        layer.LoadRnn,
+	"lstm":       layer.LoadLstm,
+	"attention":  layer.LoadAttention,
+	"layer_norm": layer.LoadLayerNorm,
+	"flatten":    layer.LoadFlatten,
+	"embedding":  layer.LoadEmbedding,
 	// activation
 	"sigmoid": activation.LoadSigmoid,
 	"tanh":    activation.LoadTanh,

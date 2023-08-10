@@ -7,7 +7,7 @@ import (
 )
 
 type transformer struct {
-	attn    *layer.SelfAttention
+	attn    *layer.Attention
 	flatten *layer.Flatten
 	dense   *layer.Dense
 	sigmoid *activation.Sigmoid

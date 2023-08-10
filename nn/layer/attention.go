@@ -8,7 +8,7 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 )
 
-type SelfAttention struct {
+type Attention struct {
 	base
 	dims, heads int
 	dropout     float64
@@ -18,9 +18,9 @@ type SelfAttention struct {
 	bq, bk, bv *tensor.Tensor
 }
 
-func NewSelfAttention(dims, heads int, dropout float64, isCausal bool, opts ...LayerCreateOption) *SelfAttention {
-	var layer SelfAttention
-	layer.new("self_attention", opts...)
+func NewSelfAttention(dims, heads int, dropout float64, isCausal bool, opts ...LayerCreateOption) *Attention {
+	var layer Attention
+	layer.new("attention", opts...)
 	layer.dims = dims
 	layer.heads = heads
 	layer.dropout = dropout
@@ -31,9 +31,9 @@ func NewSelfAttention(dims, heads int, dropout float64, isCausal bool, opts ...L
 	return &layer
 }
 
-func LoadSelfAttention(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
-	var layer SelfAttention
-	layer.new("self_attention", WithDevice(device))
+func LoadAttention(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+	var layer Attention
+	layer.new("attention", WithDevice(device))
 	layer.name = name
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
@@ -58,7 +58,7 @@ func lastDim(t *tensor.Tensor) int64 {
 	return shapes[len(shapes)-1]
 }
 
-func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
+func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := q.Shapes()
 	if layer.wq == nil {
 		layer.wq = layer.initW(lastDim(q), int64(layer.dims))
@@ -94,7 +94,7 @@ func (layer *SelfAttention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*
 	return y, score
 }
 
-func (layer *SelfAttention) Score(q, k, v, mask *tensor.Tensor) *tensor.Tensor {
+func (layer *Attention) Score(q, k, v, mask *tensor.Tensor) *tensor.Tensor {
 	if layer.wq == nil {
 		panic("missing Wq param")
 	}
@@ -149,20 +149,20 @@ func (layer *SelfAttention) Score(q, k, v, mask *tensor.Tensor) *tensor.Tensor {
 	return score.Softmax(-1)
 }
 
-func (layer *SelfAttention) split(x *tensor.Tensor) *tensor.Tensor {
+func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
 	v := x.View(inputShape[0], stepDim(x), int64(layer.heads), lastDim(x)/int64(layer.heads))
 	return v.Permute(0, 2, 1, 3)
 }
 
-func (layer *SelfAttention) Params() map[string]*tensor.Tensor {
+func (layer *Attention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv,
 		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv,
 	}
 }
 
-func (layer *SelfAttention) Args() map[string]float32 {
+func (layer *Attention) Args() map[string]float32 {
 	var isCausal float32
 	if layer.isCausal {
 		isCausal = 1
@@ -175,7 +175,7 @@ func (layer *SelfAttention) Args() map[string]float32 {
 	}
 }
 
-func (layer *SelfAttention) Freeze() {
+func (layer *Attention) Freeze() {
 	if layer.wq != nil {
 		layer.wq.SetRequiresGrad(false)
 	}
@@ -196,7 +196,7 @@ func (layer *SelfAttention) Freeze() {
 	}
 }
 
-func (layer *SelfAttention) Unfreeze() {
+func (layer *Attention) Unfreeze() {
 	if layer.wq != nil {
 		layer.wq.SetRequiresGrad(true)
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 type transformer struct {
-	attn   *layer.SelfAttention
+	attn   *layer.Attention
 	dense  *layer.Dense
 	relu   *activation.ReLU
 	norm1  *layer.LayerNorm
@@ -96,7 +96,7 @@ func (t *transformer) layers() []layer.Layer {
 }
 
 func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
-	t.attn = layers[idx].(*layer.SelfAttention)
+	t.attn = layers[idx].(*layer.Attention)
 	idx++
 	t.dense = layers[idx].(*layer.Dense)
 	idx++
