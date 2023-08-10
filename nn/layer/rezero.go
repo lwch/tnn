@@ -28,7 +28,7 @@ func LoadReZero(device consts.DeviceType, name string, params map[string]*pb.Den
 
 func (layer *ReZero) Forward(x *tensor.Tensor) *tensor.Tensor {
 	if layer.scale == nil {
-		layer.scale = tensor.FromFloat32(x.Storage(), []float32{0},
+		layer.scale = tensor.FromFloat32(nil, []float32{0},
 			tensor.WithShapes(1),
 			tensor.WithDevice(layer.device))
 		layer.scale.SetRequiresGrad(true)
