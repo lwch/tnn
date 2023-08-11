@@ -89,8 +89,8 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 		dropout = 0
 	}
 	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
-	y = y.Permute(0, 2, 1, 3)                                                            // (batch, steps, heads, hidden/heads)
-	y = y.Reshape(inputShape[0], inputShape[1], int64(layer.dims))                       // (batch, steps, hidden)
+	y = y.Transpose(1, 2).Contiguous()                                                   // (batch, steps, heads, hidden/heads)
+	y = y.View(inputShape[0], inputShape[1], int64(layer.dims))                          // (batch, steps, hidden)
 	return y, score
 }
 
