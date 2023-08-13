@@ -75,19 +75,26 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	if layer.bv == nil {
 		layer.bv = layer.initB(int64(layer.dims))
 	}
-	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
-	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
-	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, hidden)
-	q = layer.split(q)                   // (batch, heads, steps, hidden/heads)
-	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
-	v = layer.split(v)                   // (batch, heads, steps, hidden/heads)
+	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, ..., dims)
+	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, ..., dims)
+	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, ..., dims)
+	q = layer.split(q)                   // (batch, heads, ..., dims/heads)
+	k = layer.split(k)                   // (batch, heads, ..., dims/heads)
+	v = layer.split(v)                   // (batch, heads, ..., dims/heads)
 	dropout := layer.dropout
 	if !train {
 		dropout = 0
 	}
-	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, steps, hidden/heads)
-	y = y.Transpose(1, 2).Contiguous()                                                   // (batch, steps, heads, hidden/heads)
-	y = y.View(inputShape[0], inputShape[1], int64(layer.dims))                          // (batch, steps, hidden)
+	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, ..., dims/heads)
+	idx := make([]int64, len(inputShape)+1)
+	idx[0] = 0
+	for i := 1; i < len(inputShape)-1; i++ {
+		idx[i] = int64(i + 1)
+	}
+	idx[len(idx)-2] = 1
+	idx[len(idx)-1] = -1
+	y = y.Permute(idx...).Contiguous() // (batch, ..., heads, dims/heads)
+	y = y.View(inputShape...)          // (batch, ..., dims)
 	return y, score
 }
 
