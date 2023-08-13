@@ -25,8 +25,8 @@ func NewConv2D(inC, outC int, kernel1, kernel2 int, opts ...LayerCreateOption) *
 	layer.inC = inC
 	layer.outC = outC
 	layer.kernel = [2]int{kernel1, kernel2}
-	layer.stride = [2]int{1}
-	layer.padding = [2]int{0}
+	layer.stride = [2]int{1, 1}
+	layer.padding = [2]int{0, 0}
 	layer.dilation = 1
 	layer.groups = 1
 	return &layer
