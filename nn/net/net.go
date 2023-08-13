@@ -19,6 +19,7 @@ var loadFuncs = map[string]loadFunc{
 	"dense":      layer.LoadDense,
 	"dropout":    layer.LoadDropout,
 	"conv1d":     layer.LoadConv1D,
+	"conv2d":     layer.LoadConv2D,
 	"maxpool1d":  layer.LoadMaxPool1D,
 	"rnn":        layer.LoadRnn,
 	"lstm":       layer.LoadLstm,
