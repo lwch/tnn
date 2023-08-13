@@ -13,6 +13,4 @@ func TestSelfAttention(t *testing.T) {
 	x := tensor.ARange(nil, 1*3*4, consts.KFloat).Reshape(1, 3, 4)
 	_, score := l.Forward(x, x, x, nil, true)
 	fmt.Println(score.Float32Value())
-	score = l.Score(x, x, x, nil)
-	fmt.Println(score.Float32Value())
 }

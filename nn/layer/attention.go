@@ -1,8 +1,6 @@
 package layer
 
 import (
-	"math"
-
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
@@ -48,26 +46,25 @@ func LoadAttention(device consts.DeviceType, name string, params map[string]*pb.
 	return &layer
 }
 
-func stepDim(t *tensor.Tensor) int64 {
+func seqLen(t *tensor.Tensor) []int64 {
 	shapes := t.Shapes()
-	return shapes[len(shapes)-2]
-}
-
-func lastDim(t *tensor.Tensor) int64 {
-	shapes := t.Shapes()
-	return shapes[len(shapes)-1]
+	ret := make([]int64, 0, len(shapes)-2)
+	for i := 1; i < len(shapes)-1; i++ {
+		ret = append(ret, shapes[i])
+	}
+	return ret
 }
 
 func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := q.Shapes()
 	if layer.wq == nil {
-		layer.wq = layer.initW(lastDim(q), int64(layer.dims))
+		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wk == nil {
-		layer.wk = layer.initW(lastDim(k), int64(layer.dims))
+		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.wv == nil {
-		layer.wv = layer.initW(lastDim(v), int64(layer.dims))
+		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
 	if layer.bq == nil {
 		layer.bq = layer.initB(int64(layer.dims))
@@ -94,65 +91,22 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	return y, score
 }
 
-func (layer *Attention) Score(q, k, v, mask *tensor.Tensor) *tensor.Tensor {
-	if layer.wq == nil {
-		panic("missing Wq param")
-	}
-	if layer.wk == nil {
-		panic("missing Wk param")
-	}
-	if layer.wv == nil {
-		panic("missing Wv param")
-	}
-	if layer.bq == nil {
-		panic("missing Bq param")
-	}
-	if layer.bk == nil {
-		panic("missing Bk param")
-	}
-	if layer.bv == nil {
-		panic("missing Bv param")
-	}
-	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, steps, hidden)
-	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, steps, hidden)
-	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, steps, hidden)
-	q = layer.split(q)                   // (batch, heads, steps, hidden/heads)
-	k = layer.split(k)                   // (batch, heads, steps, hidden/heads)
-	v = layer.split(v)                   // (batch, heads, steps, hidden/heads)
-	store := q.Storage()
-	if store == nil {
-		store = k.Storage()
-	}
-	if store == nil {
-		store = v.Storage()
-	}
-	if layer.isCausal {
-		l := int(stepDim(q))
-		s := int(stepDim(k))
-		data := make([]float32, l*s)
-		for i := 0; i < l; i++ {
-			for j := i + 1; j < s; j++ {
-				data[i*l+j] = float32(math.Inf(-1))
-			}
-		}
-		mask = tensor.FromFloat32(store, data,
-			tensor.WithShapes(1, 1, int64(l), int64(s)),
-			tensor.WithDevice(layer.device))
-	}
-	score := q.MatMul(k.Transpose(-2, -1)) // (batch, heads, steps, steps)
-	size := tensor.FromFloat32(store, []float32{float32(math.Sqrt(float64(q.Shapes()[3])))},
-		tensor.WithShapes(1), tensor.WithDevice(layer.device))
-	score = score.Div(size)
-	if mask != nil {
-		score = score.Add(mask)
-	}
-	return score.Softmax(-1)
-}
-
 func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
-	v := x.View(inputShape[0], stepDim(x), int64(layer.heads), lastDim(x)/int64(layer.heads))
-	return v.Permute(0, 2, 1, 3)
+	dims := make([]int64, len(inputShape)+1)
+	idx := make([]int64, len(inputShape)+1)
+	dims[0] = inputShape[0]
+	idx[0] = 0
+	idx[1] = -2
+	for i, dim := range seqLen(x) {
+		dims[i+1] = dim
+		idx[i+1] = int64(i + 1)
+	}
+	idx[len(idx)-1] = -1
+	dims[len(dims)-2] = int64(layer.heads)
+	dims[len(dims)-1] = int64(layer.dims / layer.heads)
+	v := x.View(dims...)
+	return v.Permute(idx...)
 }
 
 func (layer *Attention) Params() map[string]*tensor.Tensor {
