@@ -100,7 +100,7 @@ func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
 	idx[1] = -2
 	for i, dim := range seqLen(x) {
 		dims[i+1] = dim
-		idx[i+1] = int64(i + 1)
+		idx[i+2] = int64(i + 1)
 	}
 	idx[len(idx)-1] = -1
 	dims[len(dims)-2] = int64(layer.heads)
