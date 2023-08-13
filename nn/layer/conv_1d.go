@@ -72,10 +72,10 @@ func (layer *Conv1D) Forward(x *tensor.Tensor) *tensor.Tensor {
 		layer.b = layer.initB(int64(layer.outC))
 	}
 	return x.Conv1D(layer.w, layer.b,
-		tensor.ConvStride(layer.stride),
-		tensor.ConvPadding(layer.padding),
-		tensor.ConvDilation(layer.dilation),
-		tensor.ConvGroups(layer.groups))
+		tensor.Conv1DStride(layer.stride),
+		tensor.Conv1DPadding(layer.padding),
+		tensor.Conv1DDilation(layer.dilation),
+		tensor.Conv1DGroups(layer.groups))
 }
 
 func (layer *Conv1D) Params() map[string]*tensor.Tensor {

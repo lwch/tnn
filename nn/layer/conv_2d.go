@@ -9,9 +9,9 @@ import (
 type Conv2D struct {
 	base
 	inC, outC int
-	kernel    int
-	stride    int
-	padding   int
+	kernel    [2]int
+	stride    [2]int
+	padding   [2]int
 	dilation  int
 	groups    int
 	// params
@@ -19,25 +19,25 @@ type Conv2D struct {
 	b *tensor.Tensor
 }
 
-func NewConv2D(inC, outC, kernel int, opts ...LayerCreateOption) *Conv2D {
+func NewConv2D(inC, outC int, kernel1, kernel2 int, opts ...LayerCreateOption) *Conv2D {
 	var layer Conv2D
 	layer.new("conv2d", opts...)
 	layer.inC = inC
 	layer.outC = outC
-	layer.kernel = kernel
-	layer.stride = 1
-	layer.padding = 0
+	layer.kernel = [2]int{kernel1, kernel2}
+	layer.stride = [2]int{1}
+	layer.padding = [2]int{0}
 	layer.dilation = 1
 	layer.groups = 1
 	return &layer
 }
 
-func (layer *Conv2D) SetStride(stride int) {
-	layer.stride = stride
+func (layer *Conv2D) SetStride(stride1, stride2 int) {
+	layer.stride = [2]int{stride1, stride2}
 }
 
-func (layer *Conv2D) SetPadding(padding int) {
-	layer.padding = padding
+func (layer *Conv2D) SetPadding(padding1, padding2 int) {
+	layer.padding = [2]int{padding1, padding2}
 }
 
 func (layer *Conv2D) SetDilation(dilation int) {
@@ -49,14 +49,14 @@ func (layer *Conv2D) SetGroups(groups int) {
 }
 
 func LoadConv2D(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
-	var layer Conv1D
+	var layer Conv2D
 	layer.new("conv2d", WithDevice(device))
 	layer.name = name
 	layer.inC = int(args["inC"])
 	layer.outC = int(args["outC"])
-	layer.kernel = int(args["kernel"])
-	layer.stride = int(args["stride"])
-	layer.padding = int(args["padding"])
+	layer.kernel = [2]int{int(args["kernel1"]), int(args["kernel2"])}
+	layer.stride = [2]int{int(args["stride1"]), int(args["stride2"])}
+	layer.padding = [2]int{int(args["padding1"]), int(args["padding2"])}
 	layer.dilation = int(args["dilation"])
 	layer.groups = int(args["groups"])
 	layer.w = layer.loadParam(params["w"])
@@ -66,16 +66,16 @@ func LoadConv2D(device consts.DeviceType, name string, params map[string]*pb.Den
 
 func (layer *Conv2D) Forward(x *tensor.Tensor) *tensor.Tensor {
 	if layer.w == nil {
-		layer.w = layer.initW(int64(layer.outC), int64(layer.inC/layer.groups), int64(layer.kernel), int64(layer.kernel))
+		layer.w = layer.initW(int64(layer.outC), int64(layer.inC/layer.groups), int64(layer.kernel[0]), int64(layer.kernel[1]))
 	}
 	if layer.b == nil {
 		layer.b = layer.initB(int64(layer.outC))
 	}
 	return x.Conv2D(layer.w, layer.b,
-		tensor.ConvStride(layer.stride),
-		tensor.ConvPadding(layer.padding),
-		tensor.ConvDilation(layer.dilation),
-		tensor.ConvGroups(layer.groups))
+		tensor.Conv2DStride(layer.stride[0], layer.stride[1]),
+		tensor.Conv2DPadding(layer.padding[0], layer.padding[1]),
+		tensor.Conv2DDilation(layer.dilation),
+		tensor.Conv2DGroups(layer.groups))
 }
 
 func (layer *Conv2D) Params() map[string]*tensor.Tensor {
@@ -89,9 +89,12 @@ func (layer *Conv2D) Args() map[string]float32 {
 	return map[string]float32{
 		"inC":      float32(layer.inC),
 		"outC":     float32(layer.outC),
-		"kernel":   float32(layer.kernel),
-		"stride":   float32(layer.stride),
-		"padding":  float32(layer.padding),
+		"kernel1":  float32(layer.kernel[0]),
+		"kernel2":  float32(layer.kernel[1]),
+		"stride1":  float32(layer.stride[0]),
+		"stride2":  float32(layer.stride[1]),
+		"padding1": float32(layer.padding[0]),
+		"padding2": float32(layer.padding[1]),
 		"dilation": float32(layer.dilation),
 		"groups":   float32(layer.groups),
 	}
