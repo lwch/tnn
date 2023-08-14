@@ -24,6 +24,7 @@ var loadFuncs = map[string]loadFunc{
 	"rnn":        layer.LoadRnn,
 	"lstm":       layer.LoadLstm,
 	"attention":  layer.LoadAttention,
+	"attention1": layer.LoadAttention1,
 	"layer_norm": layer.LoadLayerNorm,
 	"flatten":    layer.LoadFlatten,
 	"embedding":  layer.LoadEmbedding,

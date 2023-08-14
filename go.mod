@@ -3,7 +3,7 @@ module github.com/lwch/tnn
 go 1.20
 
 require (
-	github.com/lwch/gotorch v1.3.9
+	github.com/lwch/gotorch v1.3.10
 	github.com/lwch/runtime v1.0.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0
