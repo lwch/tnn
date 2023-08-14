@@ -56,6 +56,9 @@ func LoadAttention1(device consts.DeviceType, name string, params map[string]*pb
 }
 
 func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
+	if mask != nil && layer.isCausal {
+		panic("unexpected mask")
+	}
 	inputShape := q.Shapes()
 	if layer.wq == nil {
 		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
