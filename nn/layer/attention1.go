@@ -115,37 +115,6 @@ func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train bool) (*ten
 	return y, score
 }
 
-func (layer *Attention1) Score(q, k, mask *tensor.Tensor, idx int64) *tensor.Tensor {
-	if mask != nil && layer.isCausal {
-		panic("unexpected mask")
-	}
-	if layer.wq == nil {
-		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.wk == nil {
-		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.bq == nil {
-		layer.bq = layer.initB(int64(layer.dims))
-	}
-	if layer.bk == nil {
-		layer.bk = layer.initB(int64(layer.dims))
-	}
-	q = q.MatMul(layer.wq).Add(layer.bq).NArrow(-2, idx, 1) // (batch, ..., dims)
-	k = k.MatMul(layer.wk).Add(layer.bk).NArrow(-2, idx, 1) // (batch, ..., dims)
-	q = layer.split(q)                                      // (batch, heads, ..., dims/heads)
-	k = layer.split(k)                                      // (batch, heads, ..., dims/heads)
-	if layer.isCausal {
-		mask = layer.buildCausal(q, k)
-	}
-	score := q.MatMul(k.Transpose(-1, -2)).Div(layer.scale) // (batch, heads, ..., dims/heads)
-	if mask != nil {
-		score = score.Add(mask) // (batch, heads, ..., dims/heads)
-	}
-	score = score.Softmax1(-1) // (batch, heads, ..., dims/heads)
-	return score
-}
-
 func (layer *Attention1) split(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
 	dims := make([]int64, len(inputShape)+1)
