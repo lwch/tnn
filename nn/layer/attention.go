@@ -12,8 +12,8 @@ type Attention struct {
 	dropout     float64
 	isCausal    bool
 	// params
-	wq, wk, wv, wo *tensor.Tensor
-	bq, bk, bv, bo *tensor.Tensor
+	wq, wk, wv *tensor.Tensor
+	bq, bk, bv *tensor.Tensor
 }
 
 func NewAttention(dims, heads int, dropout float64, isCausal bool, opts ...LayerCreateOption) *Attention {
@@ -40,11 +40,9 @@ func LoadAttention(device consts.DeviceType, name string, params map[string]*pb.
 	layer.wq = layer.loadParam(params["Wq"])
 	layer.wk = layer.loadParam(params["Wk"])
 	layer.wv = layer.loadParam(params["Wv"])
-	layer.wo = layer.loadParam(params["Wo"])
 	layer.bq = layer.loadParam(params["Bq"])
 	layer.bk = layer.loadParam(params["Bk"])
 	layer.bv = layer.loadParam(params["Bv"])
-	layer.bo = layer.loadParam(params["Bo"])
 	return &layer
 }
 
@@ -71,9 +69,6 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	if layer.wv == nil {
 		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
 	}
-	if layer.wo == nil {
-		layer.wo = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
 	if layer.bq == nil {
 		layer.bq = layer.initB(int64(layer.dims))
 	}
@@ -82,9 +77,6 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	}
 	if layer.bv == nil {
 		layer.bv = layer.initB(int64(layer.dims))
-	}
-	if layer.bo == nil {
-		layer.bo = layer.initB(int64(layer.dims))
 	}
 	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, ..., dims)
 	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, ..., dims)
@@ -104,9 +96,8 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	}
 	idx[len(idx)-2] = 1
 	idx[len(idx)-1] = -1
-	y = y.Permute(idx...).Contiguous()   // (batch, ..., heads, dims/heads)
-	y = y.View(inputShape...)            // (batch, ..., dims)
-	y = y.MatMul(layer.wo).Add(layer.bo) // (batch, ..., dims)
+	y = y.Permute(idx...).Contiguous() // (batch, ..., heads, dims/heads)
+	y = y.View(inputShape...)          // (batch, ..., dims)
 	return y, score
 }
 
@@ -130,8 +121,8 @@ func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
 
 func (layer *Attention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
-		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv, "Wo": layer.wo,
-		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv, "Bo": layer.bo,
+		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv,
+		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv,
 	}
 }
 
@@ -158,9 +149,6 @@ func (layer *Attention) Freeze() {
 	if layer.wv != nil {
 		layer.wv.SetRequiresGrad(false)
 	}
-	if layer.wo != nil {
-		layer.wo.SetRequiresGrad(false)
-	}
 	if layer.bq != nil {
 		layer.bq.SetRequiresGrad(false)
 	}
@@ -169,9 +157,6 @@ func (layer *Attention) Freeze() {
 	}
 	if layer.bv != nil {
 		layer.bv.SetRequiresGrad(false)
-	}
-	if layer.bo != nil {
-		layer.bo.SetRequiresGrad(false)
 	}
 }
 
@@ -185,9 +170,6 @@ func (layer *Attention) Unfreeze() {
 	if layer.wv != nil {
 		layer.wv.SetRequiresGrad(true)
 	}
-	if layer.wo != nil {
-		layer.wo.SetRequiresGrad(true)
-	}
 	if layer.bq != nil {
 		layer.bq.SetRequiresGrad(true)
 	}
@@ -196,8 +178,5 @@ func (layer *Attention) Unfreeze() {
 	}
 	if layer.bv != nil {
 		layer.bv.SetRequiresGrad(true)
-	}
-	if layer.bo != nil {
-		layer.bo.SetRequiresGrad(true)
 	}
 }
