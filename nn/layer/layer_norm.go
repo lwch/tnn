@@ -30,5 +30,7 @@ func (layer *LayerNorm) Forward(x *tensor.Tensor) *tensor.Tensor {
 	}
 	mean := x.Mean(-1, true)
 	v := x.Var(-1, false, true)
-	return x.Sub(mean).Div(v.Add(layer.eps).Sqrt())
+	sub := x.Sub(mean)
+	bias := v.Add(layer.eps)
+	return sub.Div(bias)
 }
