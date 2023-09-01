@@ -55,6 +55,12 @@ func seqLen(t *tensor.Tensor) []int64 {
 	return ret
 }
 
+func conv1d(x, w, b *tensor.Tensor, dims int64) *tensor.Tensor {
+	shapes := x.Shapes()
+	x = x.View(-1, dims).MatMul(w).Add(b)
+	return x.View(shapes...)
+}
+
 func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
 	if mask != nil && layer.isCausal {
 		panic("unexpected mask")
@@ -78,12 +84,12 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	if layer.bv == nil {
 		layer.bv = layer.initB(int64(layer.dims))
 	}
-	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, ..., dims)
-	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, ..., dims)
-	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, ..., dims)
-	q = layer.split(q)                   // (batch, heads, ..., dims/heads)
-	k = layer.split(k)                   // (batch, heads, ..., dims/heads)
-	v = layer.split(v)                   // (batch, heads, ..., dims/heads)
+	q = conv1d(q, layer.wq, layer.bq, int64(layer.dims)) // (batch, ..., dims)
+	k = conv1d(k, layer.wk, layer.bk, int64(layer.dims)) // (batch, ..., dims)
+	v = conv1d(v, layer.wv, layer.bv, int64(layer.dims)) // (batch, ..., dims)
+	q = layer.split(q)                                   // (batch, heads, ..., dims/heads)
+	k = layer.split(k)                                   // (batch, heads, ..., dims/heads)
+	v = layer.split(v)                                   // (batch, heads, ..., dims/heads)
 	dropout := layer.dropout
 	if !train {
 		dropout = 0
