@@ -55,12 +55,6 @@ func seqLen(t *tensor.Tensor) []int64 {
 	return ret
 }
 
-func conv1d(x, w, b *tensor.Tensor, dims int64) *tensor.Tensor {
-	shapes := x.Shapes()
-	x = x.View(-1, dims).MatMul(w).Add(b)
-	return x.View(shapes...)
-}
-
 func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
 	if mask != nil && layer.isCausal {
 		panic("unexpected mask")
@@ -83,6 +77,11 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	}
 	if layer.bv == nil {
 		layer.bv = layer.initB(int64(layer.dims))
+	}
+	conv1d := func(x, w, b *tensor.Tensor, dims int64) *tensor.Tensor {
+		shapes := x.Shapes()
+		x = x.View(-1, dims).MatMul(w).Add(b)
+		return x.View(shapes...)
 	}
 	q = conv1d(q, layer.wq, layer.bq, int64(layer.dims)) // (batch, ..., dims)
 	k = conv1d(k, layer.wk, layer.bk, int64(layer.dims)) // (batch, ..., dims)
