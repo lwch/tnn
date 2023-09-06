@@ -29,6 +29,8 @@ func NewConv2D(inC, outC int, kernel1, kernel2 int, opts ...LayerCreateOption) *
 	layer.padding = [2]int{0, 0}
 	layer.dilation = 1
 	layer.groups = 1
+	layer.w = layer.initW(int64(outC), int64(inC), int64(kernel1), int64(kernel2))
+	layer.b = layer.initB(int64(outC))
 	return &layer
 }
 
@@ -65,12 +67,6 @@ func LoadConv2D(device consts.DeviceType, name string, params map[string]*pb.Den
 }
 
 func (layer *Conv2D) Forward(x *tensor.Tensor) *tensor.Tensor {
-	if layer.w == nil {
-		layer.w = layer.initW(int64(layer.outC), int64(layer.inC/layer.groups), int64(layer.kernel[0]), int64(layer.kernel[1]))
-	}
-	if layer.b == nil {
-		layer.b = layer.initB(int64(layer.outC))
-	}
 	return x.Conv2D(layer.w, layer.b,
 		tensor.Conv2DStride(layer.stride[0], layer.stride[1]),
 		tensor.Conv2DPadding(layer.padding[0], layer.padding[1]),
@@ -101,19 +97,11 @@ func (layer *Conv2D) Args() map[string]float32 {
 }
 
 func (layer *Conv2D) Freeze() {
-	if layer.w != nil {
-		layer.w.SetRequiresGrad(false)
-	}
-	if layer.b != nil {
-		layer.b.SetRequiresGrad(false)
-	}
+	layer.w.SetRequiresGrad(false)
+	layer.b.SetRequiresGrad(false)
 }
 
 func (layer *Conv2D) Unfreeze() {
-	if layer.w != nil {
-		layer.w.SetRequiresGrad(true)
-	}
-	if layer.b != nil {
-		layer.b.SetRequiresGrad(true)
-	}
+	layer.w.SetRequiresGrad(true)
+	layer.b.SetRequiresGrad(true)
 }
