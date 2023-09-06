@@ -26,12 +26,12 @@ func NewAttention(dims, heads int, dropout float64, isCausal bool, opts ...Layer
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
-	layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
-	layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
-	layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
-	layer.bq = layer.initB(int64(layer.dims))
-	layer.bk = layer.initB(int64(layer.dims))
-	layer.bv = layer.initB(int64(layer.dims))
+	layer.wq = layer.initW(int64(dims), int64(dims))
+	layer.wk = layer.initW(int64(dims), int64(dims))
+	layer.wv = layer.initW(int64(dims), int64(dims))
+	layer.bq = layer.initB(int64(dims))
+	layer.bk = layer.initB(int64(dims))
+	layer.bv = layer.initB(int64(dims))
 	return &layer
 }
 

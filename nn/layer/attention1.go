@@ -32,12 +32,12 @@ func NewAttention1(dims, heads int, dropout float64, isCausal bool, opts ...Laye
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
-	layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
-	layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
-	layer.bq = layer.initB(int64(layer.dims))
-	layer.bk = layer.initB(int64(layer.dims))
-	layer.bv = layer.initB(int64(layer.dims))
+	layer.wq = layer.initW(int64(dims), int64(dims))
+	layer.wk = layer.initW(int64(dims), int64(dims))
+	layer.wv = layer.initW(int64(dims), int64(dims))
+	layer.bq = layer.initB(int64(dims))
+	layer.bk = layer.initB(int64(dims))
+	layer.bv = layer.initB(int64(dims))
 	return &layer
 }
 
