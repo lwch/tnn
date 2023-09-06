@@ -21,6 +21,7 @@ func NewEmbedding(num, dim int, opts ...LayerCreateOption) *Embedding {
 	layer.num = num
 	layer.dim = dim
 	layer.padding = -1
+	layer.w = layer.initW(int64(num), int64(dim))
 	return &layer
 }
 
@@ -40,9 +41,6 @@ func (layer *Embedding) SetPaddingIdx(n int64) {
 }
 
 func (layer *Embedding) Forward(x *tensor.Tensor) *tensor.Tensor {
-	if layer.w == nil {
-		layer.w = layer.initW(int64(layer.num), int64(layer.dim))
-	}
 	return tensor.Embedding(x, layer.w, layer.padding)
 }
 
@@ -61,13 +59,9 @@ func (layer *Embedding) Args() map[string]float32 {
 }
 
 func (layer *Embedding) Freeze() {
-	if layer.w != nil {
-		layer.w.SetRequiresGrad(false)
-	}
+	layer.w.SetRequiresGrad(false)
 }
 
 func (layer *Embedding) Unfreeze() {
-	if layer.w != nil {
-		layer.w.SetRequiresGrad(true)
-	}
+	layer.w.SetRequiresGrad(true)
 }
