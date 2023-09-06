@@ -52,3 +52,20 @@ func (layer *LayerNorm) Forward(x *tensor.Tensor) *tensor.Tensor {
 	div := sub.Div(bias)
 	return div.Mul(layer.a).Add(layer.b)
 }
+
+func (layer *LayerNorm) Params() map[string]*tensor.Tensor {
+	return map[string]*tensor.Tensor{
+		"a": layer.a,
+		"b": layer.b,
+	}
+}
+
+func (layer *LayerNorm) Freeze() {
+	layer.a.SetRequiresGrad(false)
+	layer.b.SetRequiresGrad(false)
+}
+
+func (layer *LayerNorm) Unfreeze() {
+	layer.a.SetRequiresGrad(true)
+	layer.b.SetRequiresGrad(true)
+}
