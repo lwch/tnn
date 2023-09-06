@@ -21,6 +21,8 @@ func NewRnn(featureSize, steps, hidden int, opts ...LayerCreateOption) *Rnn {
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
+	layer.w = layer.initW(int64(featureSize+layer.hidden), int64(hidden))
+	layer.b = layer.initB(int64(hidden))
 	return &layer
 }
 
@@ -42,12 +44,6 @@ func copyState(s *tensor.Tensor) *tensor.Tensor {
 
 func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
-	if layer.w == nil {
-		layer.w = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
-	}
-	if layer.b == nil {
-		layer.b = layer.initB(int64(layer.hidden))
-	}
 	if h == nil {
 		h = tensor.Zeros(x.Storage(), consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
 	}
@@ -84,19 +80,11 @@ func (layer *Rnn) Args() map[string]float32 {
 }
 
 func (layer *Rnn) Freeze() {
-	if layer.w != nil {
-		layer.w.SetRequiresGrad(false)
-	}
-	if layer.b != nil {
-		layer.b.SetRequiresGrad(false)
-	}
+	layer.w.SetRequiresGrad(false)
+	layer.b.SetRequiresGrad(false)
 }
 
 func (layer *Rnn) Unfreeze() {
-	if layer.w != nil {
-		layer.w.SetRequiresGrad(true)
-	}
-	if layer.b != nil {
-		layer.b.SetRequiresGrad(true)
-	}
+	layer.w.SetRequiresGrad(true)
+	layer.b.SetRequiresGrad(true)
 }
