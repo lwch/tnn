@@ -48,7 +48,7 @@ func (layer *LayerNorm) Forward(x *tensor.Tensor) *tensor.Tensor {
 	mean := x.Mean(-1, true)
 	v := x.Var(-1, false, true)
 	sub := x.Sub(mean)
-	bias := v.Add(layer.eps)
+	bias := v.Add(layer.eps).Sqrt()
 	div := sub.Div(bias)
 	return div.Mul(layer.a).Add(layer.b)
 }
