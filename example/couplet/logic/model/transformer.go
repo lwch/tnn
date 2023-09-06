@@ -24,9 +24,9 @@ func newTransformer(i int) *transformer {
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
 	output := layer.NewLinear(embeddingDim, layer.WithDevice(device))
 	output.SetName(fmt.Sprintf("transformer%d_output", i))
-	norm1 := layer.NewLayerNorm(layer.WithDevice(device))
+	norm1 := layer.NewLayerNorm(embeddingDim, layer.WithDevice(device))
 	norm1.SetName(fmt.Sprintf("transformer%d_norm1", i))
-	norm2 := layer.NewLayerNorm(layer.WithDevice(device))
+	norm2 := layer.NewLayerNorm(embeddingDim, layer.WithDevice(device))
 	norm2.SetName(fmt.Sprintf("transformer%d_norm2", i))
 	return &transformer{
 		attn:   attn,

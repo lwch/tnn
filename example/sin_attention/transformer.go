@@ -22,8 +22,8 @@ func newTransformer() *transformer {
 		flatten: layer.NewFlatten(),
 		dense:   layer.NewLinear(unitSize*4, layer.WithDevice(device)),
 		sigmoid: activation.NewSigmoid(),
-		norm1:   layer.NewLayerNorm(layer.WithDevice(device)),
-		norm2:   layer.NewLayerNorm(layer.WithDevice(device)),
+		norm1:   layer.NewLayerNorm(unitSize, layer.WithDevice(device)),
+		norm2:   layer.NewLayerNorm(unitSize, layer.WithDevice(device)),
 		output:  layer.NewLinear(unitSize, layer.WithDevice(device)),
 	}
 }

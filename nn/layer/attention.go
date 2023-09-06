@@ -26,6 +26,12 @@ func NewAttention(dims, heads int, dropout float64, isCausal bool, opts ...Layer
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
+	layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
+	layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
+	layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
+	layer.bq = layer.initB(int64(layer.dims))
+	layer.bk = layer.initB(int64(layer.dims))
+	layer.bv = layer.initB(int64(layer.dims))
 	return &layer
 }
 
@@ -60,35 +66,12 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 		panic("unexpected mask")
 	}
 	inputShape := q.Shapes()
-	if layer.wq == nil {
-		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.wk == nil {
-		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.wv == nil {
-		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.bq == nil {
-		layer.bq = layer.initB(int64(layer.dims))
-	}
-	if layer.bk == nil {
-		layer.bk = layer.initB(int64(layer.dims))
-	}
-	if layer.bv == nil {
-		layer.bv = layer.initB(int64(layer.dims))
-	}
-	conv1d := func(x, w, b *tensor.Tensor, dims int64) *tensor.Tensor {
-		shapes := x.Shapes()
-		x = x.View(-1, dims).MatMul(w).Add(b)
-		return x.View(shapes...)
-	}
-	q = conv1d(q, layer.wq, layer.bq, int64(layer.dims)) // (batch, ..., dims)
-	k = conv1d(k, layer.wk, layer.bk, int64(layer.dims)) // (batch, ..., dims)
-	v = conv1d(v, layer.wv, layer.bv, int64(layer.dims)) // (batch, ..., dims)
-	q = layer.split(q)                                   // (batch, heads, ..., dims/heads)
-	k = layer.split(k)                                   // (batch, heads, ..., dims/heads)
-	v = layer.split(v)                                   // (batch, heads, ..., dims/heads)
+	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, ..., dims)
+	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, ..., dims)
+	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, ..., dims)
+	q = layer.split(q)                   // (batch, heads, ..., dims/heads)
+	k = layer.split(k)                   // (batch, heads, ..., dims/heads)
+	v = layer.split(v)                   // (batch, heads, ..., dims/heads)
 	dropout := layer.dropout
 	if !train {
 		dropout = 0
