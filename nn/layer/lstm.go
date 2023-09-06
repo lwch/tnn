@@ -22,6 +22,14 @@ func NewLstm(featureSize, steps, hidden int, opts ...LayerCreateOption) *Lstm {
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
+	layer.Wi = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Wf = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Wg = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Wo = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Bi = layer.initB(int64(hidden))
+	layer.Bf = layer.initB(int64(hidden))
+	layer.Bg = layer.initB(int64(hidden))
+	layer.Bo = layer.initB(int64(hidden))
 	return &layer
 }
 
@@ -45,30 +53,6 @@ func LoadLstm(device consts.DeviceType, name string, params map[string]*pb.Dense
 
 func (layer *Lstm) Forward(x, h, c *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
-	if layer.Wi == nil {
-		layer.Wi = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
-	}
-	if layer.Wf == nil {
-		layer.Wf = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
-	}
-	if layer.Wg == nil {
-		layer.Wg = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
-	}
-	if layer.Wo == nil {
-		layer.Wo = layer.initW(int64(layer.featureSize+layer.hidden), int64(layer.hidden))
-	}
-	if layer.Bi == nil {
-		layer.Bi = layer.initB(int64(layer.hidden))
-	}
-	if layer.Bf == nil {
-		layer.Bf = layer.initB(int64(layer.hidden))
-	}
-	if layer.Bg == nil {
-		layer.Bg = layer.initB(int64(layer.hidden))
-	}
-	if layer.Bo == nil {
-		layer.Bo = layer.initB(int64(layer.hidden))
-	}
 	if h == nil {
 		h = tensor.Zeros(nil, consts.KFloat,
 			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
@@ -129,55 +113,23 @@ func (layer *Lstm) Args() map[string]float32 {
 }
 
 func (layer *Lstm) Freeze() {
-	if layer.Wi != nil {
-		layer.Wi.SetRequiresGrad(false)
-	}
-	if layer.Wf != nil {
-		layer.Wf.SetRequiresGrad(false)
-	}
-	if layer.Wg != nil {
-		layer.Wg.SetRequiresGrad(false)
-	}
-	if layer.Wo != nil {
-		layer.Wo.SetRequiresGrad(false)
-	}
-	if layer.Bi != nil {
-		layer.Bi.SetRequiresGrad(false)
-	}
-	if layer.Bf != nil {
-		layer.Bf.SetRequiresGrad(false)
-	}
-	if layer.Bg != nil {
-		layer.Bg.SetRequiresGrad(false)
-	}
-	if layer.Bo != nil {
-		layer.Bo.SetRequiresGrad(false)
-	}
+	layer.Wi.SetRequiresGrad(false)
+	layer.Wf.SetRequiresGrad(false)
+	layer.Wg.SetRequiresGrad(false)
+	layer.Wo.SetRequiresGrad(false)
+	layer.Bi.SetRequiresGrad(false)
+	layer.Bf.SetRequiresGrad(false)
+	layer.Bg.SetRequiresGrad(false)
+	layer.Bo.SetRequiresGrad(false)
 }
 
 func (layer *Lstm) Unfreeze() {
-	if layer.Wi != nil {
-		layer.Wi.SetRequiresGrad(true)
-	}
-	if layer.Wf != nil {
-		layer.Wf.SetRequiresGrad(true)
-	}
-	if layer.Wg != nil {
-		layer.Wg.SetRequiresGrad(true)
-	}
-	if layer.Wo != nil {
-		layer.Wo.SetRequiresGrad(true)
-	}
-	if layer.Bi != nil {
-		layer.Bi.SetRequiresGrad(true)
-	}
-	if layer.Bf != nil {
-		layer.Bf.SetRequiresGrad(true)
-	}
-	if layer.Bg != nil {
-		layer.Bg.SetRequiresGrad(true)
-	}
-	if layer.Bo != nil {
-		layer.Bo.SetRequiresGrad(true)
-	}
+	layer.Wi.SetRequiresGrad(true)
+	layer.Wf.SetRequiresGrad(true)
+	layer.Wg.SetRequiresGrad(true)
+	layer.Wo.SetRequiresGrad(true)
+	layer.Bi.SetRequiresGrad(true)
+	layer.Bf.SetRequiresGrad(true)
+	layer.Bg.SetRequiresGrad(true)
+	layer.Bo.SetRequiresGrad(true)
 }
