@@ -41,9 +41,9 @@ func main() {
 }
 
 func train() {
-	hidden := layer.NewLinear(hiddenSize, layer.WithDevice(device))
+	hidden := layer.NewLinear(2, hiddenSize, layer.WithDevice(device))
 	hidden.SetName("hidden")
-	outputLayer := layer.NewLinear(1, layer.WithDevice(device))
+	outputLayer := layer.NewLinear(hiddenSize, 1, layer.WithDevice(device))
 	outputLayer.SetName("output")
 
 	net := net.New(device)

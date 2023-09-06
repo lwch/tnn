@@ -20,11 +20,11 @@ func newTransformer() *transformer {
 	return &transformer{
 		attn:    layer.NewAttention(dims, 1, 0.1, true, layer.WithDevice(device)),
 		flatten: layer.NewFlatten(),
-		dense:   layer.NewLinear(unitSize*4, layer.WithDevice(device)),
+		dense:   layer.NewLinear(dims, unitSize*4, layer.WithDevice(device)),
 		sigmoid: activation.NewSigmoid(),
 		norm1:   layer.NewLayerNorm(unitSize, layer.WithDevice(device)),
 		norm2:   layer.NewLayerNorm(unitSize, layer.WithDevice(device)),
-		output:  layer.NewLinear(unitSize, layer.WithDevice(device)),
+		output:  layer.NewLinear(unitSize*4, unitSize, layer.WithDevice(device)),
 	}
 }
 
