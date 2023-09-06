@@ -34,7 +34,7 @@ type Model struct {
 	// 模型定义
 	attn   []*transformer
 	relu   *activation.ReLU
-	output *layer.Dense
+	output *layer.Linear
 
 	// 运行时
 	epoch    int           // 当前训练到第几个迭代
@@ -61,7 +61,7 @@ func (m *Model) build() {
 		m.attn = append(m.attn, newTransformer(i))
 	}
 	m.relu = activation.NewReLU()
-	m.output = layer.NewDense(len(m.vocabs), layer.WithDevice(device))
+	m.output = layer.NewLinear(len(m.vocabs), layer.WithDevice(device))
 	m.output.SetName("output")
 }
 
@@ -153,5 +153,5 @@ func (m *Model) loadFrom(net *net.Net) {
 	}
 	m.relu = layers[idx].(*activation.ReLU)
 	idx++
-	m.output = layers[idx].(*layer.Dense)
+	m.output = layers[idx].(*layer.Linear)
 }

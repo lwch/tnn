@@ -6,7 +6,7 @@ import (
 	"github.com/lwch/tnn/internal/pb"
 )
 
-type Dense struct {
+type Linear struct {
 	base
 	output int
 	// params
@@ -14,16 +14,16 @@ type Dense struct {
 	b *tensor.Tensor
 }
 
-func NewDense(output int, opts ...LayerCreateOption) *Dense {
-	var layer Dense
-	layer.new("dense", opts...)
+func NewLinear(output int, opts ...LayerCreateOption) *Linear {
+	var layer Linear
+	layer.new("linear", opts...)
 	layer.output = output
 	return &layer
 }
 
-func LoadDense(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
-	var layer Dense
-	layer.new("dense", WithDevice(device))
+func LoadLinear(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+	var layer Linear
+	layer.new("linear", WithDevice(device))
 	layer.name = name
 	layer.output = int(args["output"])
 	layer.w = layer.loadParam(params["w"])
@@ -31,7 +31,7 @@ func LoadDense(device consts.DeviceType, name string, params map[string]*pb.Dens
 	return &layer
 }
 
-func (layer *Dense) Forward(x *tensor.Tensor) *tensor.Tensor {
+func (layer *Linear) Forward(x *tensor.Tensor) *tensor.Tensor {
 	inputShape := x.Shapes()
 	if layer.w == nil {
 		layer.w = layer.initW(inputShape[len(inputShape)-1], int64(layer.output))
@@ -42,20 +42,20 @@ func (layer *Dense) Forward(x *tensor.Tensor) *tensor.Tensor {
 	return x.MatMul(layer.w).Add(layer.b)
 }
 
-func (layer *Dense) Params() map[string]*tensor.Tensor {
+func (layer *Linear) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"w": layer.w,
 		"b": layer.b,
 	}
 }
 
-func (layer *Dense) Args() map[string]float32 {
+func (layer *Linear) Args() map[string]float32 {
 	return map[string]float32{
 		"output": float32(layer.output),
 	}
 }
 
-func (layer *Dense) Freeze() {
+func (layer *Linear) Freeze() {
 	if layer.w != nil {
 		layer.w.SetRequiresGrad(false)
 	}
@@ -64,7 +64,7 @@ func (layer *Dense) Freeze() {
 	}
 }
 
-func (layer *Dense) Unfreeze() {
+func (layer *Linear) Unfreeze() {
 	if layer.w != nil {
 		layer.w.SetRequiresGrad(true)
 	}

@@ -24,7 +24,7 @@ func (m *model) Forward(x *tensor.Tensor) *tensor.Tensor {
 	output := x
 	for _, l := range m.net.Layers() {
 		switch ln := l.(type) {
-		case *layer.Dense:
+		case *layer.Linear:
 			output = ln.Forward(output)
 		case *activation.ReLU:
 			output = ln.Forward(output)

@@ -10,19 +10,19 @@ import (
 
 type transformer struct {
 	attn   *layer.Attention
-	dense  *layer.Dense
+	dense  *layer.Linear
 	relu   *activation.ReLU
 	norm1  *layer.LayerNorm
 	norm2  *layer.LayerNorm
-	output *layer.Dense
+	output *layer.Linear
 }
 
 func newTransformer(i int) *transformer {
 	attn := layer.NewAttention(embeddingDim, heads, 0, false, layer.WithDevice(device))
 	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
-	dense := layer.NewDense(embeddingDim*4, layer.WithDevice(device))
+	dense := layer.NewLinear(embeddingDim*4, layer.WithDevice(device))
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
-	output := layer.NewDense(embeddingDim, layer.WithDevice(device))
+	output := layer.NewLinear(embeddingDim, layer.WithDevice(device))
 	output.SetName(fmt.Sprintf("transformer%d_output", i))
 	norm1 := layer.NewLayerNorm(layer.WithDevice(device))
 	norm1.SetName(fmt.Sprintf("transformer%d_norm1", i))
@@ -98,7 +98,7 @@ func (t *transformer) layers() []layer.Layer {
 func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
 	t.attn = layers[idx].(*layer.Attention)
 	idx++
-	t.dense = layers[idx].(*layer.Dense)
+	t.dense = layers[idx].(*layer.Linear)
 	idx++
 	t.relu = layers[idx].(*activation.ReLU)
 	idx++
@@ -106,7 +106,7 @@ func (t *transformer) loadFrom(layers []layer.Layer, idx int) int {
 	idx++
 	t.norm2 = layers[idx].(*layer.LayerNorm)
 	idx++
-	t.output = layers[idx].(*layer.Dense)
+	t.output = layers[idx].(*layer.Linear)
 	idx++
 	return idx
 }

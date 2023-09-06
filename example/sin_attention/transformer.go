@@ -9,22 +9,22 @@ import (
 type transformer struct {
 	attn    *layer.Attention
 	flatten *layer.Flatten
-	dense   *layer.Dense
+	dense   *layer.Linear
 	sigmoid *activation.Sigmoid
 	norm1   *layer.LayerNorm
 	norm2   *layer.LayerNorm
-	output  *layer.Dense
+	output  *layer.Linear
 }
 
 func newTransformer() *transformer {
 	return &transformer{
 		attn:    layer.NewAttention(dims, 1, 0.1, true, layer.WithDevice(device)),
 		flatten: layer.NewFlatten(),
-		dense:   layer.NewDense(unitSize*4, layer.WithDevice(device)),
+		dense:   layer.NewLinear(unitSize*4, layer.WithDevice(device)),
 		sigmoid: activation.NewSigmoid(),
 		norm1:   layer.NewLayerNorm(layer.WithDevice(device)),
 		norm2:   layer.NewLayerNorm(layer.WithDevice(device)),
-		output:  layer.NewDense(unitSize, layer.WithDevice(device)),
+		output:  layer.NewLinear(unitSize, layer.WithDevice(device)),
 	}
 }
 
