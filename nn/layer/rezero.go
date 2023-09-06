@@ -15,6 +15,10 @@ type ReZero struct {
 func NewReZero(opts ...LayerCreateOption) *ReZero {
 	var layer ReZero
 	layer.new("rezero", opts...)
+	layer.scale = tensor.FromFloat32(nil, []float32{0},
+		tensor.WithShapes(1),
+		tensor.WithDevice(layer.device))
+	layer.scale.SetRequiresGrad(true)
 	return &layer
 }
 
@@ -27,12 +31,6 @@ func LoadReZero(device consts.DeviceType, name string, params map[string]*pb.Den
 }
 
 func (layer *ReZero) Forward(x *tensor.Tensor) *tensor.Tensor {
-	if layer.scale == nil {
-		layer.scale = tensor.FromFloat32(nil, []float32{0},
-			tensor.WithShapes(1),
-			tensor.WithDevice(layer.device))
-		layer.scale.SetRequiresGrad(true)
-	}
 	return x.Mul(layer.scale)
 }
 
@@ -47,13 +45,9 @@ func (layer *ReZero) Args() map[string]float32 {
 }
 
 func (layer *ReZero) Freeze() {
-	if layer.scale != nil {
-		layer.scale.SetRequiresGrad(false)
-	}
+	layer.scale.SetRequiresGrad(false)
 }
 
 func (layer *ReZero) Unfreeze() {
-	if layer.scale != nil {
-		layer.scale.SetRequiresGrad(true)
-	}
+	layer.scale.SetRequiresGrad(true)
 }
