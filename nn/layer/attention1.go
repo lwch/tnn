@@ -32,6 +32,12 @@ func NewAttention1(dims, heads int, dropout float64, isCausal bool, opts ...Laye
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
+	layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
+	layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
+	layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
+	layer.bq = layer.initB(int64(layer.dims))
+	layer.bk = layer.initB(int64(layer.dims))
+	layer.bv = layer.initB(int64(layer.dims))
 	return &layer
 }
 
@@ -60,24 +66,6 @@ func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train bool) (*ten
 		panic("unexpected mask")
 	}
 	inputShape := q.Shapes()
-	if layer.wq == nil {
-		layer.wq = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.wk == nil {
-		layer.wk = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.wv == nil {
-		layer.wv = layer.initW(int64(layer.dims), int64(layer.dims))
-	}
-	if layer.bq == nil {
-		layer.bq = layer.initB(int64(layer.dims))
-	}
-	if layer.bk == nil {
-		layer.bk = layer.initB(int64(layer.dims))
-	}
-	if layer.bv == nil {
-		layer.bv = layer.initB(int64(layer.dims))
-	}
 	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, ..., dims)
 	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, ..., dims)
 	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, ..., dims)
