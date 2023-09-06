@@ -12,20 +12,18 @@ type Attention1 struct {
 	base
 	dims, heads int
 	dropout     float64
-	isCausal    bool
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
 	scale      *tensor.Tensor
 }
 
-func NewAttention1(dims, heads int, dropout float64, isCausal bool, opts ...LayerCreateOption) *Attention1 {
+func NewAttention1(dims, heads int, dropout float64, opts ...LayerCreateOption) *Attention1 {
 	var layer Attention1
 	layer.new("attention1", opts...)
 	layer.dims = dims
 	layer.heads = heads
 	layer.dropout = dropout
-	layer.isCausal = isCausal
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
@@ -48,7 +46,6 @@ func LoadAttention1(device consts.DeviceType, name string, params map[string]*pb
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
-	layer.isCausal = args["is_causal"] != 0
 	layer.wq = layer.loadParam(params["Wq"])
 	layer.wk = layer.loadParam(params["Wk"])
 	layer.wv = layer.loadParam(params["Wv"])
@@ -61,8 +58,8 @@ func LoadAttention1(device consts.DeviceType, name string, params map[string]*pb
 	return &layer
 }
 
-func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
-	if mask != nil && layer.isCausal {
+func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train, isCausal bool) (*tensor.Tensor, *tensor.Tensor) {
+	if mask != nil && isCausal {
 		panic("unexpected mask")
 	}
 	inputShape := q.Shapes()
@@ -72,7 +69,7 @@ func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train bool) (*ten
 	q = layer.split(q)                   // (batch, heads, ..., dims/heads)
 	k = layer.split(k)                   // (batch, heads, ..., dims/heads)
 	v = layer.split(v)                   // (batch, heads, ..., dims/heads)
-	if layer.isCausal {
+	if isCausal {
 		mask = layer.buildCausal(q, k)
 	}
 	score := q.MatMul(k.Transpose(-1, -2)).Div(layer.scale) // (batch, heads, ..., dims/heads)
@@ -145,15 +142,10 @@ func (layer *Attention1) Params() map[string]*tensor.Tensor {
 }
 
 func (layer *Attention1) Args() map[string]float32 {
-	var isCausal float32
-	if layer.isCausal {
-		isCausal = 1
-	}
 	return map[string]float32{
-		"dims":      float32(layer.dims),
-		"heads":     float32(layer.heads),
-		"dropout":   float32(layer.dropout),
-		"is_causal": isCausal,
+		"dims":    float32(layer.dims),
+		"heads":   float32(layer.heads),
+		"dropout": float32(layer.dropout),
 	}
 }
 

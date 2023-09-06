@@ -10,19 +10,17 @@ type Attention struct {
 	base
 	dims, heads int
 	dropout     float64
-	isCausal    bool
 	// params
 	wq, wk, wv *tensor.Tensor
 	bq, bk, bv *tensor.Tensor
 }
 
-func NewAttention(dims, heads int, dropout float64, isCausal bool, opts ...LayerCreateOption) *Attention {
+func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *Attention {
 	var layer Attention
 	layer.new("attention", opts...)
 	layer.dims = dims
 	layer.heads = heads
 	layer.dropout = dropout
-	layer.isCausal = isCausal
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
@@ -42,7 +40,6 @@ func LoadAttention(device consts.DeviceType, name string, params map[string]*pb.
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
-	layer.isCausal = args["is_causal"] != 0
 	layer.wq = layer.loadParam(params["Wq"])
 	layer.wk = layer.loadParam(params["Wk"])
 	layer.wv = layer.loadParam(params["Wv"])
@@ -61,8 +58,8 @@ func seqLen(t *tensor.Tensor) []int64 {
 	return ret
 }
 
-func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tensor.Tensor, *tensor.Tensor) {
-	if mask != nil && layer.isCausal {
+func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) (*tensor.Tensor, *tensor.Tensor) {
+	if mask != nil && isCausal {
 		panic("unexpected mask")
 	}
 	inputShape := q.Shapes()
@@ -76,7 +73,7 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, train bool) (*tens
 	if !train {
 		dropout = 0
 	}
-	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, layer.isCausal) // (batch, heads, ..., dims/heads)
+	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, isCausal) // (batch, heads, ..., dims/heads)
 	idx := make([]int64, len(inputShape)+1)
 	idx[0] = 0
 	for i := 1; i < len(inputShape)-1; i++ {
@@ -115,15 +112,10 @@ func (layer *Attention) Params() map[string]*tensor.Tensor {
 }
 
 func (layer *Attention) Args() map[string]float32 {
-	var isCausal float32
-	if layer.isCausal {
-		isCausal = 1
-	}
 	return map[string]float32{
-		"dims":      float32(layer.dims),
-		"heads":     float32(layer.heads),
-		"dropout":   float32(layer.dropout),
-		"is_causal": isCausal,
+		"dims":    float32(layer.dims),
+		"heads":   float32(layer.heads),
+		"dropout": float32(layer.dropout),
 	}
 }
 
