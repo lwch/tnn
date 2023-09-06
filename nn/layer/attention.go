@@ -11,8 +11,8 @@ type Attention struct {
 	dims, heads int
 	dropout     float64
 	// params
-	wq, wk, wv *tensor.Tensor
-	bq, bk, bv *tensor.Tensor
+	w *tensor.Tensor
+	b *tensor.Tensor
 }
 
 func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *Attention {
@@ -24,12 +24,8 @@ func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
-	layer.wq = layer.initW(int64(dims), int64(dims))
-	layer.wk = layer.initW(int64(dims), int64(dims))
-	layer.wv = layer.initW(int64(dims), int64(dims))
-	layer.bq = layer.initB(int64(dims))
-	layer.bk = layer.initB(int64(dims))
-	layer.bv = layer.initB(int64(dims))
+	layer.w = layer.initW(int64(dims*3), int64(dims*3))
+	layer.b = layer.initB(int64(dims * 3))
 	return &layer
 }
 
@@ -40,22 +36,9 @@ func LoadAttention(device consts.DeviceType, name string, params map[string]*pb.
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
-	layer.wq = layer.loadParam(params["Wq"])
-	layer.wk = layer.loadParam(params["Wk"])
-	layer.wv = layer.loadParam(params["Wv"])
-	layer.bq = layer.loadParam(params["Bq"])
-	layer.bk = layer.loadParam(params["Bk"])
-	layer.bv = layer.loadParam(params["Bv"])
+	layer.w = layer.loadParam(params["w"])
+	layer.b = layer.loadParam(params["b"])
 	return &layer
-}
-
-func seqLen(t *tensor.Tensor) []int64 {
-	shapes := t.Shapes()
-	ret := make([]int64, 0, len(shapes)-2)
-	for i := 1; i < len(shapes)-1; i++ {
-		ret = append(ret, shapes[i])
-	}
-	return ret
 }
 
 func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) (*tensor.Tensor, *tensor.Tensor) {
@@ -63,51 +46,33 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bo
 		panic("unexpected mask")
 	}
 	inputShape := q.Shapes()
-	q = q.MatMul(layer.wq).Add(layer.bq) // (batch, ..., dims)
-	k = k.MatMul(layer.wk).Add(layer.bk) // (batch, ..., dims)
-	v = v.MatMul(layer.wv).Add(layer.bv) // (batch, ..., dims)
-	q = layer.split(q)                   // (batch, heads, ..., dims/heads)
-	k = layer.split(k)                   // (batch, heads, ..., dims/heads)
-	v = layer.split(v)                   // (batch, heads, ..., dims/heads)
+	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1)           // (batch, seq, dims*3)
+	x = x.MatMul(layer.w).Add(layer.b)                       // (batch, seq, dims*3)
+	q = x.NArrow(-1, 0, int64(layer.dims))                   // (batch, seq, dims)
+	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims))   // (batch, seq, dims)
+	v = x.NArrow(-1, int64(layer.dims*2), int64(layer.dims)) // (batch, seq, dims)
+	q = layer.split(q)                                       // (batch, heads, seq, dims/heads)
+	k = layer.split(k)                                       // (batch, heads, seq, dims/heads)
+	v = layer.split(v)                                       // (batch, heads, seq, dims/heads)
 	dropout := layer.dropout
 	if !train {
 		dropout = 0
 	}
-	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, isCausal) // (batch, heads, ..., dims/heads)
-	idx := make([]int64, len(inputShape)+1)
-	idx[0] = 0
-	for i := 1; i < len(inputShape)-1; i++ {
-		idx[i] = int64(i + 1)
-	}
-	idx[len(idx)-2] = 1
-	idx[len(idx)-1] = -1
-	y = y.Permute(idx...).Contiguous() // (batch, ..., heads, dims/heads)
-	y = y.View(inputShape...)          // (batch, ..., dims)
+	y, score := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, isCausal) // (batch, heads, seq, dims/heads)
+	y = y.Transpose(1, 2)                                                          // (batch, seq, heads, dims/heads)
+	y = y.Reshape(-1, inputShape[1], int64(layer.dims))                            // (batch, seq, dims)
 	return y, score
 }
 
 func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
-	inputShape := x.Shapes()
-	dims := make([]int64, len(inputShape)+1)
-	idx := make([]int64, len(inputShape)+1)
-	dims[0] = inputShape[0]
-	idx[0] = 0
-	idx[1] = -2
-	for i, dim := range seqLen(x) {
-		dims[i+1] = dim
-		idx[i+2] = int64(i + 1)
-	}
-	idx[len(idx)-1] = -1
-	dims[len(dims)-2] = int64(layer.heads)
-	dims[len(dims)-1] = int64(layer.dims / layer.heads)
-	v := x.View(dims...)
-	return v.Permute(idx...)
+	y := x.View(-1, x.Shapes()[1], int64(layer.heads), int64(layer.dims/layer.heads))
+	return y.Transpose(1, 2)
 }
 
 func (layer *Attention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
-		"Wq": layer.wq, "Wk": layer.wk, "Wv": layer.wv,
-		"Bq": layer.bq, "Bk": layer.bk, "Bv": layer.bv,
+		"w": layer.w,
+		"b": layer.b,
 	}
 }
 
@@ -120,19 +85,11 @@ func (layer *Attention) Args() map[string]float32 {
 }
 
 func (layer *Attention) Freeze() {
-	layer.wq.SetRequiresGrad(false)
-	layer.wk.SetRequiresGrad(false)
-	layer.wv.SetRequiresGrad(false)
-	layer.bq.SetRequiresGrad(false)
-	layer.bk.SetRequiresGrad(false)
-	layer.bv.SetRequiresGrad(false)
+	layer.w.SetRequiresGrad(false)
+	layer.b.SetRequiresGrad(false)
 }
 
 func (layer *Attention) Unfreeze() {
-	layer.wq.SetRequiresGrad(true)
-	layer.wk.SetRequiresGrad(true)
-	layer.wv.SetRequiresGrad(true)
-	layer.bq.SetRequiresGrad(true)
-	layer.bk.SetRequiresGrad(true)
-	layer.bv.SetRequiresGrad(true)
+	layer.w.SetRequiresGrad(true)
+	layer.b.SetRequiresGrad(true)
 }
