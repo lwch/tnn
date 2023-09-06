@@ -158,43 +158,19 @@ func (layer *Attention1) Args() map[string]float32 {
 }
 
 func (layer *Attention1) Freeze() {
-	if layer.wq != nil {
-		layer.wq.SetRequiresGrad(false)
-	}
-	if layer.wk != nil {
-		layer.wk.SetRequiresGrad(false)
-	}
-	if layer.wv != nil {
-		layer.wv.SetRequiresGrad(false)
-	}
-	if layer.bq != nil {
-		layer.bq.SetRequiresGrad(false)
-	}
-	if layer.bk != nil {
-		layer.bk.SetRequiresGrad(false)
-	}
-	if layer.bv != nil {
-		layer.bv.SetRequiresGrad(false)
-	}
+	layer.wq.SetRequiresGrad(false)
+	layer.wk.SetRequiresGrad(false)
+	layer.wv.SetRequiresGrad(false)
+	layer.bq.SetRequiresGrad(false)
+	layer.bk.SetRequiresGrad(false)
+	layer.bv.SetRequiresGrad(false)
 }
 
 func (layer *Attention1) Unfreeze() {
-	if layer.wq != nil {
-		layer.wq.SetRequiresGrad(true)
-	}
-	if layer.wk != nil {
-		layer.wk.SetRequiresGrad(true)
-	}
-	if layer.wv != nil {
-		layer.wv.SetRequiresGrad(true)
-	}
-	if layer.bq != nil {
-		layer.bq.SetRequiresGrad(true)
-	}
-	if layer.bk != nil {
-		layer.bk.SetRequiresGrad(true)
-	}
-	if layer.bv != nil {
-		layer.bv.SetRequiresGrad(true)
-	}
+	layer.wq.SetRequiresGrad(true)
+	layer.wk.SetRequiresGrad(true)
+	layer.wv.SetRequiresGrad(true)
+	layer.bq.SetRequiresGrad(true)
+	layer.bk.SetRequiresGrad(true)
+	layer.bv.SetRequiresGrad(true)
 }
