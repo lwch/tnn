@@ -66,13 +66,12 @@ func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train, isCausal b
 	if isCausal {
 		mask = layer.buildCausal(q, k)
 	}
-	score := q.MatMul(k.Transpose(-1, -2)).Div(layer.scale) // (batch, heads, seq, dims/heads)
+	score := q.MatMul(k.Transpose(-2, -1)).Div(layer.scale) // (batch, heads, seq, dims/heads)
 	if mask != nil {
 		score = score.Add(mask) // (batch, heads, ..., dims/heads)
 	}
 	score = score.Softmax1(-1)                          // (batch, heads, seq, dims/heads)
-	score = score.Dropout(layer.dropout, train)         // (batch, heads, seq, dims/heads)
-	y := score.MatMul(v)                                // (batch, heads, seq, dims/heads)
+	y := score.Dropout(layer.dropout, train).MatMul(v)  // (batch, heads, seq, dims/heads)
 	y = y.Transpose(1, 2)                               // (batch, seq, heads, dims/heads)
 	y = y.Reshape(-1, inputShape[1], int64(layer.dims)) // (batch, seq, dims)
 	return y, score
