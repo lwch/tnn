@@ -94,17 +94,12 @@ func (layer *Attention1) buildCausal(q, k *tensor.Tensor) *tensor.Tensor {
 			}
 		}
 	}
-	dims := make([]int64, 0, q.Dims())
-	for i := int64(0); i < q.Dims()-2; i++ {
-		dims = append(dims, 1)
-	}
-	dims = append(dims, l, s)
 	storage := q.Storage()
 	if storage == nil {
 		storage = k.Storage()
 	}
 	return tensor.FromFloat32(storage, mask,
-		tensor.WithShapes(dims...),
+		tensor.WithShapes(1, 1, l, s),
 		tensor.WithDevice(layer.device))
 }
 
