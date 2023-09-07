@@ -50,7 +50,7 @@ func LoadAttention1(device consts.DeviceType, name string, params map[string]*pb
 	return &layer
 }
 
-func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, train, isCausal bool) (*tensor.Tensor, *tensor.Tensor) {
+func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) (*tensor.Tensor, *tensor.Tensor) {
 	if mask != nil && isCausal {
 		panic("unexpected mask")
 	}
