@@ -3,7 +3,6 @@ package layer
 import (
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 )
 
 type LayerNorm struct {
@@ -32,15 +31,15 @@ func NewLayerNorm(dims int64, opts ...LayerCreateOption) *LayerNorm {
 	return &layer
 }
 
-func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer LayerNorm
 	layer.new("layer_norm", WithDevice(device))
 	layer.name = name
 	layer.eps = tensor.FromFloat32(nil, []float32{1e-9},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.a = layer.loadParam(params["a"])
-	layer.b = layer.loadParam(params["b"])
+	layer.a = params["a"]
+	layer.b = params["b"]
 	return &layer
 }
 

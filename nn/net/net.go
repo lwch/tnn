@@ -1,10 +1,15 @@
 package net
 
 import (
+	"archive/tar"
 	"bytes"
+	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
+	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/internal/pb"
@@ -13,7 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type loadFunc func(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) layer.Layer
+type loadFunc func(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"linear":     layer.LoadLinear,
@@ -73,33 +78,44 @@ func (n *Net) ParamCount() uint64 {
 	return ret
 }
 
-func (n *Net) Save(dir string) error {
+func (n *Net) Save(dir string, compress bool) error {
 	f, err := os.Create(dir)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	_, err = n.WriteTo(f)
+	_, err = n.WriteTo(f, compress)
 	return err
 }
 
-func (n *Net) WriteTo(w io.Writer) (int64, error) {
+func (n *Net) WriteTo(w io.Writer, compress bool) (int64, error) {
+	if compress {
+		var err error
+		w, err = zstd.NewWriter(w)
+		if err != nil {
+			return 0, err
+		}
+		defer w.(*zstd.Encoder).Close()
+	}
+	tw := tar.NewWriter(w)
+	defer tw.Close()
 	var net pb.Net
 	net.Layers = make([]*pb.Layer, len(n.layers))
+	var params []*tensor.Tensor
 	for i := 0; i < len(n.layers); i++ {
 		net.Layers[i] = new(pb.Layer)
 		net.Layers[i].Class = n.layers[i].Class()
 		net.Layers[i].Name = n.layers[i].Name()
-		net.Layers[i].Params = make(map[string]*pb.Dense)
+		net.Layers[i].Params = make(map[string]*pb.Param)
 		for name, p := range n.layers[i].Params() {
-			var dense pb.Dense
+			var param pb.Param
+			param.Name = name
 			shape := p.Shapes()
-			dense.Shape = make([]int32, len(shape))
-			for j := 0; j < len(shape); j++ {
-				dense.Shape[j] = int32(shape[j])
-			}
-			dense.Data = p.ToDevice(consts.KCPU).Float32Value()
-			net.Layers[i].Params[name] = &dense
+			param.Shape = make([]int64, len(shape))
+			copy(param.Shape, shape)
+			param.File = fmt.Sprintf("%d.bin", len(params))
+			params = append(params, p)
+			net.Layers[i].Params[name] = &param
 		}
 		net.Layers[i].Args = n.layers[i].Args()
 	}
@@ -107,40 +123,77 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return io.Copy(w, bytes.NewReader(data))
+	err = tw.WriteHeader(&tar.Header{
+		Typeflag:   tar.TypeReg,
+		Name:       "SPEC",
+		Size:       int64(len(data)),
+		Mode:       0644,
+		ModTime:    time.Now(),
+		AccessTime: time.Now(),
+		ChangeTime: time.Now(),
+	})
+	if err != nil {
+		return 0, err
+	}
+	cnt, err := io.Copy(tw, bytes.NewReader(data))
+	if err != nil {
+		return 0, err
+	}
+	for i := 0; i < len(params); i++ {
+		err = tw.WriteHeader(&tar.Header{
+			Typeflag:   tar.TypeReg,
+			Name:       fmt.Sprintf("%d.bin", i),
+			Size:       int64(params[i].ElemCount() * 4),
+			Mode:       0644,
+			ModTime:    time.Now(),
+			AccessTime: time.Now(),
+			ChangeTime: time.Now(),
+		})
+		if err != nil {
+			return 0, err
+		}
+		err = binary.Write(tw, binary.BigEndian, params[i].Float32Value())
+		if err != nil {
+			return 0, err
+		}
+		cnt += int64(params[i].ElemCount() * 4)
+	}
+	return cnt, nil
 }
 
-func (n *Net) Load(dir string) error {
+func (n *Net) Load(dir string, compressed bool) error {
 	f, err := os.Open(dir)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	_, err = n.ReadFrom(f)
+	_, err = n.ReadFrom(f, compressed)
 	return err
 }
 
-func (n *Net) ReadFrom(r io.Reader) (int64, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return 0, err
-	}
-	var net pb.Net
-	if err = proto.Unmarshal(data, &net); err != nil {
-		return 0, err
-	}
-	layers := net.GetLayers()
-	n.layers = make([]layer.Layer, len(layers))
-	for i := 0; i < len(layers); i++ {
-		class := layers[i].GetClass()
-		fn := loadFuncs[class]
-		if fn == nil {
-			panic("unsupported " + class + " layer")
-		}
-		name := layers[i].GetName()
-		n.layers[i] = fn(n.device, name, layers[i].GetParams(), layers[i].GetArgs())
-	}
-	return int64(len(data)), nil
+func (n *Net) loadSpec(r io.Reader) (*pb.Net, error) {
+	return nil, nil
+}
+
+func (n *Net) ReadFrom(r io.ReadSeeker, compressed bool) (int64, error) {
+	return 0, nil
+	// tr := tar.NewReader(r)
+	// var net pb.Net
+	// if err = proto.Unmarshal(data, &net); err != nil {
+	// 	return 0, err
+	// }
+	// layers := net.GetLayers()
+	// n.layers = make([]layer.Layer, len(layers))
+	// for i := 0; i < len(layers); i++ {
+	// 	class := layers[i].GetClass()
+	// 	fn := loadFuncs[class]
+	// 	if fn == nil {
+	// 		panic("unsupported " + class + " layer")
+	// 	}
+	// 	name := layers[i].GetName()
+	// 	n.layers[i] = fn(n.device, name, layers[i].GetParams(), layers[i].GetArgs())
+	// }
+	// return int64(len(data)), nil
 }
 
 func (n *Net) Layers() []layer.Layer {

@@ -3,7 +3,6 @@ package layer
 import (
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 )
 
 type Rnn struct {
@@ -26,15 +25,15 @@ func NewRnn(featureSize, steps, hidden int, opts ...LayerCreateOption) *Rnn {
 	return &layer
 }
 
-func LoadRnn(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadRnn(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Rnn
 	layer.new("rnn", WithDevice(device))
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
-	layer.w = layer.loadParam(params["w"])
-	layer.b = layer.loadParam(params["b"])
+	layer.w = params["w"]
+	layer.b = params["b"]
 	return &layer
 }
 

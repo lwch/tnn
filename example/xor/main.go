@@ -88,12 +88,12 @@ func train() {
 	p.Add(lossLine)
 	p.Save(8*vg.Inch, 8*vg.Inch, "xor.png")
 
-	runtime.Assert(net.Save(modelFile))
+	runtime.Assert(net.Save(modelFile, true))
 }
 
 func loadModel() *model {
 	net := net.New(device)
-	runtime.Assert(net.Load(modelFile))
+	runtime.Assert(net.Load(modelFile, true))
 
 	optimizer := optimizer.NewAdam(optimizer.WithAdamLr(lr))
 	return newModel(net, optimizer)

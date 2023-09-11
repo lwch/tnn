@@ -3,7 +3,6 @@ package layer
 import (
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 )
 
 type Linear struct {
@@ -23,13 +22,13 @@ func NewLinear(input, output int, opts ...LayerCreateOption) *Linear {
 	return &layer
 }
 
-func LoadLinear(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadLinear(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Linear
 	layer.new("linear", WithDevice(device))
 	layer.name = name
 	layer.output = int(args["output"])
-	layer.w = layer.loadParam(params["w"])
-	layer.b = layer.loadParam(params["b"])
+	layer.w = params["w"]
+	layer.b = params["b"]
 	return &layer
 }
 

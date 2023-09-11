@@ -3,7 +3,6 @@ package activation
 import (
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/layer"
 )
 
@@ -17,7 +16,7 @@ func NewSigmoid() *Sigmoid {
 	return &layer
 }
 
-func LoadSigmoid(_ consts.DeviceType, name string, _ map[string]*pb.Dense, _ map[string]float32) layer.Layer {
+func LoadSigmoid(_ consts.DeviceType, name string, _ map[string]*tensor.Tensor, _ map[string]float32) layer.Layer {
 	var layer Sigmoid
 	layer.base = new("sigmoid")
 	layer.name = name

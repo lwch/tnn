@@ -3,7 +3,6 @@ package layer
 import (
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 )
 
 type Conv1D struct {
@@ -50,7 +49,7 @@ func (layer *Conv1D) SetGroups(groups int) {
 	layer.groups = groups
 }
 
-func LoadConv1D(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadConv1D(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Conv1D
 	layer.new("conv1d", WithDevice(device))
 	layer.name = name
@@ -61,8 +60,8 @@ func LoadConv1D(device consts.DeviceType, name string, params map[string]*pb.Den
 	layer.padding = int(args["padding"])
 	layer.dilation = int(args["dilation"])
 	layer.groups = int(args["groups"])
-	layer.w = layer.loadParam(params["w"])
-	layer.b = layer.loadParam(params["b"])
+	layer.w = params["w"]
+	layer.b = params["b"]
 	return &layer
 }
 
