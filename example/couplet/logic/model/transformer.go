@@ -18,7 +18,7 @@ type transformer struct {
 }
 
 func newTransformer(i int) *transformer {
-	attn := layer.NewAttention(embeddingDim, heads, 0, false, layer.WithDevice(device))
+	attn := layer.NewAttention(embeddingDim, heads, 0, layer.WithDevice(device))
 	attn.SetName(fmt.Sprintf("transformer%d_attention", i))
 	dense := layer.NewLinear(embeddingDim, embeddingDim*4, layer.WithDevice(device))
 	dense.SetName(fmt.Sprintf("transformer%d_dense", i))
@@ -40,20 +40,28 @@ func newTransformer(i int) *transformer {
 
 func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *tensor.Tensor {
 	batchSize := q.Shapes()[0]
-	paddingData := make([]float32, batchSize*maskSize)
+	maskData := make([]float32, batchSize*maskSize)
+	// padding mask
 	for i := 0; i < int(batchSize); i++ {
 		start := i * maskSize
 		for p := padding[i]; p < paddingSize; p++ {
 			for j := 0; j < paddingSize; j++ {
-				paddingData[start+p*paddingSize+j] = -1e9
-				paddingData[start+j*paddingSize+p] = -1e9
+				maskData[start+p*paddingSize+j] = -1e9
+				maskData[start+j*paddingSize+p] = -1e9
 			}
 		}
 	}
-	paddingMask := tensor.FromFloat32(q.Storage(), paddingData,
+	for y := 0; y < paddingSize; y++ {
+		for x := 0; x < paddingSize; x++ {
+			if x > y {
+				maskData[y*paddingSize+x] = -1e9
+			}
+		}
+	}
+	mask := tensor.FromFloat32(q.Storage(), maskData,
 		tensor.WithShapes(batchSize, 1, paddingSize, paddingSize),
 		tensor.WithDevice(device))
-	y, _ := t.attn.Forward(q, k, k, paddingMask, train)
+	y, _ := t.attn.Forward(q, k, k, mask, false, train)
 	y = y.Add(q)
 	selfOut := t.norm1.Forward(y)
 	y = t.dense.Forward(y)

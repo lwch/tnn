@@ -5,7 +5,6 @@ import (
 
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 	"github.com/lwch/tnn/nn/initializer"
 )
 
@@ -67,21 +66,6 @@ func (b *base) Params() map[string]*tensor.Tensor {
 
 func (b *base) Args() map[string]float32 {
 	return nil
-}
-
-func (b *base) loadParam(data *pb.Dense) *tensor.Tensor {
-	if data == nil {
-		return nil
-	}
-	shape := make([]int64, 0, 2)
-	for _, v := range data.Shape {
-		shape = append(shape, int64(v))
-	}
-	t := tensor.FromFloat32(nil, data.GetData(),
-		tensor.WithShapes(shape...),
-		tensor.WithDevice(b.device))
-	t.SetRequiresGrad(true)
-	return t
 }
 
 func (b *base) Ones(size int64) *tensor.Tensor {

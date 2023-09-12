@@ -3,15 +3,16 @@ syntax = "proto3";
 package pb;
 option go_package = ".;pb";
 
-message dense {
-    repeated int32 shape = 1;
-    repeated float  data = 2;
+message param {
+    string          name = 1;
+    repeated int64 shape = 2;
+    string          file = 3;
 }
 
 message layer {
     string              class = 1;
     string               name = 2;
-    map<string, dense> params = 3;
+    map<string, param> params = 3;
     map<string, float>   args = 4;
 }
 

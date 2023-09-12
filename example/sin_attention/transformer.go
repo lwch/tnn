@@ -18,7 +18,7 @@ type transformer struct {
 
 func newTransformer() *transformer {
 	return &transformer{
-		attn:    layer.NewAttention(dims, 1, 0.1, true, layer.WithDevice(device)),
+		attn:    layer.NewAttention(dims, 1, 0.1, layer.WithDevice(device)),
 		flatten: layer.NewFlatten(),
 		dense:   layer.NewLinear(dims, unitSize*4, layer.WithDevice(device)),
 		sigmoid: activation.NewSigmoid(),
@@ -28,8 +28,8 @@ func newTransformer() *transformer {
 	}
 }
 
-func (t *transformer) Forward(x *tensor.Tensor) *tensor.Tensor {
-	y, _ := t.attn.Forward(x, x, x, nil, true)
+func (t *transformer) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
+	y, _ := t.attn.Forward(x, x, x, nil, true, train)
 	y = y.Add(x)
 	selfOut := t.norm1.Forward(y)
 	y = t.flatten.Forward(y)

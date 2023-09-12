@@ -3,7 +3,6 @@ package layer
 import (
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 )
 
 type Embedding struct {
@@ -25,14 +24,14 @@ func NewEmbedding(num, dim int, opts ...LayerCreateOption) *Embedding {
 	return &layer
 }
 
-func LoadEmbedding(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadEmbedding(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Embedding
 	layer.new("embedding", WithDevice(device))
 	layer.name = name
 	layer.num = int(args["num"])
 	layer.dim = int(args["dim"])
 	layer.padding = int64(args["padding"])
-	layer.w = layer.loadParam(params["w"])
+	layer.w = params["w"]
 	return &layer
 }
 

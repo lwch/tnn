@@ -5,7 +5,6 @@ import (
 
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
-	"github.com/lwch/tnn/internal/pb"
 )
 
 type Attention1 struct {
@@ -35,15 +34,15 @@ func NewAttention1(dims, heads int, dropout float64, opts ...LayerCreateOption) 
 	return &layer
 }
 
-func LoadAttention1(device consts.DeviceType, name string, params map[string]*pb.Dense, args map[string]float32) Layer {
+func LoadAttention1(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Attention1
 	layer.new("attention1", WithDevice(device))
 	layer.name = name
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
-	layer.w = layer.loadParam(params["w"])
-	layer.b = layer.loadParam(params["b"])
+	layer.w = params["w"]
+	layer.b = params["b"]
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))

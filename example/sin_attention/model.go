@@ -27,10 +27,10 @@ func newModel(optimizer optimizer.Optimizer) *model {
 	return &m
 }
 
-func (m *model) Forward(x *tensor.Tensor) *tensor.Tensor {
+func (m *model) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	y := x
 	for _, attn := range m.attn {
-		y = attn.Forward(y)
+		y = attn.Forward(y, train)
 	}
 	y = m.flatten.Forward(y)
 	y = m.sigmoid.Forward(y)
@@ -39,7 +39,7 @@ func (m *model) Forward(x *tensor.Tensor) *tensor.Tensor {
 }
 
 func (m *model) Train(x, y *tensor.Tensor) {
-	pred := m.Forward(x)
+	pred := m.Forward(x, true)
 	l := lossFunc(pred, y)
 	l.Backward()
 }
@@ -49,11 +49,11 @@ func (m *model) Apply() {
 }
 
 func (m *model) Predict(x *tensor.Tensor) []float32 {
-	return m.Forward(x).Float32Value()
+	return m.Forward(x, false).Float32Value()
 }
 
 func (m *model) Loss(x, y *tensor.Tensor) float32 {
-	pred := m.Forward(x)
+	pred := m.Forward(x, false)
 	return float32(lossFunc(pred, y).Value())
 }
 
