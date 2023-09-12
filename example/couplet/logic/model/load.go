@@ -16,7 +16,7 @@ func (m *Model) Load(dir string) {
 		panic("model not found")
 	}
 	var net net.Net
-	runtime.Assert(net.Load(filepath.Join(dir, "couplet.model"), true))
+	runtime.Assert(net.Load(filepath.Join(dir, "couplet.model")))
 	m.loadFrom(&net)
 
 	if _, err := os.Stat(filepath.Join(dir, "vocabs")); os.IsNotExist(err) {
