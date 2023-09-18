@@ -11,7 +11,6 @@ type Attention struct {
 	dropout     float64
 	// params
 	w *tensor.Tensor
-	b *tensor.Tensor
 }
 
 func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *Attention {
@@ -24,7 +23,6 @@ func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *
 		panic("dims must be divisible by heads")
 	}
 	layer.w = layer.initW(int64(dims*3), int64(dims*3))
-	layer.b = layer.initB(int64(dims * 3))
 	return &layer
 }
 
@@ -36,7 +34,6 @@ func LoadAttention(device consts.DeviceType, name string, params map[string]*ten
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
 	layer.w = params["w"]
-	layer.b = params["b"]
 	return &layer
 }
 
@@ -46,7 +43,7 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bo
 	}
 	inputShape := q.Shapes()
 	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1)           // (batch, seq, dims*3)
-	x = x.MatMul(layer.w).Add(layer.b)                       // (batch, seq, dims*3)
+	x = x.MatMul(layer.w)                                    // (batch, seq, dims*3)
 	q = x.NArrow(-1, 0, int64(layer.dims))                   // (batch, seq, dims)
 	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims))   // (batch, seq, dims)
 	v = x.NArrow(-1, int64(layer.dims*2), int64(layer.dims)) // (batch, seq, dims)
@@ -71,7 +68,6 @@ func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
 func (layer *Attention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"w": layer.w,
-		"b": layer.b,
 	}
 }
 
@@ -85,10 +81,8 @@ func (layer *Attention) Args() map[string]float32 {
 
 func (layer *Attention) Freeze() {
 	layer.w.SetRequiresGrad(false)
-	layer.b.SetRequiresGrad(false)
 }
 
 func (layer *Attention) Unfreeze() {
 	layer.w.SetRequiresGrad(true)
-	layer.b.SetRequiresGrad(true)
 }

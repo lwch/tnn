@@ -10,7 +10,6 @@ type LayerNorm struct {
 	eps *tensor.Tensor
 	// params
 	a *tensor.Tensor
-	b *tensor.Tensor
 }
 
 func NewLayerNorm(dims int64, opts ...LayerCreateOption) *LayerNorm {
@@ -27,7 +26,6 @@ func NewLayerNorm(dims int64, opts ...LayerCreateOption) *LayerNorm {
 		tensor.WithShapes(dims),
 		tensor.WithDevice(layer.device))
 	layer.a.SetRequiresGrad(true)
-	layer.b = layer.initB(dims)
 	return &layer
 }
 
@@ -39,7 +37,6 @@ func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*ten
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	layer.a = params["a"]
-	layer.b = params["b"]
 	return &layer
 }
 
@@ -49,22 +46,19 @@ func (layer *LayerNorm) Forward(x *tensor.Tensor) *tensor.Tensor {
 	sub := x.Sub(mean)
 	bias := v.Add(layer.eps).Sqrt()
 	div := sub.Div(bias)
-	return div.Mul(layer.a).Add(layer.b)
+	return div.Mul(layer.a)
 }
 
 func (layer *LayerNorm) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"a": layer.a,
-		"b": layer.b,
 	}
 }
 
 func (layer *LayerNorm) Freeze() {
 	layer.a.SetRequiresGrad(false)
-	layer.b.SetRequiresGrad(false)
 }
 
 func (layer *LayerNorm) Unfreeze() {
 	layer.a.SetRequiresGrad(true)
-	layer.b.SetRequiresGrad(true)
 }

@@ -15,7 +15,6 @@ type Conv1D struct {
 	groups    int
 	// params
 	w *tensor.Tensor
-	b *tensor.Tensor
 }
 
 func NewConv1D(inC, outC, kernel int, opts ...LayerCreateOption) *Conv1D {
@@ -29,7 +28,6 @@ func NewConv1D(inC, outC, kernel int, opts ...LayerCreateOption) *Conv1D {
 	layer.dilation = 1
 	layer.groups = 1
 	layer.w = layer.initW(int64(outC), int64(inC), int64(kernel))
-	layer.b = layer.initB(int64(outC))
 	return &layer
 }
 
@@ -61,12 +59,11 @@ func LoadConv1D(device consts.DeviceType, name string, params map[string]*tensor
 	layer.dilation = int(args["dilation"])
 	layer.groups = int(args["groups"])
 	layer.w = params["w"]
-	layer.b = params["b"]
 	return &layer
 }
 
 func (layer *Conv1D) Forward(x *tensor.Tensor) *tensor.Tensor {
-	return x.Conv1D(layer.w, layer.b,
+	return x.Conv1D(layer.w, nil,
 		tensor.Conv1DStride(layer.stride),
 		tensor.Conv1DPadding(layer.padding),
 		tensor.Conv1DDilation(layer.dilation),
@@ -76,7 +73,6 @@ func (layer *Conv1D) Forward(x *tensor.Tensor) *tensor.Tensor {
 func (layer *Conv1D) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"w": layer.w,
-		"b": layer.b,
 	}
 }
 
@@ -94,10 +90,8 @@ func (layer *Conv1D) Args() map[string]float32 {
 
 func (layer *Conv1D) Freeze() {
 	layer.w.SetRequiresGrad(false)
-	layer.b.SetRequiresGrad(false)
 }
 
 func (layer *Conv1D) Unfreeze() {
 	layer.w.SetRequiresGrad(true)
-	layer.b.SetRequiresGrad(true)
 }
