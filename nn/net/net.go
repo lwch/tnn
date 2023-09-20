@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
@@ -284,23 +285,25 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 	}
 	layers := spec.GetLayers()
 	n.layers = make([]layer.Layer, len(layers))
+	var wg sync.WaitGroup
+	wg.Add(len(layers))
 	for i := 0; i < len(layers); i++ {
 		class := layers[i].GetClass()
 		fn := loadFuncs[class]
 		if fn == nil {
 			panic("unsupported " + class + " layer")
 		}
-		params := make(map[string]*tensor.Tensor)
-		for _, param := range layers[i].GetParams() {
-			params[param.GetName()], err = n.loadParam(zr, param.GetFile(),
-				consts.ScalarType(param.GetType()),
-				param.GetElemCount(),
-				param.GetShapes())
-			if err != nil {
-				return 0, err
+		go func(i int) {
+			params := make(map[string]*tensor.Tensor)
+			for _, param := range layers[i].GetParams() {
+				params[param.GetName()], err = n.loadParam(zr, param.GetFile(),
+					consts.ScalarType(param.GetType()),
+					param.GetElemCount(),
+					param.GetShapes())
+				runtime.Assert(err)
 			}
-		}
-		n.layers[i] = fn(layers[i].GetName(), params, layers[i].GetArgs())
+			n.layers[i] = fn(layers[i].GetName(), params, layers[i].GetArgs())
+		}(i)
 	}
 	return size, nil
 }
