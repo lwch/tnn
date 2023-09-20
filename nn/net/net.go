@@ -294,6 +294,7 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 			panic("unsupported " + class + " layer")
 		}
 		go func(i int) {
+			defer wg.Done()
 			params := make(map[string]*tensor.Tensor)
 			for _, param := range layers[i].GetParams() {
 				params[param.GetName()], err = n.loadParam(zr, param.GetFile(),
@@ -305,6 +306,7 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 			n.layers[i] = fn(layers[i].GetName(), params, layers[i].GetArgs())
 		}(i)
 	}
+	wg.Wait()
 	return size, nil
 }
 
