@@ -17,8 +17,8 @@ github.com/go-fonts/liberation v0.3.1 h1:9RPT2NhUpxQ7ukUvz3jeUckmN42T9D9TpjtQcqK
 github.com/go-fonts/liberation v0.3.1/go.mod h1:jdJ+cqF+F4SUL2V+qxBth8fvBpBDS7yloUL5Fi8GTGY=
 github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 h1:NxXI5pTAtpEaU49bpLpQoDsu1zrteW/vxzTz8Cd2UAs=
 github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9/go.mod h1:gWuR/CrFDDeVRFQwHPvsv9soJVB/iqymhuZQuJ3a9OM=
-github.com/go-pdf/fpdf v0.8.0 h1:IJKpdaagnWUeSkUFUjTcSzTppFxmv8ucGQyNPQWxYOQ=
-github.com/go-pdf/fpdf v0.8.0/go.mod h1:gfqhcNwXrsd3XYKte9a7vM3smvU/jB4ZRDrmWSxpfdc=
+github.com/go-pdf/fpdf v0.9.0 h1:PPvSaUuo1iMi9KkaAn90NuKi+P4gwMedWPHhj8YlJQw=
+github.com/go-pdf/fpdf v0.9.0/go.mod h1:oO8N111TkmKb9D7VvWGLvLJlaZUQVPM+6V42pp3iV4Y=
 github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 h1:DACJavvAHhabrF08vX0COfcOBJRhZ8lUbR+ZWIs0Y5g=
 github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0/go.mod h1:E/TSTwGwJL78qG/PmXZO1EjYhfJinVAhrmmHX6Z8B9k=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=
@@ -28,10 +28,10 @@ github.com/google/go-cmp v0.5.8/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/klauspost/compress v1.16.7 h1:2mk3MPGNzKyxErAw8YaohYh69+pa4sIQSC0fPGCFR9I=
-github.com/klauspost/compress v1.16.7/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
-github.com/lwch/gotorch v1.4.3 h1:Qzewqky+uBhJws6yQbRcVxfW+f0vjT2/8c+0WaLtskM=
-github.com/lwch/gotorch v1.4.3/go.mod h1:9PKKNMouYtoOdOdcuO5SJevc93mfHxjgY5aW5m6tBMI=
+github.com/klauspost/compress v1.17.0 h1:Rnbp4K9EjcDuVuHtd0dgA4qNuv9yKDYKK1ulpJwgrqM=
+github.com/klauspost/compress v1.17.0/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
+github.com/lwch/gotorch v1.5.5 h1:GlVfFeEmf9dcsO291gsXQjOa7zm/5gxOxsFxMtKOE3c=
+github.com/lwch/gotorch v1.5.5/go.mod h1:CPNgHULlgMUuLTkXxr7uRqwxWexJ75tMph3evfx/ZDI=
 github.com/lwch/runtime v1.0.1 h1:xfurs9IGzkTWfdum1K5GaDkEuGopohOQhk7roELmbf4=
 github.com/lwch/runtime v1.0.1/go.mod h1:mJuSABS7wUvRK3rUyV624NZ3+rV5eiAhsGEuU1iNrtk=
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=

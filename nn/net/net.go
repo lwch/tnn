@@ -11,6 +11,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/lwch/gotorch/consts"
+	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/internal/pb"
@@ -40,6 +41,10 @@ var loadFuncs = map[string]loadFunc{
 	"tanh":    activation.LoadTanh,
 	"relu":    activation.LoadRelu,
 	"gelu":    activation.LoadGelu,
+}
+
+func RegisterLoadFunc(class string, fn loadFunc) {
+	loadFuncs[class] = fn
 }
 
 type Net struct {
@@ -110,10 +115,11 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 		var layer layer
 		for name, p := range n.layers[i].Params() {
 			var param pb.Param
+			param.Type = uint32(p.ScalarType())
+			param.ElemCount = p.ElemCount()
 			param.Name = name
-			shape := p.Shapes()
-			param.Shape = make([]int64, len(shape))
-			copy(param.Shape, shape)
+			param.Shapes = make([]int64, p.Dims())
+			copy(param.Shapes, p.Shapes())
 			param.File = fmt.Sprintf("layer_%d_param_%s.bin", i, name)
 			layer.names = append(layer.names, name)
 			layer.params = append(layer.params, p)
@@ -151,7 +157,30 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 				if err != nil {
 					return err
 				}
-				return binary.Write(f, binary.BigEndian, param.Float32Value())
+				switch param.ScalarType() {
+				case consts.KUint8:
+					return binary.Write(f, binary.BigEndian, param.Uint8Value())
+				case consts.KInt8:
+					return binary.Write(f, binary.BigEndian, param.Int8Value())
+				case consts.KInt16:
+					return binary.Write(f, binary.BigEndian, param.Int16Value())
+				case consts.KInt32:
+					return binary.Write(f, binary.BigEndian, param.Int32Value())
+				case consts.KInt64:
+					return binary.Write(f, binary.BigEndian, param.Int64Value())
+				case consts.KHalf:
+					return binary.Write(f, binary.BigEndian, param.HalfRaw())
+				case consts.KFloat:
+					return binary.Write(f, binary.BigEndian, param.Float32Value())
+				case consts.KDouble:
+					return binary.Write(f, binary.BigEndian, param.Float64Value())
+				case consts.KBool:
+					return binary.Write(f, binary.BigEndian, param.BoolValue())
+				case consts.KBFloat16:
+					return binary.Write(f, binary.BigEndian, param.BFloat16Raw())
+				default:
+					panic(fmt.Errorf("unsupported scalar type: %s", param.ScalarType().String()))
+				}
 			}()
 			if err != nil {
 				return 0, err
@@ -193,25 +222,50 @@ func (n *Net) readSpec(r *zip.Reader) (*pb.Net, error) {
 	return &net, nil
 }
 
-func (n *Net) loadParam(r *zip.Reader, file string, shape []int64) (*tensor.Tensor, error) {
+func buildParam[T uint8 | int8 | int16 | uint16 | int32 | int64 |
+	float32 | float64 | bool](r io.Reader, cnt int64, shapes []int64, device consts.DeviceType,
+	fn func(s *mmgr.Storage, data []T, opts ...tensor.Option) *tensor.Tensor) (*tensor.Tensor, error) {
+	data := make([]T, cnt)
+	if err := binary.Read(r, binary.BigEndian, data); err != nil {
+		return nil, err
+	}
+	t := fn(nil, data,
+		tensor.WithShapes(shapes...),
+		tensor.WithDevice(device))
+	t.SetRequiresGrad(true)
+	return t, nil
+}
+
+func (n *Net) loadParam(r *zip.Reader, file string, t consts.ScalarType, cnt int64, shapes []int64) (*tensor.Tensor, error) {
 	f, err := r.Open(file)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
+	switch t {
+	case consts.KUint8:
+		return buildParam[uint8](f, cnt, shapes, n.device, tensor.FromUint8)
+	case consts.KInt8:
+		return buildParam[int8](f, cnt, shapes, n.device, tensor.FromInt8)
+	case consts.KInt16:
+		return buildParam[int16](f, cnt, shapes, n.device, tensor.FromInt16)
+	case consts.KInt32:
+		return buildParam[int32](f, cnt, shapes, n.device, tensor.FromInt32)
+	case consts.KInt64:
+		return buildParam[int64](f, cnt, shapes, n.device, tensor.FromInt64)
+	case consts.KHalf:
+		return buildParam[uint16](f, cnt, shapes, n.device, tensor.FromHalfRaw)
+	case consts.KFloat:
+		return buildParam[float32](f, cnt, shapes, n.device, tensor.FromFloat32)
+	case consts.KDouble:
+		return buildParam[float64](f, cnt, shapes, n.device, tensor.FromFloat64)
+	case consts.KBool:
+		return buildParam[bool](f, cnt, shapes, n.device, tensor.FromBool)
+	case consts.KBFloat16:
+		return buildParam[uint16](f, cnt, shapes, n.device, tensor.FromBFloat16Raw)
+	default:
+		panic(fmt.Errorf("unsupported scalar type: %s", t.String()))
 	}
-	data := make([]float32, fi.Size()/4)
-	if err = binary.Read(f, binary.BigEndian, data); err != nil {
-		return nil, err
-	}
-	t := tensor.FromFloat32(nil, data,
-		tensor.WithShapes(shape...),
-		tensor.WithDevice(n.device))
-	t.SetRequiresGrad(true)
-	return t, nil
 }
 
 func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
@@ -238,8 +292,10 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 		}
 		params := make(map[string]*tensor.Tensor)
 		for _, param := range layers[i].GetParams() {
-			shape := param.GetShape()
-			params[param.GetName()], err = n.loadParam(zr, param.GetFile(), shape)
+			params[param.GetName()], err = n.loadParam(zr, param.GetFile(),
+				consts.ScalarType(param.GetType()),
+				param.GetElemCount(),
+				param.GetShapes())
 			if err != nil {
 				return 0, err
 			}

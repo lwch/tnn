@@ -3,8 +3,8 @@ module github.com/lwch/tnn
 go 1.20
 
 require (
-	github.com/klauspost/compress v1.16.7
-	github.com/lwch/gotorch v1.4.3
+	github.com/klauspost/compress v1.17.0
+	github.com/lwch/gotorch v1.5.5
 	github.com/lwch/runtime v1.0.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0
@@ -19,7 +19,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-fonts/liberation v0.3.1 // indirect
 	github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 // indirect
-	github.com/go-pdf/fpdf v0.8.0 // indirect
+	github.com/go-pdf/fpdf v0.9.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
