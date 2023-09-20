@@ -20,7 +20,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type loadFunc func(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) layer.Layer
+type loadFunc func(name string, params map[string]*tensor.Tensor, args map[string]float32) layer.Layer
 
 var loadFuncs = map[string]loadFunc{
 	"linear":     layer.LoadLinear,
@@ -300,7 +300,7 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 				return 0, err
 			}
 		}
-		n.layers[i] = fn(n.device, layers[i].GetName(), params, layers[i].GetArgs())
+		n.layers[i] = fn(layers[i].GetName(), params, layers[i].GetArgs())
 	}
 	return size, nil
 }

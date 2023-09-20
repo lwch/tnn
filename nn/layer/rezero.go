@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -21,9 +20,9 @@ func NewReZero(opts ...LayerCreateOption) *ReZero {
 	return &layer
 }
 
-func LoadReZero(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadReZero(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer ReZero
-	layer.new("rezero", WithDevice(device))
+	layer.new("rezero")
 	layer.name = name
 	layer.scale = params["scale"]
 	return &layer

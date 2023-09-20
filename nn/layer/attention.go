@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -26,9 +25,9 @@ func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *
 	return &layer
 }
 
-func LoadAttention(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadAttention(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Attention
-	layer.new("attention", WithDevice(device))
+	layer.new("attention")
 	layer.name = name
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])

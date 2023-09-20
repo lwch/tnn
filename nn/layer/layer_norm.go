@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -29,9 +28,9 @@ func NewLayerNorm(dims int64, opts ...LayerCreateOption) *LayerNorm {
 	return &layer
 }
 
-func LoadLayerNorm(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadLayerNorm(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer LayerNorm
-	layer.new("layer_norm", WithDevice(device))
+	layer.new("layer_norm")
 	layer.name = name
 	layer.eps = tensor.FromFloat32(nil, []float32{1e-9},
 		tensor.WithShapes(1),

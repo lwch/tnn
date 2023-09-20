@@ -1,7 +1,6 @@
 package activation
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
 )
@@ -16,7 +15,7 @@ func NewTanh() *Tanh {
 	return &layer
 }
 
-func LoadTanh(_ consts.DeviceType, name string, _ map[string]*tensor.Tensor, _ map[string]float32) layer.Layer {
+func LoadTanh(name string, _ map[string]*tensor.Tensor, _ map[string]float32) layer.Layer {
 	var layer Tanh
 	layer.base = new("tanh")
 	layer.name = name

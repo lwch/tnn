@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -49,9 +48,9 @@ func (layer *Conv2D) SetGroups(groups int) {
 	layer.groups = groups
 }
 
-func LoadConv2D(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadConv2D(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Conv2D
-	layer.new("conv2d", WithDevice(device))
+	layer.new("conv2d")
 	layer.name = name
 	layer.inC = int(args["inC"])
 	layer.outC = int(args["outC"])

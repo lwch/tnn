@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -20,9 +19,9 @@ func NewLinear(input, output int, opts ...LayerCreateOption) *Linear {
 	return &layer
 }
 
-func LoadLinear(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadLinear(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Linear
-	layer.new("linear", WithDevice(device))
+	layer.new("linear")
 	layer.name = name
 	layer.output = int(args["output"])
 	layer.w = params["w"]

@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -41,9 +40,9 @@ func (layer *MaxPool1D) SetCeil(ceil bool) {
 	layer.ceil = ceil
 }
 
-func LoadMaxPool1D(device consts.DeviceType, name string, _ map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadMaxPool1D(name string, _ map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer MaxPool1D
-	layer.new("maxpool1d", WithDevice(device))
+	layer.new("maxpool1d")
 	layer.name = name
 	layer.kernel = int(args["kernel"])
 	layer.stride = int(args["stride"])

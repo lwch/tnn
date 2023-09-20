@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -24,9 +23,9 @@ func NewEmbedding(num, dim int, opts ...LayerCreateOption) *Embedding {
 	return &layer
 }
 
-func LoadEmbedding(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadEmbedding(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Embedding
-	layer.new("embedding", WithDevice(device))
+	layer.new("embedding")
 	layer.name = name
 	layer.num = int(args["num"])
 	layer.dim = int(args["dim"])

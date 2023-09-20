@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -15,7 +14,7 @@ func NewFlatten() *Flatten {
 	return &layer
 }
 
-func LoadFlatten(_ consts.DeviceType, name string, _ map[string]*tensor.Tensor, _ map[string]float32) Layer {
+func LoadFlatten(name string, _ map[string]*tensor.Tensor, _ map[string]float32) Layer {
 	var layer Flatten
 	layer.new("flatten")
 	layer.name = name

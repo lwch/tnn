@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -17,7 +16,7 @@ func NewDropout(keep float64) *Dropout {
 	return &layer
 }
 
-func LoadDropout(_ consts.DeviceType, name string, _ map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadDropout(name string, _ map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Dropout
 	layer.new("dropout")
 	layer.name = name

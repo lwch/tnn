@@ -32,9 +32,9 @@ func NewLstm(featureSize, steps, hidden int, opts ...LayerCreateOption) *Lstm {
 	return &layer
 }
 
-func LoadLstm(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadLstm(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Lstm
-	layer.new("lstm", WithDevice(device))
+	layer.new("lstm")
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])

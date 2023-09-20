@@ -25,9 +25,9 @@ func NewRnn(featureSize, steps, hidden int, opts ...LayerCreateOption) *Rnn {
 	return &layer
 }
 
-func LoadRnn(device consts.DeviceType, name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
+func LoadRnn(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Rnn
-	layer.new("rnn", WithDevice(device))
+	layer.new("rnn")
 	layer.name = name
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])

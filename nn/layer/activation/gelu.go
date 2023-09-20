@@ -1,7 +1,6 @@
 package activation
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
 )
@@ -18,7 +17,7 @@ func NewGeLU(tanh bool) *GeLU {
 	return &layer
 }
 
-func LoadGelu(_ consts.DeviceType, name string, _ map[string]*tensor.Tensor, args map[string]float32) layer.Layer {
+func LoadGelu(name string, _ map[string]*tensor.Tensor, args map[string]float32) layer.Layer {
 	var layer GeLU
 	layer.base = new("gelu")
 	layer.name = name
