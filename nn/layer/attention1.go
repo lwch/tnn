@@ -12,7 +12,6 @@ type Attention1 struct {
 	dropout     float64
 	// params
 	w     *tensor.Tensor
-	b     *tensor.Tensor
 	scale *tensor.Tensor
 }
 
@@ -29,7 +28,6 @@ func NewAttention1(dims, heads int, dropout float64, opts ...LayerCreateOption) 
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	layer.w = layer.initW(int64(dims*3), int64(dims*3))
-	layer.b = layer.initB(int64(dims * 3))
 	return &layer
 }
 
@@ -41,7 +39,6 @@ func LoadAttention1(name string, params map[string]*tensor.Tensor, args map[stri
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
 	layer.w = params["w"]
-	layer.b = params["b"]
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
@@ -54,7 +51,7 @@ func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, isCausal, train b
 	}
 	inputShape := q.Shapes()
 	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1)           // (batch, seq, dims*3)
-	x = x.MatMul(layer.w).Add(layer.b)                       // (batch, seq, dims*3)
+	x = x.MatMul(layer.w)                                    // (batch, seq, dims*3)
 	q = x.NArrow(-1, 0, int64(layer.dims))                   // (batch, seq, dims)
 	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims))   // (batch, seq, dims)
 	v = x.NArrow(-1, int64(layer.dims*2), int64(layer.dims)) // (batch, seq, dims)
@@ -103,7 +100,6 @@ func (layer *Attention1) buildCausal(q, k *tensor.Tensor) *tensor.Tensor {
 func (layer *Attention1) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
 		"w": layer.w,
-		"b": layer.b,
 	}
 }
 
@@ -117,10 +113,8 @@ func (layer *Attention1) Args() map[string]float32 {
 
 func (layer *Attention1) Freeze() {
 	layer.w.SetRequiresGrad(false)
-	layer.b.SetRequiresGrad(false)
 }
 
 func (layer *Attention1) Unfreeze() {
 	layer.w.SetRequiresGrad(true)
-	layer.b.SetRequiresGrad(true)
 }
