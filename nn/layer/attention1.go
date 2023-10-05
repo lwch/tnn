@@ -3,6 +3,7 @@ package layer
 import (
 	"math"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -45,7 +46,7 @@ func LoadAttention1(name string, params map[string]*tensor.Tensor, args map[stri
 	return &layer
 }
 
-func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) (*tensor.Tensor, *tensor.Tensor) {
+func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) *tensor.Tensor {
 	if mask != nil && isCausal {
 		panic("unexpected mask")
 	}
@@ -59,17 +60,37 @@ func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, isCausal, train b
 	k = layer.split(k)                                       // (batch, heads, seq, dims/heads)
 	v = layer.split(v)                                       // (batch, heads, seq, dims/heads)
 	if isCausal {
-		mask = layer.buildCausal(q, k)
+		mask = buildCausal(q, k, layer.device)
 	}
 	score := q.MatMul(k.Transpose(-2, -1)).Div(layer.scale) // (batch, heads, seq, dims/heads)
 	if mask != nil {
-		score = score.Add(mask) // (batch, heads, ..., dims/heads)
+		score = score.Add(mask) // (batch, heads, seq, dims/heads)
 	}
 	score = score.Softmax1(-1)                          // (batch, heads, seq, dims/heads)
 	y := score.Dropout(layer.dropout, train).MatMul(v)  // (batch, heads, seq, dims/heads)
 	y = y.Transpose(1, 2)                               // (batch, seq, heads, dims/heads)
 	y = y.Reshape(-1, inputShape[1], int64(layer.dims)) // (batch, seq, dims)
-	return y, score
+	return y
+}
+
+func (layer *Attention1) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool) *tensor.Tensor {
+	if mask != nil && isCausal {
+		panic("unexpected mask")
+	}
+	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1)         // (batch, seq, dims*3)
+	x = x.MatMul(layer.w)                                  // (batch, seq, dims*3)
+	q = x.NArrow(-1, 0, int64(layer.dims))                 // (batch, seq, dims)
+	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims)) // (batch, seq, dims)
+	q = layer.split(q)                                     // (batch, heads, seq, dims/heads)
+	k = layer.split(k)                                     // (batch, heads, seq, dims/heads)
+	if isCausal {
+		mask = buildCausal(q, k, layer.device)
+	}
+	score := q.MatMul(k.Transpose(-2, -1)).Div(layer.scale) // (batch, heads, seq, dims/heads)
+	if mask != nil {
+		score = score.Add(mask) // (batch, heads, seq, dims/heads)
+	}
+	return score.Softmax1(-1) // (batch, heads, seq, dims/heads)
 }
 
 func (layer *Attention1) split(x *tensor.Tensor) *tensor.Tensor {
@@ -77,7 +98,7 @@ func (layer *Attention1) split(x *tensor.Tensor) *tensor.Tensor {
 	return y.Transpose(1, 2)
 }
 
-func (layer *Attention1) buildCausal(q, k *tensor.Tensor) *tensor.Tensor {
+func buildCausal(q, k *tensor.Tensor, device consts.DeviceType) *tensor.Tensor {
 	l := q.Shapes()[q.Dims()-2]
 	s := k.Shapes()[k.Dims()-2]
 	mask := make([]float32, l*s)
@@ -94,7 +115,7 @@ func (layer *Attention1) buildCausal(q, k *tensor.Tensor) *tensor.Tensor {
 	}
 	return tensor.FromFloat32(storage, mask,
 		tensor.WithShapes(1, 1, l, s),
-		tensor.WithDevice(layer.device))
+		tensor.WithDevice(device))
 }
 
 func (layer *Attention1) Params() map[string]*tensor.Tensor {

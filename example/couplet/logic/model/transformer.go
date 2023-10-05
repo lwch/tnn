@@ -61,7 +61,7 @@ func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *t
 	mask := tensor.FromFloat32(q.Storage(), maskData,
 		tensor.WithShapes(batchSize, 1, paddingSize, paddingSize),
 		tensor.WithDevice(device))
-	y, _ := t.attn.Forward(q, k, k, mask, false, train)
+	y := t.attn.Forward(q, k, k, mask, false, train)
 	y = y.Add(q)
 	selfOut := t.norm1.Forward(y)
 	y = t.dense.Forward(y)
