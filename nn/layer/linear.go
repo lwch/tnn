@@ -15,7 +15,7 @@ func NewLinear(input, output int, opts ...LayerCreateOption) *Linear {
 	var layer Linear
 	layer.new("linear", opts...)
 	layer.output = output
-	layer.w = layer.initW(int64(input), int64(layer.output))
+	layer.w = layer.initW(int64(layer.output), int64(input))
 	return &layer
 }
 
@@ -29,7 +29,7 @@ func LoadLinear(name string, params map[string]*tensor.Tensor, args map[string]f
 }
 
 func (layer *Linear) Forward(x *tensor.Tensor) *tensor.Tensor {
-	return x.MatMul(layer.w)
+	return x.MatMul(layer.w.Transpose(0, 1))
 }
 
 func (layer *Linear) Params() map[string]*tensor.Tensor {
