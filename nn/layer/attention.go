@@ -94,7 +94,7 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bo
 	k = layer.split(k)                                       // (batch, seq, heads, dims/heads)
 	v = layer.split(v)                                       // (batch, seq, heads, dims/heads)
 	if layer.rope {
-		q, k = layer.applyROPE(q, k)
+		q, k = layer.applyROPE(q, k, q.Shapes()[1])
 	}
 	q = q.Transpose(1, 2) // (batch, heads, seq, dims/heads)
 	k = k.Transpose(1, 2) // (batch, heads, seq, dims/heads)
@@ -120,7 +120,7 @@ func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool
 	q = layer.split(q)                                     // (batch, seq, heads, dims/heads)
 	k = layer.split(k)                                     // (batch, seq, heads, dims/heads)
 	if layer.rope {
-		q, k = layer.applyROPE(q, k)
+		q, k = layer.applyROPE(q, k, q.Shapes()[1])
 	}
 	q = q.Transpose(1, 2) // (batch, heads, seq, dims/heads)
 	k = k.Transpose(1, 2) // (batch, heads, seq, dims/heads)
@@ -134,13 +134,13 @@ func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool
 	return score.Softmax(-1) // (batch, heads, seq, dims/heads)
 }
 
-func (layer *Attention) applyROPE(q, k *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
+func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tensor, *tensor.Tensor) {
 	qShapes := q.Shapes()
 	kShapes := k.Shapes()
 	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
 	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
-	xq = xq.Mul(layer.freqs).ViewAsReal().View(qShapes...)
-	xk = xk.Mul(layer.freqs).ViewAsReal().View(kShapes...)
+	xq = xq.Mul(layer.freqs.NArrow(0, 0, seq)).ViewAsReal().View(qShapes...)
+	xk = xk.Mul(layer.freqs.NArrow(0, 0, seq)).ViewAsReal().View(kShapes...)
 	return xq, xk
 }
 
