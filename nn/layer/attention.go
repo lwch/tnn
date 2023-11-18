@@ -34,7 +34,7 @@ func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCrea
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.freqs = buildFreqs(dims, maxRopeLength, layer.device)
+	layer.freqs = buildFreqs(dims/heads, maxRopeLength, layer.device)
 	return &layer
 }
 
@@ -50,7 +50,7 @@ func LoadAttention(name string, params map[string]*tensor.Tensor, args map[strin
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.freqs = buildFreqs(layer.dims, maxRopeLength, layer.device)
+	layer.freqs = buildFreqs(layer.dims/layer.heads, maxRopeLength, layer.device)
 	return &layer
 }
 
