@@ -139,8 +139,9 @@ func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tenso
 	kShapes := k.Shapes()
 	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
 	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
-	xq = xq.Mul(layer.freqs.NArrow(0, 0, seq)).ViewAsReal().View(qShapes...)
-	xk = xk.Mul(layer.freqs.NArrow(0, 0, seq)).ViewAsReal().View(kShapes...)
+	freqs := layer.freqs.NArrow(0, 0, seq).View(1, seq, 1, -1)
+	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...)
+	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...)
 	return xq, xk
 }
 
