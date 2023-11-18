@@ -32,6 +32,8 @@ github.com/klauspost/compress v1.17.0 h1:Rnbp4K9EjcDuVuHtd0dgA4qNuv9yKDYKK1ulpJw
 github.com/klauspost/compress v1.17.0/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
 github.com/lwch/gotorch v1.6.0 h1:o+oYYCZg83GyL4JyF/h5zqog5VuxwRe8SNQGmxVhgB8=
 github.com/lwch/gotorch v1.6.0/go.mod h1:CPNgHULlgMUuLTkXxr7uRqwxWexJ75tMph3evfx/ZDI=
+github.com/lwch/gotorch v1.6.3 h1:u/nbyPSgTAQc4fEEe+zwUvfU7LfXLRSL9LKGG+s9awQ=
+github.com/lwch/gotorch v1.6.3/go.mod h1:CPNgHULlgMUuLTkXxr7uRqwxWexJ75tMph3evfx/ZDI=
 github.com/lwch/runtime v1.0.1 h1:xfurs9IGzkTWfdum1K5GaDkEuGopohOQhk7roELmbf4=
 github.com/lwch/runtime v1.0.1/go.mod h1:mJuSABS7wUvRK3rUyV624NZ3+rV5eiAhsGEuU1iNrtk=
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=

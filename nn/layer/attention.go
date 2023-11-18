@@ -3,24 +3,30 @@ package layer
 import (
 	"math"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
+
+const maxRopeLength = 8192
 
 type Attention struct {
 	base
 	dims, heads int
 	dropout     float64
+	rope        bool
 	// params
 	w     *tensor.Tensor
 	scale *tensor.Tensor
+	freqs *tensor.Tensor
 }
 
-func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *Attention {
+func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCreateOption) *Attention {
 	var layer Attention
 	layer.new("attention", opts...)
 	layer.dims = dims
 	layer.heads = heads
 	layer.dropout = dropout
+	layer.rope = rope
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
@@ -28,6 +34,7 @@ func NewAttention(dims, heads int, dropout float64, opts ...LayerCreateOption) *
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
+	layer.freqs = buildFreqs(dims, maxRopeLength, layer.device)
 	return &layer
 }
 
@@ -38,11 +45,39 @@ func LoadAttention(name string, params map[string]*tensor.Tensor, args map[strin
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
+	layer.rope = args["rope"] != 0
 	layer.w = params["w"]
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
+	layer.freqs = buildFreqs(layer.dims, maxRopeLength, layer.device)
 	return &layer
+}
+
+func buildFreqs(dim, maxLength int, device consts.DeviceType) *tensor.Tensor {
+	data := make([]float32, dim/2)
+	for i := 0; i < dim/2; i++ {
+		data[i] = float32(1 / math.Pow(10000, float64(2*i)/float64(dim)))
+	}
+	freqs := tensor.FromFloat32(nil, data,
+		tensor.WithShapes(int64(dim)/2),
+		tensor.WithDevice(device))
+	data = make([]float32, maxLength)
+	for i := range data {
+		data[i] = float32(i)
+	}
+	t := tensor.FromFloat32(nil, data,
+		tensor.WithShapes(int64(maxLength)),
+		tensor.WithDevice(device))
+	freqs = tensor.Outer(t, freqs)
+	data = make([]float32, freqs.ElemCount())
+	for i := range data {
+		data[i] = 1
+	}
+	ones := tensor.FromFloat32(nil, data,
+		tensor.WithShapes(freqs.Shapes()...),
+		tensor.WithDevice(device))
+	return tensor.Polar(ones, freqs)
 }
 
 func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) *tensor.Tensor {
@@ -55,9 +90,15 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bo
 	q = x.NArrow(-1, 0, int64(layer.dims))                   // (batch, seq, dims)
 	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims))   // (batch, seq, dims)
 	v = x.NArrow(-1, int64(layer.dims*2), int64(layer.dims)) // (batch, seq, dims)
-	q = layer.split(q)                                       // (batch, heads, seq, dims/heads)
-	k = layer.split(k)                                       // (batch, heads, seq, dims/heads)
-	v = layer.split(v)                                       // (batch, heads, seq, dims/heads)
+	q = layer.split(q)                                       // (batch, seq, heads, dims/heads)
+	k = layer.split(k)                                       // (batch, seq, heads, dims/heads)
+	v = layer.split(v)                                       // (batch, seq, heads, dims/heads)
+	if layer.rope {
+		q, k = layer.applyROPE(q, k)
+	}
+	q = q.Transpose(1, 2) // (batch, heads, seq, dims/heads)
+	k = k.Transpose(1, 2) // (batch, heads, seq, dims/heads)
+	v = v.Transpose(1, 2) // (batch, heads, seq, dims/heads)
 	dropout := layer.dropout
 	if !train {
 		dropout = 0
@@ -76,8 +117,13 @@ func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool
 	x = x.MatMul(layer.w)                                  // (batch, seq, dims*3)
 	q = x.NArrow(-1, 0, int64(layer.dims))                 // (batch, seq, dims)
 	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims)) // (batch, seq, dims)
-	q = layer.split(q)                                     // (batch, heads, seq, dims/heads)
-	k = layer.split(k)                                     // (batch, heads, seq, dims/heads)
+	q = layer.split(q)                                     // (batch, seq, heads, dims/heads)
+	k = layer.split(k)                                     // (batch, seq, heads, dims/heads)
+	if layer.rope {
+		q, k = layer.applyROPE(q, k)
+	}
+	q = q.Transpose(1, 2) // (batch, heads, seq, dims/heads)
+	k = k.Transpose(1, 2) // (batch, heads, seq, dims/heads)
 	if isCausal {
 		mask = buildCausal(q, k, layer.device)
 	}
@@ -88,9 +134,18 @@ func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool
 	return score.Softmax(-1) // (batch, heads, seq, dims/heads)
 }
 
+func (layer *Attention) applyROPE(q, k *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
+	qShapes := q.Shapes()
+	kShapes := k.Shapes()
+	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
+	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
+	xq = xq.Mul(layer.freqs).ViewAsReal().View(qShapes...)
+	xk = xk.Mul(layer.freqs).ViewAsReal().View(kShapes...)
+	return xq, xk
+}
+
 func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
-	y := x.View(-1, x.Shapes()[1], int64(layer.heads), int64(layer.dims/layer.heads))
-	return y.Transpose(1, 2)
+	return x.View(-1, x.Shapes()[1], int64(layer.heads), int64(layer.dims/layer.heads))
 }
 
 func (layer *Attention) Params() map[string]*tensor.Tensor {
@@ -100,10 +155,15 @@ func (layer *Attention) Params() map[string]*tensor.Tensor {
 }
 
 func (layer *Attention) Args() map[string]float32 {
+	var rope float32
+	if layer.rope {
+		rope = 1
+	}
 	return map[string]float32{
 		"dims":    float32(layer.dims),
 		"heads":   float32(layer.heads),
 		"dropout": float32(layer.dropout),
+		"rope":    rope,
 	}
 }
 
