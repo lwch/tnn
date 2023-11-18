@@ -3,11 +3,8 @@ package layer
 import (
 	"math"
 
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
-
-const maxRopeLength = 8192
 
 type Attention struct {
 	base
@@ -17,7 +14,6 @@ type Attention struct {
 	// params
 	w     *tensor.Tensor
 	scale *tensor.Tensor
-	freqs *tensor.Tensor
 }
 
 func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCreateOption) *Attention {
@@ -34,7 +30,6 @@ func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCrea
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.freqs = buildFreqs(dims/heads, maxRopeLength, layer.device)
 	return &layer
 }
 
@@ -50,34 +45,7 @@ func LoadAttention(name string, params map[string]*tensor.Tensor, args map[strin
 	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.freqs = buildFreqs(layer.dims/layer.heads, maxRopeLength, layer.device)
 	return &layer
-}
-
-func buildFreqs(dim, maxLength int, device consts.DeviceType) *tensor.Tensor {
-	data := make([]float32, dim/2)
-	for i := 0; i < dim/2; i++ {
-		data[i] = float32(1 / math.Pow(10000, float64(2*i)/float64(dim)))
-	}
-	freqs := tensor.FromFloat32(nil, data,
-		tensor.WithShapes(int64(dim)/2),
-		tensor.WithDevice(device))
-	data = make([]float32, maxLength)
-	for i := range data {
-		data[i] = float32(i)
-	}
-	t := tensor.FromFloat32(nil, data,
-		tensor.WithShapes(int64(maxLength)),
-		tensor.WithDevice(device))
-	freqs = tensor.Outer(t, freqs)
-	data = make([]float32, freqs.ElemCount())
-	for i := range data {
-		data[i] = 1
-	}
-	ones := tensor.FromFloat32(nil, data,
-		tensor.WithShapes(freqs.Shapes()...),
-		tensor.WithDevice(device))
-	return tensor.Polar(ones, freqs)
 }
 
 func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) *tensor.Tensor {
@@ -134,12 +102,38 @@ func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool
 	return score.Softmax(-1) // (batch, heads, seq, dims/heads)
 }
 
+func buildFreqs(q *tensor.Tensor, dim, seq int64) *tensor.Tensor {
+	data := make([]float32, dim/2)
+	for i := int64(0); i < dim/2; i++ {
+		data[i] = float32(1 / math.Pow(10000, float64(2*i)/float64(dim)))
+	}
+	freqs := tensor.FromFloat32(q.Storage(), data,
+		tensor.WithShapes(dim/2),
+		tensor.WithDevice(q.DeviceType()))
+	data = make([]float32, seq)
+	for i := range data {
+		data[i] = float32(i)
+	}
+	t := tensor.FromFloat32(q.Storage(), data,
+		tensor.WithShapes(seq),
+		tensor.WithDevice(q.DeviceType()))
+	freqs = tensor.Outer(t, freqs)
+	data = make([]float32, freqs.ElemCount())
+	for i := range data {
+		data[i] = 1
+	}
+	ones := tensor.FromFloat32(q.Storage(), data,
+		tensor.WithShapes(freqs.Shapes()...),
+		tensor.WithDevice(q.DeviceType()))
+	return tensor.Polar(ones, freqs).View(1, seq, 1, -1)
+}
+
 func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tensor, *tensor.Tensor) {
 	qShapes := q.Shapes()
 	kShapes := k.Shapes()
 	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
 	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
-	freqs := layer.freqs.NArrow(0, 0, seq).View(1, seq, 1, -1)
+	freqs := buildFreqs(q, qShapes[len(qShapes)-1], seq)
 	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...)
 	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...)
 	return xq, xk
