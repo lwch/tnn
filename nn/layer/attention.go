@@ -14,6 +14,8 @@ type Attention struct {
 	// params
 	w     *tensor.Tensor
 	scale *tensor.Tensor
+	// runtime
+	freqs *tensor.Tensor
 }
 
 func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCreateOption) *Attention {
@@ -133,7 +135,10 @@ func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tenso
 	kShapes := k.Shapes()
 	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
 	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
-	freqs := buildFreqs(q, qShapes[len(qShapes)-1], seq)
+	if layer.freqs == nil || layer.freqs.Shapes()[1] < seq {
+		layer.freqs = buildFreqs(q, qShapes[len(qShapes)-1], seq)
+	}
+	freqs := layer.freqs.NArrow(1, 0, seq)
 	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...)
 	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...)
 	return xq, xk
