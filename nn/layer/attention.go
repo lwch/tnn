@@ -143,9 +143,9 @@ func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tenso
 		layer.freqs.UnFree()
 	}
 	freqs := layer.freqs.NArrow(1, 0, seq)
+	freqs.SetStorage(q.Storage()) // automatic free
 	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...)
 	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...)
-	freqs.Free()
 	return xq, xk
 }
 
