@@ -120,6 +120,7 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 			param.ElemCount = p.ElemCount()
 			param.Name = name
 			param.Shapes = make([]int64, p.Dims())
+			param.TensorName = p.Name()
 			copy(param.Shapes, p.Shapes())
 			param.File = fmt.Sprintf("layer_%d_param_%s.bin", i, name)
 			layer.names = append(layer.names, name)
@@ -224,20 +225,20 @@ func (n *Net) readSpec(r *zip.Reader) (*pb.Net, error) {
 }
 
 func buildParam[T uint8 | int8 | int16 | uint16 | int32 | int64 |
-	float32 | float64 | bool](r io.Reader, cnt int64, shapes []int64, device consts.DeviceType,
-	fn func(data []T, opts ...tensor.Option) *tensor.Tensor) (*tensor.Tensor, error) {
+	float32 | float64 | bool](r io.Reader, name string, cnt int64, shapes []int64, device consts.DeviceType,
+	fn func(name string, data []T, opts ...tensor.Option) *tensor.Tensor) (*tensor.Tensor, error) {
 	data := make([]T, cnt)
 	if err := binary.Read(r, binary.BigEndian, data); err != nil {
 		return nil, err
 	}
-	t := fn(data,
+	t := fn(name, data,
 		tensor.WithShapes(shapes...),
 		tensor.WithDevice(device))
 	t.SetRequiresGrad(true)
 	return t, nil
 }
 
-func (n *Net) loadParam(r *zip.Reader, file string, t consts.ScalarType, cnt int64, shapes []int64) (*tensor.Tensor, error) {
+func (n *Net) loadParam(r *zip.Reader, name, file string, t consts.ScalarType, cnt int64, shapes []int64) (*tensor.Tensor, error) {
 	f, err := r.Open(file)
 	if err != nil {
 		return nil, err
@@ -245,25 +246,25 @@ func (n *Net) loadParam(r *zip.Reader, file string, t consts.ScalarType, cnt int
 	defer f.Close()
 	switch t {
 	case consts.KUint8:
-		return buildParam[uint8](f, cnt, shapes, n.device, tensor.FromUint8)
+		return buildParam[uint8](f, name, cnt, shapes, n.device, tensor.FromUint8)
 	case consts.KInt8:
-		return buildParam[int8](f, cnt, shapes, n.device, tensor.FromInt8)
+		return buildParam[int8](f, name, cnt, shapes, n.device, tensor.FromInt8)
 	case consts.KInt16:
-		return buildParam[int16](f, cnt, shapes, n.device, tensor.FromInt16)
+		return buildParam[int16](f, name, cnt, shapes, n.device, tensor.FromInt16)
 	case consts.KInt32:
-		return buildParam[int32](f, cnt, shapes, n.device, tensor.FromInt32)
+		return buildParam[int32](f, name, cnt, shapes, n.device, tensor.FromInt32)
 	case consts.KInt64:
-		return buildParam[int64](f, cnt, shapes, n.device, tensor.FromInt64)
+		return buildParam[int64](f, name, cnt, shapes, n.device, tensor.FromInt64)
 	case consts.KHalf:
-		return buildParam[uint16](f, cnt, shapes, n.device, tensor.FromHalfRaw)
+		return buildParam[uint16](f, name, cnt, shapes, n.device, tensor.FromHalfRaw)
 	case consts.KFloat:
-		return buildParam[float32](f, cnt, shapes, n.device, tensor.FromFloat32)
+		return buildParam[float32](f, name, cnt, shapes, n.device, tensor.FromFloat32)
 	case consts.KDouble:
-		return buildParam[float64](f, cnt, shapes, n.device, tensor.FromFloat64)
+		return buildParam[float64](f, name, cnt, shapes, n.device, tensor.FromFloat64)
 	case consts.KBool:
-		return buildParam[bool](f, cnt, shapes, n.device, tensor.FromBool)
+		return buildParam[bool](f, name, cnt, shapes, n.device, tensor.FromBool)
 	case consts.KBFloat16:
-		return buildParam[uint16](f, cnt, shapes, n.device, tensor.FromBFloat16Raw)
+		return buildParam[uint16](f, name, cnt, shapes, n.device, tensor.FromBFloat16Raw)
 	default:
 		panic(fmt.Errorf("unsupported scalar type: %s", t.String()))
 	}
@@ -297,7 +298,8 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 			defer wg.Done()
 			params := make(map[string]*tensor.Tensor)
 			for _, param := range layers[i].GetParams() {
-				params[param.GetName()], err = n.loadParam(zr, param.GetFile(),
+				params[param.GetName()], err = n.loadParam(zr, param.GetTensorName(),
+					param.GetFile(),
 					consts.ScalarType(param.GetType()),
 					param.GetElemCount(),
 					param.GetShapes())

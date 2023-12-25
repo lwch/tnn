@@ -13,20 +13,19 @@ type Embedding struct {
 	w *tensor.Tensor
 }
 
-func NewEmbedding(num, dim int, opts ...LayerCreateOption) *Embedding {
+func NewEmbedding(name string, num, dim int, opts ...LayerCreateOption) *Embedding {
 	var layer Embedding
-	layer.new("embedding", opts...)
+	layer.new("embedding", name, opts...)
 	layer.num = num
 	layer.dim = dim
 	layer.padding = -1
-	layer.w = layer.initW(int64(num), int64(dim))
+	layer.w = layer.initW("w", int64(num), int64(dim))
 	return &layer
 }
 
 func LoadEmbedding(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Embedding
-	layer.new("embedding")
-	layer.name = name
+	layer.new("embedding", name)
 	layer.num = int(args["num"])
 	layer.dim = int(args["dim"])
 	layer.padding = int64(args["padding"])

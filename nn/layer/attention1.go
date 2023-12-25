@@ -16,31 +16,30 @@ type Attention1 struct {
 	scale *tensor.Tensor
 }
 
-func NewAttention1(dims, heads int, dropout float64, opts ...LayerCreateOption) *Attention1 {
+func NewAttention1(name string, dims, heads int, dropout float64, opts ...LayerCreateOption) *Attention1 {
 	var layer Attention1
-	layer.new("attention1", opts...)
+	layer.new("attention1", name, opts...)
 	layer.dims = dims
 	layer.heads = heads
 	layer.dropout = dropout
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
-	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(dims)))},
+	layer.scale = tensor.FromFloat32(name+".scale", []float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.w = layer.initW(int64(dims*3), int64(dims*3))
+	layer.w = layer.initW("w", int64(dims*3), int64(dims*3))
 	return &layer
 }
 
 func LoadAttention1(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Attention1
-	layer.new("attention1")
-	layer.name = name
+	layer.new("attention1", name)
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
 	layer.w = params["w"]
-	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
+	layer.scale = tensor.FromFloat32(name+".scale", []float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	return &layer
@@ -109,7 +108,7 @@ func buildCausal(q, k *tensor.Tensor, device consts.DeviceType) *tensor.Tensor {
 			}
 		}
 	}
-	return tensor.FromFloat32(mask,
+	return tensor.FromFloat32("mask", mask,
 		tensor.WithShapes(1, 1, l, s),
 		tensor.WithDevice(device))
 }

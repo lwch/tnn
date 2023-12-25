@@ -103,10 +103,10 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor, []float3
 	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
 	// 	copy(y[j*1:(j+1)*1], dy)
 	// })
-	xs := tensor.FromFloat32(x,
+	xs := tensor.FromFloat32("x", x,
 		tensor.WithShapes(batchSize, steps, featureSize),
 		tensor.WithDevice(device))
-	ys := tensor.FromFloat32(y,
+	ys := tensor.FromFloat32("y", y,
 		tensor.WithShapes(batchSize, 1),
 		tensor.WithDevice(device))
 	return xs, ys, y

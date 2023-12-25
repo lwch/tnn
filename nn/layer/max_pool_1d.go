@@ -13,9 +13,9 @@ type MaxPool1D struct {
 	ceil     bool
 }
 
-func NewMaxPool1D(kernel int, opts ...LayerCreateOption) *MaxPool1D {
+func NewMaxPool1D(name string, kernel int, opts ...LayerCreateOption) *MaxPool1D {
 	var layer MaxPool1D
-	layer.new("maxpool1d", opts...)
+	layer.new("maxpool1d", name, opts...)
 	layer.kernel = kernel
 	layer.stride = -1
 	layer.padding = 0
@@ -42,8 +42,7 @@ func (layer *MaxPool1D) SetCeil(ceil bool) {
 
 func LoadMaxPool1D(name string, _ map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer MaxPool1D
-	layer.new("maxpool1d")
-	layer.name = name
+	layer.new("maxpool1d", name)
 	layer.kernel = int(args["kernel"])
 	layer.stride = int(args["stride"])
 	layer.padding = int(args["padding"])

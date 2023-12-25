@@ -11,18 +11,17 @@ type Linear struct {
 	w *tensor.Tensor
 }
 
-func NewLinear(input, output int, opts ...LayerCreateOption) *Linear {
+func NewLinear(name string, input, output int, opts ...LayerCreateOption) *Linear {
 	var layer Linear
-	layer.new("linear", opts...)
+	layer.new("linear", name, opts...)
 	layer.output = output
-	layer.w = layer.initW(int64(layer.output), int64(input))
+	layer.w = layer.initW("w", int64(layer.output), int64(input))
 	return &layer
 }
 
 func LoadLinear(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Linear
-	layer.new("linear")
-	layer.name = name
+	layer.new("linear", name)
 	layer.output = int(args["output"])
 	layer.w = params["w"]
 	return &layer

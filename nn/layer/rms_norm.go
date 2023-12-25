@@ -11,17 +11,17 @@ type RMSNorm struct {
 	a *tensor.Tensor
 }
 
-func NewRMSNorm(dims int64, opts ...LayerCreateOption) *RMSNorm {
+func NewRMSNorm(name string, dims int64, opts ...LayerCreateOption) *RMSNorm {
 	var layer RMSNorm
-	layer.new("rms_norm", opts...)
+	layer.new("rms_norm", name, opts...)
 	data := make([]float32, dims)
 	for i := range data {
 		data[i] = 1
 	}
-	layer.eps = tensor.FromFloat32([]float32{1e-9},
+	layer.eps = tensor.FromFloat32(name+".eps", []float32{1e-9},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.a = tensor.FromFloat32(data,
+	layer.a = tensor.FromFloat32(name+".a", data,
 		tensor.WithShapes(dims),
 		tensor.WithDevice(layer.device))
 	layer.a.SetRequiresGrad(true)
@@ -30,9 +30,8 @@ func NewRMSNorm(dims int64, opts ...LayerCreateOption) *RMSNorm {
 
 func LoadRMSNorm(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer RMSNorm
-	layer.new("rms_norm")
-	layer.name = name
-	layer.eps = tensor.FromFloat32([]float32{1e-9},
+	layer.new("rms_norm", name)
+	layer.eps = tensor.FromFloat32(name+".eps", []float32{1e-9},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	layer.a = params["a"]

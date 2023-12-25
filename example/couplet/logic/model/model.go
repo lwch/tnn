@@ -59,8 +59,7 @@ func (m *Model) build() {
 		m.attn = append(m.attn, newTransformer(i))
 	}
 	m.relu = activation.NewReLU()
-	m.output = layer.NewLinear(embeddingDim, len(m.vocabs), layer.WithDevice(device))
-	m.output.SetName("output")
+	m.output = layer.NewLinear("output", embeddingDim, len(m.vocabs), layer.WithDevice(device))
 }
 
 func (m *Model) params() []*tensor.Tensor {
@@ -124,7 +123,7 @@ func init() {
 			data[start+i*2+1] = float32(math.Cos(n))
 		}
 	}
-	positionEncoding = tensor.FromFloat32(data,
+	positionEncoding = tensor.FromFloat32("pe", data,
 		tensor.WithShapes(1, paddingSize, embeddingDim),
 		tensor.WithDevice(device))
 }

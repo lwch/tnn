@@ -20,9 +20,9 @@ func newModel(optimizer optimizer.Optimizer) *model {
 	for i := 0; i < transformerSize; i++ {
 		m.attn = append(m.attn, newTransformer())
 	}
-	m.flatten = layer.NewFlatten()
+	m.flatten = layer.NewFlatten("flatten")
 	m.sigmoid = activation.NewSigmoid()
-	m.outputLayer = layer.NewLinear(unitSize, 1, layer.WithDevice(device))
+	m.outputLayer = layer.NewLinear("output", unitSize, 1, layer.WithDevice(device))
 	m.optimizer = optimizer
 	return &m
 }

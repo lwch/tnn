@@ -8,16 +8,15 @@ type Flatten struct {
 	base
 }
 
-func NewFlatten() *Flatten {
+func NewFlatten(name string) *Flatten {
 	var layer Flatten
-	layer.new("flatten")
+	layer.new("flatten", name)
 	return &layer
 }
 
 func LoadFlatten(name string, _ map[string]*tensor.Tensor, _ map[string]float32) Layer {
 	var layer Flatten
-	layer.new("flatten")
-	layer.name = name
+	layer.new("flatten", name)
 	return &layer
 }
 

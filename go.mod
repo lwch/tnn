@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/klauspost/compress v1.17.0
-	github.com/lwch/gotorch v1.6.4-0.20231225055136-e71cb9c61dfc
+	github.com/lwch/gotorch v1.6.4-0.20231225080040-4939cd87077e
 	github.com/lwch/runtime v1.0.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0

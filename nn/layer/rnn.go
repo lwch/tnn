@@ -14,21 +14,20 @@ type Rnn struct {
 	b *tensor.Tensor
 }
 
-func NewRnn(featureSize, steps, hidden int, opts ...LayerCreateOption) *Rnn {
+func NewRnn(name string, featureSize, steps, hidden int, opts ...LayerCreateOption) *Rnn {
 	var layer Rnn
-	layer.new("rnn", opts...)
+	layer.new("rnn", name, opts...)
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
-	layer.w = layer.initW(int64(featureSize+layer.hidden), int64(hidden))
-	layer.b = layer.initB(int64(hidden))
+	layer.w = layer.initW("w", int64(featureSize+layer.hidden), int64(hidden))
+	layer.b = layer.initB("b", int64(hidden))
 	return &layer
 }
 
 func LoadRnn(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Rnn
-	layer.new("rnn")
-	layer.name = name
+	layer.new("rnn", name)
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
@@ -37,14 +36,14 @@ func LoadRnn(name string, params map[string]*tensor.Tensor, args map[string]floa
 	return &layer
 }
 
-func copyState(s *tensor.Tensor) *tensor.Tensor {
-	return tensor.FromFloat32(s.Float32Value(), tensor.WithShapes(s.Shapes()...))
+func copyState(name string, s *tensor.Tensor) *tensor.Tensor {
+	return tensor.FromFloat32(name+".dup", s.Float32Value(), tensor.WithShapes(s.Shapes()...))
 }
 
 func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if h == nil {
-		h = tensor.Zeros(consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
+		h = tensor.Zeros(layer.name+".hidden", consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
 	}
 	x = x.Transpose(1, 0) // (steps, batch, feature)
 	var result *tensor.Tensor
@@ -60,7 +59,8 @@ func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) 
 			result = tensor.VStack(result, h)
 		}
 	}
-	return result.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)), copyState(h)
+	return result.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)),
+		copyState(layer.name+".hidden", h)
 }
 
 func (layer *Rnn) Params() map[string]*tensor.Tensor {
