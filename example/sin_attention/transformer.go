@@ -8,7 +8,6 @@ import (
 
 type transformer struct {
 	attn    *layer.Attention
-	flatten *layer.Flatten
 	dense   *layer.Linear
 	sigmoid *activation.Sigmoid
 	norm1   *layer.LayerNorm
@@ -18,13 +17,12 @@ type transformer struct {
 
 func newTransformer() *transformer {
 	return &transformer{
-		attn:    layer.NewAttention(dims, 1, 0.1, layer.WithDevice(device)),
-		flatten: layer.NewFlatten(),
-		dense:   layer.NewLinear(dims, unitSize*4, layer.WithDevice(device)),
+		attn:    layer.NewAttention(dims, 1, 0.1, false, layer.WithDevice(device)),
+		dense:   layer.NewLinear(dims, dims*4, layer.WithDevice(device)),
 		sigmoid: activation.NewSigmoid(),
-		norm1:   layer.NewLayerNorm(unitSize, layer.WithDevice(device)),
-		norm2:   layer.NewLayerNorm(unitSize, layer.WithDevice(device)),
-		output:  layer.NewLinear(unitSize*4, unitSize, layer.WithDevice(device)),
+		norm1:   layer.NewLayerNorm(dims, layer.WithDevice(device)),
+		norm2:   layer.NewLayerNorm(dims, layer.WithDevice(device)),
+		output:  layer.NewLinear(dims*4, dims, layer.WithDevice(device)),
 	}
 }
 
@@ -32,11 +30,9 @@ func (t *transformer) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	y := t.attn.Forward(x, x, x, nil, true, train)
 	y = y.Add(x)
 	selfOut := t.norm1.Forward(y)
-	y = t.flatten.Forward(y)
 	y = t.dense.Forward(y)
 	y = t.sigmoid.Forward(y)
 	y = t.output.Forward(y)
-	y = y.Reshape(batchSize, steps, dims)
 	y = y.Add(selfOut)
 	y = t.norm2.Forward(y)
 	return y

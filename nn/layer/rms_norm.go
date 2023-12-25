@@ -18,10 +18,10 @@ func NewRMSNorm(dims int64, opts ...LayerCreateOption) *RMSNorm {
 	for i := range data {
 		data[i] = 1
 	}
-	layer.eps = tensor.FromFloat32(nil, []float32{1e-9},
+	layer.eps = tensor.FromFloat32([]float32{1e-9},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.a = tensor.FromFloat32(nil, data,
+	layer.a = tensor.FromFloat32(data,
 		tensor.WithShapes(dims),
 		tensor.WithDevice(layer.device))
 	layer.a.SetRequiresGrad(true)
@@ -32,7 +32,7 @@ func LoadRMSNorm(name string, params map[string]*tensor.Tensor, args map[string]
 	var layer RMSNorm
 	layer.new("rms_norm")
 	layer.name = name
-	layer.eps = tensor.FromFloat32(nil, []float32{1e-9},
+	layer.eps = tensor.FromFloat32([]float32{1e-9},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	layer.a = params["a"]

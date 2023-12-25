@@ -38,13 +38,13 @@ func LoadRnn(name string, params map[string]*tensor.Tensor, args map[string]floa
 }
 
 func copyState(s *tensor.Tensor) *tensor.Tensor {
-	return tensor.FromFloat32(nil, s.Float32Value(), tensor.WithShapes(s.Shapes()...))
+	return tensor.FromFloat32(s.Float32Value(), tensor.WithShapes(s.Shapes()...))
 }
 
 func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if h == nil {
-		h = tensor.Zeros(x.Storage(), consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
+		h = tensor.Zeros(consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
 	}
 	x = x.Transpose(1, 0) // (steps, batch, feature)
 	var result *tensor.Tensor

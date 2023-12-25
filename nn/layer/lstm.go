@@ -53,12 +53,12 @@ func LoadLstm(name string, params map[string]*tensor.Tensor, args map[string]flo
 func (layer *Lstm) Forward(x, h, c *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if h == nil {
-		h = tensor.Zeros(nil, consts.KFloat,
+		h = tensor.Zeros(consts.KFloat,
 			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
 			tensor.WithDevice(layer.device))
 	}
 	if c == nil {
-		c = tensor.Zeros(nil, consts.KFloat,
+		c = tensor.Zeros(consts.KFloat,
 			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
 			tensor.WithDevice(layer.device))
 	}

@@ -8,7 +8,6 @@ import (
 
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/loss"
-	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
@@ -28,7 +27,6 @@ const modelFile = "xor.model"
 const device = consts.KCPU
 
 var lossFunc = loss.NewMse
-var storage = mmgr.New()
 
 func main() {
 	if _, err := os.Stat(modelFile); os.IsNotExist(err) {
@@ -139,13 +137,13 @@ func accuracy(m *model) float32 {
 }
 
 func getBatch() (*tensor.Tensor, *tensor.Tensor) {
-	x := tensor.FromFloat32(storage, []float32{
+	x := tensor.FromFloat32([]float32{
 		0, 0,
 		0, 1,
 		1, 0,
 		1, 1,
 	}, tensor.WithShapes(4, 2), tensor.WithDevice(device))
-	y := tensor.FromFloat32(storage, []float32{
+	y := tensor.FromFloat32([]float32{
 		0,
 		1,
 		1,

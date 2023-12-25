@@ -73,13 +73,13 @@ func (b *base) Ones(size int64) *tensor.Tensor {
 	for i := range data {
 		data[i] = 1
 	}
-	return tensor.FromFloat32(nil, data,
+	return tensor.FromFloat32(data,
 		tensor.WithShapes(int64(size)),
 		tensor.WithDevice(b.device))
 }
 
 func (b *base) initW(shapes ...int64) *tensor.Tensor {
-	t := tensor.Zeros(nil, consts.KFloat,
+	t := tensor.Zeros(consts.KFloat,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	b.init.Init(t)
@@ -96,7 +96,7 @@ func (b *base) initB(shapes ...int64) *tensor.Tensor {
 	for i := 0; i < len(data); i++ {
 		data[i] = float32(rand.NormFloat64())
 	}
-	t := tensor.FromFloat32(nil, data,
+	t := tensor.FromFloat32(data,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)

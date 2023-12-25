@@ -79,10 +79,10 @@ func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 		y = append(y, yTrain...)
 		padding = append(padding, p)
 	}
-	xIn := tensor.FromFloat32(storage, x,
+	xIn := tensor.FromFloat32(x,
 		tensor.WithShapes(int64(len(samples)), paddingSize, embeddingDim),
 		tensor.WithDevice(device))
-	yOut := tensor.FromInt64(storage, y,
+	yOut := tensor.FromInt64(y,
 		tensor.WithShapes(int64(len(samples)), paddingSize),
 		tensor.WithDevice(device))
 	pred := m.forward(xIn, padding, true)
@@ -104,7 +104,6 @@ func (m *Model) trainBatch(b []batch) float64 {
 		}(b[i].data)
 	}
 	wg.Wait()
-	storage.GC()
 	m.optimizer.Step(m.params())
 	return sum / float64(len(b))
 }

@@ -25,7 +25,7 @@ func NewAttention1(dims, heads int, dropout float64, opts ...LayerCreateOption) 
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
-	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(dims)))},
+	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	layer.w = layer.initW(int64(dims*3), int64(dims*3))
@@ -40,7 +40,7 @@ func LoadAttention1(name string, params map[string]*tensor.Tensor, args map[stri
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
 	layer.w = params["w"]
-	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))},
+	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	return &layer
@@ -109,11 +109,7 @@ func buildCausal(q, k *tensor.Tensor, device consts.DeviceType) *tensor.Tensor {
 			}
 		}
 	}
-	storage := q.Storage()
-	if storage == nil {
-		storage = k.Storage()
-	}
-	return tensor.FromFloat32(storage, mask,
+	return tensor.FromFloat32(mask,
 		tensor.WithShapes(1, 1, l, s),
 		tensor.WithDevice(device))
 }
