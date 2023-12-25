@@ -120,7 +120,6 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 			param.ElemCount = p.ElemCount()
 			param.Name = name
 			param.Shapes = make([]int64, p.Dims())
-			param.TensorName = p.Name()
 			copy(param.Shapes, p.Shapes())
 			param.File = fmt.Sprintf("layer_%d_param_%s.bin", i, name)
 			layer.names = append(layer.names, name)
@@ -238,7 +237,7 @@ func buildParam[T uint8 | int8 | int16 | uint16 | int32 | int64 |
 	return t, nil
 }
 
-func (n *Net) loadParam(r *zip.Reader, name, file string, t consts.ScalarType, cnt int64, shapes []int64) (*tensor.Tensor, error) {
+func (n *Net) loadParam(r *zip.Reader, file string, t consts.ScalarType, cnt int64, shapes []int64) (*tensor.Tensor, error) {
 	f, err := r.Open(file)
 	if err != nil {
 		return nil, err
@@ -298,7 +297,7 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 			defer wg.Done()
 			params := make(map[string]*tensor.Tensor)
 			for _, param := range layers[i].GetParams() {
-				params[param.GetName()], err = n.loadParam(zr, param.GetTensorName(),
+				params[param.GetName()], err = n.loadParam(zr,
 					param.GetFile(),
 					consts.ScalarType(param.GetType()),
 					param.GetElemCount(),

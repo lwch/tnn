@@ -9,7 +9,6 @@ message param {
     string           name = 3;
     repeated int64 shapes = 4;
     string           file = 5;
-    string    tensor_name = 6;
 }
 
 message layer {
