@@ -19,7 +19,7 @@ func NewEmbedding(name string, num, dim int, opts ...LayerCreateOption) *Embeddi
 	layer.num = num
 	layer.dim = dim
 	layer.padding = -1
-	layer.w = layer.initW("w", int64(num), int64(dim))
+	layer.w = layer.initW(int64(num), int64(dim))
 	return &layer
 }
 

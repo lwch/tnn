@@ -20,8 +20,8 @@ func NewRnn(name string, featureSize, steps, hidden int, opts ...LayerCreateOpti
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
-	layer.w = layer.initW("w", int64(featureSize+layer.hidden), int64(hidden))
-	layer.b = layer.initB("b", int64(hidden))
+	layer.w = layer.initW(int64(featureSize+layer.hidden), int64(hidden))
+	layer.b = layer.initB(int64(hidden))
 	return &layer
 }
 
@@ -37,13 +37,13 @@ func LoadRnn(name string, params map[string]*tensor.Tensor, args map[string]floa
 }
 
 func copyState(name string, s *tensor.Tensor) *tensor.Tensor {
-	return tensor.FromFloat32(name+".dup", s.Float32Value(), tensor.WithShapes(s.Shapes()...))
+	return tensor.FromFloat32(s.Float32Value(), tensor.WithShapes(s.Shapes()...))
 }
 
 func (layer *Rnn) Forward(x, h *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if h == nil {
-		h = tensor.Zeros(layer.name+".hidden", consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
+		h = tensor.Zeros(consts.KFloat, tensor.WithShapes(inputShape[0], int64(layer.hidden)))
 	}
 	x = x.Transpose(1, 0) // (steps, batch, feature)
 	var result *tensor.Tensor

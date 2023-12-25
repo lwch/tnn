@@ -21,14 +21,14 @@ func NewLstm(name string, featureSize, steps, hidden int, opts ...LayerCreateOpt
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
-	layer.Wi = layer.initW("wi", int64(featureSize+hidden), int64(hidden))
-	layer.Wf = layer.initW("wf", int64(featureSize+hidden), int64(hidden))
-	layer.Wg = layer.initW("wg", int64(featureSize+hidden), int64(hidden))
-	layer.Wo = layer.initW("wo", int64(featureSize+hidden), int64(hidden))
-	layer.Bi = layer.initB("bi", int64(hidden))
-	layer.Bf = layer.initB("bf", int64(hidden))
-	layer.Bg = layer.initB("bg", int64(hidden))
-	layer.Bo = layer.initB("bo", int64(hidden))
+	layer.Wi = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Wf = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Wg = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Wo = layer.initW(int64(featureSize+hidden), int64(hidden))
+	layer.Bi = layer.initB(int64(hidden))
+	layer.Bf = layer.initB(int64(hidden))
+	layer.Bg = layer.initB(int64(hidden))
+	layer.Bo = layer.initB(int64(hidden))
 	return &layer
 }
 
@@ -52,12 +52,12 @@ func LoadLstm(name string, params map[string]*tensor.Tensor, args map[string]flo
 func (layer *Lstm) Forward(x, h, c *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if h == nil {
-		h = tensor.Zeros(layer.name+".hidden", consts.KFloat,
+		h = tensor.Zeros(consts.KFloat,
 			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
 			tensor.WithDevice(layer.device))
 	}
 	if c == nil {
-		c = tensor.Zeros(layer.name+".cell", consts.KFloat,
+		c = tensor.Zeros(consts.KFloat,
 			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
 			tensor.WithDevice(layer.device))
 	}

@@ -27,8 +27,8 @@ func NewConv2D(name string, inC, outC int, kernel1, kernel2 int, opts ...LayerCr
 	layer.padding = [2]int{0, 0}
 	layer.dilation = 1
 	layer.groups = 1
-	layer.w = layer.initW("w", int64(outC), int64(inC), int64(kernel1), int64(kernel2))
-	layer.b = layer.initB("b", int64(outC))
+	layer.w = layer.initW(int64(outC), int64(inC), int64(kernel1), int64(kernel2))
+	layer.b = layer.initB(int64(outC))
 	return &layer
 }
 

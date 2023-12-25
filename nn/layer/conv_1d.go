@@ -26,7 +26,7 @@ func NewConv1D(name string, inC, outC, kernel int, opts ...LayerCreateOption) *C
 	layer.padding = 0
 	layer.dilation = 1
 	layer.groups = 1
-	layer.w = layer.initW("w", int64(outC), int64(inC), int64(kernel))
+	layer.w = layer.initW(int64(outC), int64(inC), int64(kernel))
 	return &layer
 }
 

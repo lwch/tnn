@@ -18,10 +18,10 @@ func NewLayerNorm(name string, dims int64, opts ...LayerCreateOption) *LayerNorm
 	for i := range data {
 		data[i] = 1
 	}
-	layer.eps = tensor.FromFloat32(name+".eps", []float32{1e-9},
+	layer.eps = tensor.FromFloat32([]float32{1e-9},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
-	layer.a = tensor.FromFloat32(name+".a", data,
+	layer.a = tensor.FromFloat32(data,
 		tensor.WithShapes(dims),
 		tensor.WithDevice(layer.device))
 	layer.a.SetRequiresGrad(true)
@@ -31,7 +31,7 @@ func NewLayerNorm(name string, dims int64, opts ...LayerCreateOption) *LayerNorm
 func LoadLayerNorm(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer LayerNorm
 	layer.new("layer_norm", name)
-	layer.eps = tensor.FromFloat32(name+".eps", []float32{1e-9},
+	layer.eps = tensor.FromFloat32([]float32{1e-9},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	layer.a = params["a"]

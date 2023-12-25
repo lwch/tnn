@@ -15,7 +15,7 @@ func NewLinear(name string, input, output int, opts ...LayerCreateOption) *Linea
 	var layer Linear
 	layer.new("linear", name, opts...)
 	layer.output = output
-	layer.w = layer.initW("w", int64(layer.output), int64(input))
+	layer.w = layer.initW(int64(layer.output), int64(input))
 	return &layer
 }
 

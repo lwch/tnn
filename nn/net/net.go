@@ -225,13 +225,13 @@ func (n *Net) readSpec(r *zip.Reader) (*pb.Net, error) {
 }
 
 func buildParam[T uint8 | int8 | int16 | uint16 | int32 | int64 |
-	float32 | float64 | bool](r io.Reader, name string, cnt int64, shapes []int64, device consts.DeviceType,
-	fn func(name string, data []T, opts ...tensor.Option) *tensor.Tensor) (*tensor.Tensor, error) {
+	float32 | float64 | bool](r io.Reader, cnt int64, shapes []int64, device consts.DeviceType,
+	fn func(data []T, opts ...tensor.Option) *tensor.Tensor) (*tensor.Tensor, error) {
 	data := make([]T, cnt)
 	if err := binary.Read(r, binary.BigEndian, data); err != nil {
 		return nil, err
 	}
-	t := fn(name, data,
+	t := fn(data,
 		tensor.WithShapes(shapes...),
 		tensor.WithDevice(device))
 	t.SetRequiresGrad(true)
@@ -246,25 +246,25 @@ func (n *Net) loadParam(r *zip.Reader, name, file string, t consts.ScalarType, c
 	defer f.Close()
 	switch t {
 	case consts.KUint8:
-		return buildParam[uint8](f, name, cnt, shapes, n.device, tensor.FromUint8)
+		return buildParam[uint8](f, cnt, shapes, n.device, tensor.FromUint8)
 	case consts.KInt8:
-		return buildParam[int8](f, name, cnt, shapes, n.device, tensor.FromInt8)
+		return buildParam[int8](f, cnt, shapes, n.device, tensor.FromInt8)
 	case consts.KInt16:
-		return buildParam[int16](f, name, cnt, shapes, n.device, tensor.FromInt16)
+		return buildParam[int16](f, cnt, shapes, n.device, tensor.FromInt16)
 	case consts.KInt32:
-		return buildParam[int32](f, name, cnt, shapes, n.device, tensor.FromInt32)
+		return buildParam[int32](f, cnt, shapes, n.device, tensor.FromInt32)
 	case consts.KInt64:
-		return buildParam[int64](f, name, cnt, shapes, n.device, tensor.FromInt64)
+		return buildParam[int64](f, cnt, shapes, n.device, tensor.FromInt64)
 	case consts.KHalf:
-		return buildParam[uint16](f, name, cnt, shapes, n.device, tensor.FromHalfRaw)
+		return buildParam[uint16](f, cnt, shapes, n.device, tensor.FromHalfRaw)
 	case consts.KFloat:
-		return buildParam[float32](f, name, cnt, shapes, n.device, tensor.FromFloat32)
+		return buildParam[float32](f, cnt, shapes, n.device, tensor.FromFloat32)
 	case consts.KDouble:
-		return buildParam[float64](f, name, cnt, shapes, n.device, tensor.FromFloat64)
+		return buildParam[float64](f, cnt, shapes, n.device, tensor.FromFloat64)
 	case consts.KBool:
-		return buildParam[bool](f, name, cnt, shapes, n.device, tensor.FromBool)
+		return buildParam[bool](f, cnt, shapes, n.device, tensor.FromBool)
 	case consts.KBFloat16:
-		return buildParam[uint16](f, name, cnt, shapes, n.device, tensor.FromBFloat16Raw)
+		return buildParam[uint16](f, cnt, shapes, n.device, tensor.FromBFloat16Raw)
 	default:
 		panic(fmt.Errorf("unsupported scalar type: %s", t.String()))
 	}

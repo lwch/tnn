@@ -53,7 +53,7 @@ func (t *transformer) forward(q, k *tensor.Tensor, padding []int, train bool) *t
 			}
 		}
 	}
-	mask := tensor.FromFloat32("mask", maskData,
+	mask := tensor.FromFloat32(maskData,
 		tensor.WithShapes(batchSize, 1, paddingSize, paddingSize),
 		tensor.WithDevice(device))
 	y := t.attn.Forward(q, k, k, mask, false, train)

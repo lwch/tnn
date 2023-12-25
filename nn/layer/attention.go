@@ -28,8 +28,8 @@ func NewAttention(name string, dims, heads int, dropout float64, rope bool, opts
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
-	layer.w = layer.initW("w", int64(dims*3), int64(dims*3))
-	layer.scale = tensor.FromFloat32(name+".scale", []float32{float32(math.Sqrt(float64(dims)))},
+	layer.w = layer.initW(int64(dims*3), int64(dims*3))
+	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	return &layer
@@ -43,7 +43,7 @@ func LoadAttention(name string, params map[string]*tensor.Tensor, args map[strin
 	layer.dropout = float64(args["dropout"])
 	layer.rope = args["rope"] != 0
 	layer.w = params["w"]
-	layer.scale = tensor.FromFloat32(name+".scale", []float32{float32(math.Sqrt(float64(layer.dims)))},
+	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	return &layer
@@ -108,14 +108,14 @@ func buildFreqs(q *tensor.Tensor, dim, seq int64) *tensor.Tensor {
 	for i := int64(0); i < dim/2; i++ {
 		data[i] = float32(1 / math.Pow(10000, float64(2*i)/float64(dim)))
 	}
-	freqs := tensor.FromFloat32("freqs", data,
+	freqs := tensor.FromFloat32(data,
 		tensor.WithShapes(dim/2),
 		tensor.WithDevice(q.DeviceType()))
 	data = make([]float32, seq)
 	for i := range data {
 		data[i] = float32(i)
 	}
-	t := tensor.FromFloat32("index", data,
+	t := tensor.FromFloat32(data,
 		tensor.WithShapes(seq),
 		tensor.WithDevice(q.DeviceType()))
 	freqs = tensor.Outer(t, freqs)
@@ -123,7 +123,7 @@ func buildFreqs(q *tensor.Tensor, dim, seq int64) *tensor.Tensor {
 	for i := range data {
 		data[i] = 1
 	}
-	ones := tensor.FromFloat32("ones", data,
+	ones := tensor.FromFloat32(data,
 		tensor.WithShapes(freqs.Shapes()...),
 		tensor.WithDevice(q.DeviceType()))
 	return tensor.Polar(ones, freqs).View(1, seq, 1, -1)

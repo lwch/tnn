@@ -64,8 +64,8 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func (b *base) initW(name string, shapes ...int64) *tensor.Tensor {
-	t := tensor.Zeros(b.name+"."+name, consts.KFloat,
+func (b *base) initW(shapes ...int64) *tensor.Tensor {
+	t := tensor.Zeros(consts.KFloat,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	b.init.Init(t)
@@ -73,7 +73,7 @@ func (b *base) initW(name string, shapes ...int64) *tensor.Tensor {
 	return t
 }
 
-func (b *base) initB(name string, shapes ...int64) *tensor.Tensor {
+func (b *base) initB(shapes ...int64) *tensor.Tensor {
 	n := shapes[0]
 	for i := 1; i < len(shapes); i++ {
 		n *= shapes[i]
@@ -82,7 +82,7 @@ func (b *base) initB(name string, shapes ...int64) *tensor.Tensor {
 	for i := 0; i < len(data); i++ {
 		data[i] = float32(rand.NormFloat64())
 	}
-	t := tensor.FromFloat32(b.name+"."+name, data,
+	t := tensor.FromFloat32(data,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)

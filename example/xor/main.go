@@ -135,13 +135,13 @@ func accuracy(m *model) float32 {
 }
 
 func getBatch() (*tensor.Tensor, *tensor.Tensor) {
-	x := tensor.FromFloat32("x", []float32{
+	x := tensor.FromFloat32([]float32{
 		0, 0,
 		0, 1,
 		1, 0,
 		1, 1,
 	}, tensor.WithShapes(4, 2), tensor.WithDevice(device))
-	y := tensor.FromFloat32("y", []float32{
+	y := tensor.FromFloat32([]float32{
 		0,
 		1,
 		1,

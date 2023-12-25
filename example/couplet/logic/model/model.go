@@ -123,7 +123,7 @@ func init() {
 			data[start+i*2+1] = float32(math.Cos(n))
 		}
 	}
-	positionEncoding = tensor.FromFloat32("pe", data,
+	positionEncoding = tensor.FromFloat32(data,
 		tensor.WithShapes(1, paddingSize, embeddingDim),
 		tensor.WithDevice(device))
 }
