@@ -1,6 +1,8 @@
 package main
 
 import (
+	"runtime"
+
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
@@ -52,6 +54,7 @@ func (m *model) Train(epoch int, x, y *tensor.Tensor) float32 {
 	l.Backward()
 	value := l.Value()
 	m.optimizer.Step(m.params())
+	runtime.GC()
 	return float32(value)
 }
 

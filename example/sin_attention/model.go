@@ -1,6 +1,8 @@
 package main
 
 import (
+	"runtime"
+
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
@@ -42,6 +44,7 @@ func (m *model) Train(x, y *tensor.Tensor) {
 	pred := m.Forward(x, true)
 	l := lossFunc(pred, y)
 	l.Backward()
+	runtime.GC()
 }
 
 func (m *model) Apply() {

@@ -30,8 +30,8 @@ github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLf
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.17.0 h1:Rnbp4K9EjcDuVuHtd0dgA4qNuv9yKDYKK1ulpJwgrqM=
 github.com/klauspost/compress v1.17.0/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
-github.com/lwch/gotorch v1.6.4-0.20231225093322-f42b51d21aa2 h1:p6TR+FkruS/Gm8XVbc1P4TtFGUgwj2oGTOAPieaXLcs=
-github.com/lwch/gotorch v1.6.4-0.20231225093322-f42b51d21aa2/go.mod h1:ZYDxRXkVVswExYvGWHgvaaDmXqQEtmockbuIBtp/qOA=
+github.com/lwch/gotorch v1.7.0 h1:WKQaoDO0fIVE1/RAgAwcg+objH8F6ZxBZPee6IBgpCQ=
+github.com/lwch/gotorch v1.7.0/go.mod h1:ZYDxRXkVVswExYvGWHgvaaDmXqQEtmockbuIBtp/qOA=
 github.com/lwch/logging v1.1.3 h1:fYppr1h3TxSwH4WNHeO5g1gt1KDg4omd0rYw4ttddcU=
 github.com/lwch/logging v1.1.3/go.mod h1:MxaC1CKm3o5EZcgRvPMXxS2ogwXTEPeo/3SCBiTqn3o=
 github.com/lwch/runtime v1.0.1 h1:xfurs9IGzkTWfdum1K5GaDkEuGopohOQhk7roELmbf4=
