@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"sync"
+	rt "runtime"
 	"time"
 
 	"github.com/lwch/gotorch/optimizer"
@@ -79,10 +79,10 @@ func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 		y = append(y, yTrain...)
 		padding = append(padding, p)
 	}
-	xIn := tensor.FromFloat32(storage, x,
+	xIn := tensor.FromFloat32(x,
 		tensor.WithShapes(int64(len(samples)), paddingSize, embeddingDim),
 		tensor.WithDevice(device))
-	yOut := tensor.FromInt64(storage, y,
+	yOut := tensor.FromInt64(y,
 		tensor.WithShapes(int64(len(samples)), paddingSize),
 		tensor.WithDevice(device))
 	pred := m.forward(xIn, padding, true)
@@ -94,18 +94,12 @@ func (m *Model) trainWorker(samples []*sample.Sample) float64 {
 }
 
 func (m *Model) trainBatch(b []batch) float64 {
-	var wg sync.WaitGroup
-	wg.Add(len(b))
 	var sum float64
 	for i := 0; i < len(b); i++ {
-		go func(samples []*sample.Sample) {
-			defer wg.Done()
-			sum += m.trainWorker(samples)
-		}(b[i].data)
+		sum += m.trainWorker(b[i].data)
 	}
-	wg.Wait()
-	storage.GC()
 	m.optimizer.Step(m.params())
+	rt.GC()
 	return sum / float64(len(b))
 }
 

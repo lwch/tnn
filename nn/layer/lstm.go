@@ -15,9 +15,9 @@ type Lstm struct {
 	Wo, Bo             *tensor.Tensor
 }
 
-func NewLstm(featureSize, steps, hidden int, opts ...LayerCreateOption) *Lstm {
+func NewLstm(name string, featureSize, steps, hidden int, opts ...LayerCreateOption) *Lstm {
 	var layer Lstm
-	layer.new("lstm", opts...)
+	layer.new("lstm", name, opts...)
 	layer.featureSize = featureSize
 	layer.steps = steps
 	layer.hidden = hidden
@@ -34,8 +34,7 @@ func NewLstm(featureSize, steps, hidden int, opts ...LayerCreateOption) *Lstm {
 
 func LoadLstm(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Lstm
-	layer.new("lstm")
-	layer.name = name
+	layer.new("lstm", name)
 	layer.featureSize = int(args["feature_size"])
 	layer.steps = int(args["steps"])
 	layer.hidden = int(args["hidden"])
@@ -53,12 +52,12 @@ func LoadLstm(name string, params map[string]*tensor.Tensor, args map[string]flo
 func (layer *Lstm) Forward(x, h, c *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor, *tensor.Tensor) {
 	inputShape := x.Shapes()
 	if h == nil {
-		h = tensor.Zeros(nil, consts.KFloat,
+		h = tensor.Zeros(consts.KFloat,
 			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
 			tensor.WithDevice(layer.device))
 	}
 	if c == nil {
-		c = tensor.Zeros(nil, consts.KFloat,
+		c = tensor.Zeros(consts.KFloat,
 			tensor.WithShapes(int64(inputShape[0]), int64(layer.hidden)),
 			tensor.WithDevice(layer.device))
 	}
@@ -87,7 +86,8 @@ func (layer *Lstm) Forward(x, h, c *tensor.Tensor) (*tensor.Tensor, *tensor.Tens
 		}
 	}
 	return result.Reshape(inputShape[0], inputShape[1], int64(layer.hidden)),
-		copyState(h), copyState(c)
+		copyState(layer.name+".hidden", h),
+		copyState(layer.name+".cell", c)
 }
 
 func (layer *Lstm) Params() map[string]*tensor.Tensor {

@@ -18,9 +18,9 @@ type Attention struct {
 	freqs *tensor.Tensor
 }
 
-func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCreateOption) *Attention {
+func NewAttention(name string, dims, heads int, dropout float64, rope bool, opts ...LayerCreateOption) *Attention {
 	var layer Attention
-	layer.new("attention", opts...)
+	layer.new("attention", name, opts...)
 	layer.dims = dims
 	layer.heads = heads
 	layer.dropout = dropout
@@ -29,7 +29,7 @@ func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCrea
 		panic("dims must be divisible by heads")
 	}
 	layer.w = layer.initW(int64(dims*3), int64(dims*3))
-	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(dims)))},
+	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	return &layer
@@ -37,14 +37,13 @@ func NewAttention(dims, heads int, dropout float64, rope bool, opts ...LayerCrea
 
 func LoadAttention(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Attention
-	layer.new("attention")
-	layer.name = name
+	layer.new("attention", name)
 	layer.dims = int(args["dims"])
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
 	layer.rope = args["rope"] != 0
 	layer.w = params["w"]
-	layer.scale = tensor.FromFloat32(nil, []float32{float32(math.Sqrt(float64(layer.dims)))},
+	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	return &layer
@@ -109,14 +108,14 @@ func buildFreqs(q *tensor.Tensor, dim, seq int64) *tensor.Tensor {
 	for i := int64(0); i < dim/2; i++ {
 		data[i] = float32(1 / math.Pow(10000, float64(2*i)/float64(dim)))
 	}
-	freqs := tensor.FromFloat32(q.Storage(), data,
+	freqs := tensor.FromFloat32(data,
 		tensor.WithShapes(dim/2),
 		tensor.WithDevice(q.DeviceType()))
 	data = make([]float32, seq)
 	for i := range data {
 		data[i] = float32(i)
 	}
-	t := tensor.FromFloat32(q.Storage(), data,
+	t := tensor.FromFloat32(data,
 		tensor.WithShapes(seq),
 		tensor.WithDevice(q.DeviceType()))
 	freqs = tensor.Outer(t, freqs)
@@ -124,7 +123,7 @@ func buildFreqs(q *tensor.Tensor, dim, seq int64) *tensor.Tensor {
 	for i := range data {
 		data[i] = 1
 	}
-	ones := tensor.FromFloat32(q.Storage(), data,
+	ones := tensor.FromFloat32(data,
 		tensor.WithShapes(freqs.Shapes()...),
 		tensor.WithDevice(q.DeviceType()))
 	return tensor.Polar(ones, freqs).View(1, seq, 1, -1)
@@ -136,14 +135,9 @@ func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tenso
 	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
 	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
 	if layer.freqs == nil || layer.freqs.Shapes()[1] < seq {
-		if layer.freqs != nil {
-			layer.freqs.Free()
-		}
 		layer.freqs = buildFreqs(q, qShapes[len(qShapes)-1], seq)
-		layer.freqs.UnFree()
 	}
 	freqs := layer.freqs.NArrow(1, 0, seq)
-	freqs.SetStorage(q.Storage()) // automatic free
 	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...)
 	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...)
 	return xq, xk

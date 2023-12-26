@@ -1,6 +1,8 @@
 package main
 
 import (
+	"runtime"
+
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
@@ -18,10 +20,10 @@ type model struct {
 
 func newModel(optimizer optimizer.Optimizer) *model {
 	return &model{
-		rnn: layer.NewRnn(featureSize, steps, hiddenSize, layer.WithDevice(device)),
-		// lstm:        layer.NewLstm(featureSize, steps, hiddenSize, layer.WithDevice(device)),
-		flatten:     layer.NewFlatten(),
-		outputLayer: layer.NewLinear(hiddenSize, 1, layer.WithDevice(device)),
+		rnn: layer.NewRnn("rnn", featureSize, steps, hiddenSize, layer.WithDevice(device)),
+		// lstm:        layer.NewLstm("lstm", featureSize, steps, hiddenSize, layer.WithDevice(device)),
+		flatten:     layer.NewFlatten("flatten"),
+		outputLayer: layer.NewLinear("output", steps*hiddenSize, 1, layer.WithDevice(device)),
 		optimizer:   optimizer,
 	}
 }
@@ -30,33 +32,16 @@ func (m *model) Forward(x *tensor.Tensor, train bool) *tensor.Tensor {
 	var output *tensor.Tensor
 	if m.rnn != nil {
 		var hidden *tensor.Tensor
-		old := m.hidden
 		output, hidden = m.rnn.Forward(x, m.hidden)
 		if train {
 			m.hidden = hidden
-			if old != nil {
-				old.Free()
-			}
-		} else {
-			hidden.Free()
 		}
 	} else {
 		var hidden, cell *tensor.Tensor
-		oldHidden := m.hidden
-		oldCell := m.cell
 		output, hidden, cell = m.lstm.Forward(x, m.hidden, m.cell)
 		if train {
 			m.hidden = hidden
 			m.cell = cell
-			if oldHidden != nil {
-				oldHidden.Free()
-			}
-			if oldCell != nil {
-				oldCell.Free()
-			}
-		} else {
-			hidden.Free()
-			cell.Free()
 		}
 	}
 	output = m.flatten.Forward(output)
@@ -69,6 +54,7 @@ func (m *model) Train(epoch int, x, y *tensor.Tensor) float32 {
 	l.Backward()
 	value := l.Value()
 	m.optimizer.Step(m.params())
+	runtime.GC()
 	return float32(value)
 }
 

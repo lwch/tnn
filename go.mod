@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/klauspost/compress v1.17.0
-	github.com/lwch/gotorch v1.6.4-0.20231224130151-24e22a24b830
+	github.com/lwch/gotorch v1.7.0
 	github.com/lwch/runtime v1.0.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0
@@ -23,6 +23,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/lwch/logging v1.1.3 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect

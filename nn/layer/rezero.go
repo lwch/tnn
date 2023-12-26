@@ -10,10 +10,10 @@ type ReZero struct {
 	scale *tensor.Tensor
 }
 
-func NewReZero(opts ...LayerCreateOption) *ReZero {
+func NewReZero(name string, opts ...LayerCreateOption) *ReZero {
 	var layer ReZero
-	layer.new("rezero", opts...)
-	layer.scale = tensor.FromFloat32(nil, []float32{0},
+	layer.new("rezero", name, opts...)
+	layer.scale = tensor.FromFloat32([]float32{0},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	layer.scale.SetRequiresGrad(true)
@@ -22,8 +22,7 @@ func NewReZero(opts ...LayerCreateOption) *ReZero {
 
 func LoadReZero(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer ReZero
-	layer.new("rezero")
-	layer.name = name
+	layer.new("rezero", name)
 	layer.scale = params["scale"]
 	return &layer
 }

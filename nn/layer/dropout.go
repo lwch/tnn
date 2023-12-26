@@ -9,17 +9,16 @@ type Dropout struct {
 	keep float64
 }
 
-func NewDropout(keep float64) *Dropout {
+func NewDropout(name string, keep float64) *Dropout {
 	var layer Dropout
-	layer.new("dropout")
+	layer.new("dropout", name)
 	layer.keep = keep
 	return &layer
 }
 
 func LoadDropout(name string, _ map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Dropout
-	layer.new("dropout")
-	layer.name = name
+	layer.new("dropout", name)
 	layer.keep = float64(args["keep"])
 	return &layer
 }

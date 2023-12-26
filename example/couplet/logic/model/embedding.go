@@ -16,7 +16,7 @@ import (
 func (m *Model) buildEmbedding(dir string) {
 	fmt.Println("build embedding...")
 	init := initializer.NewXavierUniform(1)
-	t := tensor.Zeros(nil, consts.KFloat, tensor.WithShapes(int64(len(m.vocabs)), embeddingDim))
+	t := tensor.Zeros(consts.KFloat, tensor.WithShapes(int64(len(m.vocabs)), embeddingDim))
 	init.Init(t)
 	data := t.Float32Value()
 	runtime.Assert(os.MkdirAll(filepath.Dir(dir), 0755))

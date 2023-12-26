@@ -16,9 +16,9 @@ type Conv1D struct {
 	w *tensor.Tensor
 }
 
-func NewConv1D(inC, outC, kernel int, opts ...LayerCreateOption) *Conv1D {
+func NewConv1D(name string, inC, outC, kernel int, opts ...LayerCreateOption) *Conv1D {
 	var layer Conv1D
-	layer.new("conv1d", opts...)
+	layer.new("conv1d", name, opts...)
 	layer.inC = inC
 	layer.outC = outC
 	layer.kernel = kernel
@@ -48,8 +48,7 @@ func (layer *Conv1D) SetGroups(groups int) {
 
 func LoadConv1D(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer Conv1D
-	layer.new("conv1d")
-	layer.name = name
+	layer.new("conv1d", name)
 	layer.inC = int(args["inC"])
 	layer.outC = int(args["outC"])
 	layer.kernel = int(args["kernel"])

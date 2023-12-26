@@ -1,6 +1,8 @@
 package main
 
 import (
+	"runtime"
+
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/tnn/nn/layer"
@@ -20,9 +22,9 @@ func newModel(optimizer optimizer.Optimizer) *model {
 	for i := 0; i < transformerSize; i++ {
 		m.attn = append(m.attn, newTransformer())
 	}
-	m.flatten = layer.NewFlatten()
+	m.flatten = layer.NewFlatten("flatten")
 	m.sigmoid = activation.NewSigmoid()
-	m.outputLayer = layer.NewLinear(unitSize, 1, layer.WithDevice(device))
+	m.outputLayer = layer.NewLinear("output", unitSize, 1, layer.WithDevice(device))
 	m.optimizer = optimizer
 	return &m
 }
@@ -42,6 +44,7 @@ func (m *model) Train(x, y *tensor.Tensor) {
 	pred := m.Forward(x, true)
 	l := lossFunc(pred, y)
 	l.Backward()
+	runtime.GC()
 }
 
 func (m *model) Apply() {

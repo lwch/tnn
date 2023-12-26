@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/lwch/gotorch/loss"
-	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
@@ -27,7 +26,6 @@ const (
 )
 
 var lossFunc = loss.NewCrossEntropy
-var storage = mmgr.New()
 
 // Model 模型
 type Model struct {
@@ -61,8 +59,7 @@ func (m *Model) build() {
 		m.attn = append(m.attn, newTransformer(i))
 	}
 	m.relu = activation.NewReLU()
-	m.output = layer.NewLinear(embeddingDim, len(m.vocabs), layer.WithDevice(device))
-	m.output.SetName("output")
+	m.output = layer.NewLinear("output", embeddingDim, len(m.vocabs), layer.WithDevice(device))
 }
 
 func (m *Model) params() []*tensor.Tensor {
@@ -126,7 +123,7 @@ func init() {
 			data[start+i*2+1] = float32(math.Cos(n))
 		}
 	}
-	positionEncoding = tensor.FromFloat32(nil, data,
+	positionEncoding = tensor.FromFloat32(data,
 		tensor.WithShapes(1, paddingSize, embeddingDim),
 		tensor.WithDevice(device))
 }

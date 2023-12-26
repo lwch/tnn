@@ -8,7 +8,7 @@ import (
 
 func TestSave(t *testing.T) {
 	var net Net
-	net.Add(layer.NewLinear(2, 3))
+	net.Add(layer.NewLinear("linear", 2, 3))
 	err := net.Save("test.model")
 	if err != nil {
 		t.Fatal(err)

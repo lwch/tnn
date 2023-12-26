@@ -12,7 +12,6 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/lwch/gotorch/consts"
-	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
 	"github.com/lwch/tnn/internal/pb"
@@ -226,12 +225,12 @@ func (n *Net) readSpec(r *zip.Reader) (*pb.Net, error) {
 
 func buildParam[T uint8 | int8 | int16 | uint16 | int32 | int64 |
 	float32 | float64 | bool](r io.Reader, cnt int64, shapes []int64, device consts.DeviceType,
-	fn func(s *mmgr.Storage, data []T, opts ...tensor.Option) *tensor.Tensor) (*tensor.Tensor, error) {
+	fn func(data []T, opts ...tensor.Option) *tensor.Tensor) (*tensor.Tensor, error) {
 	data := make([]T, cnt)
 	if err := binary.Read(r, binary.BigEndian, data); err != nil {
 		return nil, err
 	}
-	t := fn(nil, data,
+	t := fn(data,
 		tensor.WithShapes(shapes...),
 		tensor.WithDevice(device))
 	t.SetRequiresGrad(true)
@@ -298,7 +297,8 @@ func (n *Net) ReadFrom(r io.ReaderAt, size int64) (int64, error) {
 			defer wg.Done()
 			params := make(map[string]*tensor.Tensor)
 			for _, param := range layers[i].GetParams() {
-				params[param.GetName()], err = n.loadParam(zr, param.GetFile(),
+				params[param.GetName()], err = n.loadParam(zr,
+					param.GetFile(),
 					consts.ScalarType(param.GetType()),
 					param.GetElemCount(),
 					param.GetShapes())

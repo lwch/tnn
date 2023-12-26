@@ -11,7 +11,6 @@ import (
 type Layer interface {
 	Params() map[string]*tensor.Tensor
 	Class() string
-	SetName(name string)
 	Name() string
 	Args() map[string]float32
 	Freeze()
@@ -39,8 +38,9 @@ func WithDevice(device consts.DeviceType) LayerCreateOption {
 	}
 }
 
-func (b *base) new(class string, opts ...LayerCreateOption) {
+func (b *base) new(class, name string, opts ...LayerCreateOption) {
 	b.class = class
+	b.name = name
 	b.device = consts.KCPU
 	b.init = initializer.NewXavierUniform(1)
 	for _, opt := range opts {
@@ -50,10 +50,6 @@ func (b *base) new(class string, opts ...LayerCreateOption) {
 
 func (b *base) Class() string {
 	return b.class
-}
-
-func (b *base) SetName(name string) {
-	b.name = name
 }
 
 func (b *base) Name() string {
@@ -68,18 +64,8 @@ func (b *base) Args() map[string]float32 {
 	return nil
 }
 
-func (b *base) Ones(size int64) *tensor.Tensor {
-	data := make([]float32, size)
-	for i := range data {
-		data[i] = 1
-	}
-	return tensor.FromFloat32(nil, data,
-		tensor.WithShapes(int64(size)),
-		tensor.WithDevice(b.device))
-}
-
 func (b *base) initW(shapes ...int64) *tensor.Tensor {
-	t := tensor.Zeros(nil, consts.KFloat,
+	t := tensor.Zeros(consts.KFloat,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	b.init.Init(t)
@@ -96,7 +82,7 @@ func (b *base) initB(shapes ...int64) *tensor.Tensor {
 	for i := 0; i < len(data); i++ {
 		data[i] = float32(rand.NormFloat64())
 	}
-	t := tensor.FromFloat32(nil, data,
+	t := tensor.FromFloat32(data,
 		tensor.WithDevice(b.device),
 		tensor.WithShapes(shapes...))
 	t.SetRequiresGrad(true)

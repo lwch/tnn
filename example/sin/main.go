@@ -6,7 +6,6 @@ import (
 
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/loss"
-	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
@@ -26,7 +25,6 @@ const hiddenSize = 64
 const device = consts.KCPU
 
 var lossFunc = loss.NewMse
-var storage = mmgr.New()
 
 var points []float32
 
@@ -50,7 +48,6 @@ func main() {
 
 	var real, predict plotter.XYs
 	for i := 0; i < epoch; i++ {
-		storage.GC()
 		x, y, _ := getBatch(points, i+batchSize)
 		loss := m.Train(i, x, y)
 		x, _, ys := getBatch(points, i+batchSize)
@@ -106,10 +103,10 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor, []float3
 	// 	copy(x[j*unitSize:(j+1)*unitSize], dx)
 	// 	copy(y[j*1:(j+1)*1], dy)
 	// })
-	xs := tensor.FromFloat32(storage, x,
+	xs := tensor.FromFloat32(x,
 		tensor.WithShapes(batchSize, steps, featureSize),
 		tensor.WithDevice(device))
-	ys := tensor.FromFloat32(storage, y,
+	ys := tensor.FromFloat32(y,
 		tensor.WithShapes(batchSize, 1),
 		tensor.WithDevice(device))
 	return xs, ys, y

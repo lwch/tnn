@@ -5,11 +5,9 @@ import (
 	"math"
 	"math/rand"
 	rt "runtime"
-	"sync"
 
 	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/loss"
-	"github.com/lwch/gotorch/mmgr"
 	"github.com/lwch/gotorch/optimizer"
 	"github.com/lwch/gotorch/tensor"
 	"github.com/lwch/runtime"
@@ -29,7 +27,6 @@ const transformerSize = 2
 const device = consts.KCPU
 
 var lossFunc = loss.NewMse
-var storage = mmgr.New()
 
 func main() {
 	var points []float32
@@ -54,16 +51,10 @@ func main() {
 	// trainBatchSize = 1
 
 	trainBatch := func(i int) {
-		var wg sync.WaitGroup
-		wg.Add(miniBatchSize)
 		for j := 0; j < miniBatchSize; j++ {
-			go func(idx int) {
-				defer wg.Done()
-				x, y := getBatch(points, idx)
-				m.Train(x, y)
-			}(i + j)
+			x, y := getBatch(points, i+j)
+			m.Train(x, y)
 		}
-		wg.Wait()
 	}
 
 	var real, predict plotter.XYs
@@ -81,7 +72,6 @@ func main() {
 		fmt.Printf("Epoch: %d, Loss: %e, Accuracy: %.02f%%\n", i, m.Loss(x, y), acc)
 		// fmt.Println(y.Value())
 		// fmt.Println(pred.Value())
-		storage.GC()
 	}
 
 	lReal, err := plotter.NewLine(real)
@@ -123,10 +113,10 @@ func getBatch(points []float32, i int) (*tensor.Tensor, *tensor.Tensor) {
 		copy(x[j*unitSize:(j+1)*unitSize], dx)
 		copy(y[j*1:(j+1)*1], dy)
 	})
-	return tensor.FromFloat32(storage, x,
+	return tensor.FromFloat32(x,
 			tensor.WithShapes(batchSize, steps, dims),
 			tensor.WithDevice(device)),
-		tensor.FromFloat32(storage, y, tensor.WithShapes(batchSize, 1),
+		tensor.FromFloat32(y, tensor.WithShapes(batchSize, 1),
 			tensor.WithDevice(device))
 }
 
