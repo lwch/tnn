@@ -47,6 +47,9 @@ func LoadAttention(name string, params map[string]*tensor.Tensor, args map[strin
 	layer.dropout = float64(args["dropout"])
 	layer.rope = args["rope"] != 0
 	layer.ropeBase = int64(args["rope_base"])
+	if layer.ropeBase <= 0 {
+		layer.ropeBase = 10000
+	}
 	layer.w = params["w"]
 	layer.wo = params["wo"]
 	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
