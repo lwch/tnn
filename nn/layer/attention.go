@@ -183,8 +183,10 @@ func (layer *Attention) Args() map[string]float32 {
 
 func (layer *Attention) Freeze() {
 	layer.w.SetRequiresGrad(false)
+	layer.wo.SetRequiresGrad(false)
 }
 
 func (layer *Attention) Unfreeze() {
 	layer.w.SetRequiresGrad(true)
+	layer.wo.SetRequiresGrad(false)
 }
