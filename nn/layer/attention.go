@@ -14,7 +14,6 @@ type Attention struct {
 	ropeBase    int64
 	// params
 	w     *tensor.Tensor
-	wo    *tensor.Tensor
 	scale *tensor.Tensor
 	// runtime
 	freqs *tensor.Tensor
@@ -32,7 +31,6 @@ func NewAttention(name string, dims, heads int, dropout float64, rope bool, opts
 		panic("dims must be divisible by heads")
 	}
 	layer.w = layer.initW(int64(dims*3), int64(dims*3))
-	layer.wo = layer.initW(int64(dims), int64(dims))
 	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
@@ -51,7 +49,6 @@ func LoadAttention(name string, params map[string]*tensor.Tensor, args map[strin
 		layer.ropeBase = 10000
 	}
 	layer.w = params["w"]
-	layer.wo = params["wo"]
 	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
@@ -88,7 +85,7 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bo
 	y := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, isCausal) // (batch, heads, seq, dims/heads)
 	y = y.Transpose(1, 2)                                                   // (batch, seq, heads, dims/heads)
 	y = y.Reshape(-1, inputShape[1], int64(layer.dims))                     // (batch, seq, dims)
-	return y.MatMul(layer.wo)
+	return y
 }
 
 func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool) *tensor.Tensor {
@@ -162,8 +159,7 @@ func (layer *Attention) split(x *tensor.Tensor) *tensor.Tensor {
 
 func (layer *Attention) Params() map[string]*tensor.Tensor {
 	return map[string]*tensor.Tensor{
-		"w":  layer.w,
-		"wo": layer.wo,
+		"w": layer.w,
 	}
 }
 
@@ -183,10 +179,8 @@ func (layer *Attention) Args() map[string]float32 {
 
 func (layer *Attention) Freeze() {
 	layer.w.SetRequiresGrad(false)
-	layer.wo.SetRequiresGrad(false)
 }
 
 func (layer *Attention) Unfreeze() {
 	layer.w.SetRequiresGrad(true)
-	layer.wo.SetRequiresGrad(false)
 }
