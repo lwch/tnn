@@ -59,6 +59,10 @@ func LoadAttention1(name string, params map[string]*tensor.Tensor, args map[stri
 	return &layer
 }
 
+func (layer *Attention1) SetROPEBase(n int64) {
+	layer.ropeBase = n
+}
+
 func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) *tensor.Tensor {
 	if mask != nil && isCausal {
 		panic("unexpected mask")
