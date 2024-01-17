@@ -11,6 +11,7 @@ type Attention struct {
 	dims, heads int
 	dropout     float64
 	rope        bool
+	ropeBase    int64
 	// params
 	w     *tensor.Tensor
 	wo    *tensor.Tensor
@@ -26,6 +27,7 @@ func NewAttention(name string, dims, heads int, dropout float64, rope bool, opts
 	layer.heads = heads
 	layer.dropout = dropout
 	layer.rope = rope
+	layer.ropeBase = 10000
 	if layer.dims%layer.heads != 0 {
 		panic("dims must be divisible by heads")
 	}
@@ -44,12 +46,17 @@ func LoadAttention(name string, params map[string]*tensor.Tensor, args map[strin
 	layer.heads = int(args["heads"])
 	layer.dropout = float64(args["dropout"])
 	layer.rope = args["rope"] != 0
+	layer.ropeBase = int64(args["rope_base"])
 	layer.w = params["w"]
 	layer.wo = params["wo"]
 	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
 		tensor.WithShapes(1),
 		tensor.WithDevice(layer.device))
 	return &layer
+}
+
+func (layer *Attention) SetROPEBase(n int64) {
+	layer.ropeBase = n
 }
 
 func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bool) *tensor.Tensor {
@@ -106,10 +113,10 @@ func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool
 	return score.Softmax(-1) // (batch, heads, seq, dims/heads)
 }
 
-func buildFreqs(q *tensor.Tensor, dim, seq int64) *tensor.Tensor {
+func buildFreqs(q *tensor.Tensor, base, dim, seq int64) *tensor.Tensor {
 	data := make([]float32, dim/2)
 	for i := int64(0); i < dim/2; i++ {
-		data[i] = float32(1 / math.Pow(10000, float64(2*i)/float64(dim)))
+		data[i] = float32(1 / math.Pow(float64(base), float64(2*i)/float64(dim)))
 	}
 	freqs := tensor.FromFloat32(data,
 		tensor.WithShapes(dim/2),
@@ -138,7 +145,7 @@ func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tenso
 	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
 	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
 	if layer.freqs == nil || layer.freqs.Shapes()[1] < seq {
-		layer.freqs = buildFreqs(q, qShapes[len(qShapes)-1], seq)
+		layer.freqs = buildFreqs(q, layer.ropeBase, qShapes[len(qShapes)-1], seq)
 	}
 	freqs := layer.freqs.NArrow(1, 0, seq)
 	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...)
@@ -163,10 +170,11 @@ func (layer *Attention) Args() map[string]float32 {
 		rope = 1
 	}
 	return map[string]float32{
-		"dims":    float32(layer.dims),
-		"heads":   float32(layer.heads),
-		"dropout": float32(layer.dropout),
-		"rope":    rope,
+		"dims":      float32(layer.dims),
+		"heads":     float32(layer.heads),
+		"dropout":   float32(layer.dropout),
+		"rope":      rope,
+		"rope_base": float32(layer.ropeBase),
 	}
 }
 
