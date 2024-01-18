@@ -39,7 +39,7 @@ func LoadRMSNorm(name string, params map[string]*tensor.Tensor, args map[string]
 }
 
 func (l *RMSNorm) norm(x *tensor.Tensor) *tensor.Tensor {
-	return x.Mul(x.Pow(2).Mean(-1, true).Add(l.eps).RSqrt())
+	return x.Mul(x.Pow(2).Mean(-1, true).Add(l.eps.ToDevice(x.DeviceType())).RSqrt())
 }
 
 func (layer *RMSNorm) Forward(x *tensor.Tensor) *tensor.Tensor {
