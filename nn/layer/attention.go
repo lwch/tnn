@@ -3,6 +3,7 @@ package layer
 import (
 	"math"
 
+	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -142,14 +143,14 @@ func buildFreqs(q *tensor.Tensor, base, dim, seq int64) *tensor.Tensor {
 func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tensor, *tensor.Tensor) {
 	qShapes := q.Shapes()
 	kShapes := k.Shapes()
-	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ViewAsComplex()
-	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ViewAsComplex()
+	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ToDevice(consts.KCPU).ViewAsComplex()
+	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ToDevice(consts.KCPU).ViewAsComplex()
 	if layer.freqs == nil || layer.freqs.Shapes()[1] < seq {
-		layer.freqs = buildFreqs(q, layer.ropeBase, qShapes[len(qShapes)-1], seq)
+		layer.freqs = buildFreqs(xq, layer.ropeBase, qShapes[len(qShapes)-1], seq)
 	}
 	freqs := layer.freqs.NArrow(1, 0, seq)
-	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...)
-	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...)
+	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...).ToDevice(q.DeviceType())
+	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...).ToDevice(k.DeviceType())
 	return xq, xk
 }
 
