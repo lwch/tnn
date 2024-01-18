@@ -158,6 +158,7 @@ func (n *Net) WriteTo(w io.Writer) (int64, error) {
 				if err != nil {
 					return err
 				}
+				param = param.ToDevice(consts.KCPU)
 				switch param.ScalarType() {
 				case consts.KUint8:
 					return binary.Write(f, binary.BigEndian, param.Uint8Value())
