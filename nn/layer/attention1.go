@@ -61,14 +61,8 @@ func (layer *Attention1) Forward(q, k, v, mask *tensor.Tensor, isCausal, train b
 		panic("unexpected mask")
 	}
 	inputShape := q.Shapes()
-	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1) // (batch, seq, dims*3)
-	if layer.paramType == consts.KHalf {
-		x = x.ToScalarType(consts.KFloat).
-			MatMul(layer.w.ToScalarType(consts.KFloat).Transpose(0, 1)).
-			ToScalarType(consts.KHalf) // (batch, seq, dims*3)
-	} else {
-		x = x.MatMul(layer.w.Transpose(0, 1)) // (batch, seq, dims*3)
-	}
+	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1)           // (batch, seq, dims*3)
+	x = x.MatMul(layer.w.Transpose(0, 1))                    // (batch, seq, dims*3)
 	q = x.NArrow(-1, 0, int64(layer.dims))                   // (batch, seq, dims)
 	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims))   // (batch, seq, dims)
 	v = x.NArrow(-1, int64(layer.dims*2), int64(layer.dims)) // (batch, seq, dims)
@@ -99,14 +93,8 @@ func (layer *Attention1) Score(q, k, v, mask *tensor.Tensor, isCausal, train boo
 	if mask != nil && isCausal {
 		panic("unexpected mask")
 	}
-	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1) // (batch, seq, dims*3)
-	if layer.paramType == consts.KHalf {
-		x = x.ToScalarType(consts.KFloat).
-			MatMul(layer.w.ToScalarType(consts.KFloat).Transpose(0, 1)).
-			ToScalarType(consts.KHalf) // (batch, seq, dims*3)
-	} else {
-		x = x.MatMul(layer.w.Transpose(0, 1)) // (batch, seq, dims*3)
-	}
+	x := tensor.Cat([]*tensor.Tensor{q, k, v}, -1)         // (batch, seq, dims*3)
+	x = x.MatMul(layer.w)                                  // (batch, seq, dims*3)
 	q = x.NArrow(-1, 0, int64(layer.dims))                 // (batch, seq, dims)
 	k = x.NArrow(-1, int64(layer.dims), int64(layer.dims)) // (batch, seq, dims)
 	q = layer.split(q)                                     // (batch, heads, seq, dims/heads)
