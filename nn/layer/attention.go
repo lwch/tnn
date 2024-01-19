@@ -85,9 +85,18 @@ func (layer *Attention) Forward(q, k, v, mask *tensor.Tensor, isCausal, train bo
 	if !train {
 		dropout = 0
 	}
-	y := tensor.ScaledDotProductAttention(q, k, v, mask, dropout, isCausal) // (batch, heads, seq, dims/heads)
-	y = y.Transpose(1, 2)                                                   // (batch, seq, heads, dims/heads)
-	y = y.Reshape(-1, inputShape[1], int64(layer.dims))                     // (batch, seq, dims)
+	var y *tensor.Tensor
+	if layer.paramType == consts.KHalf {
+		q = q.ToScalarType(consts.KFloat)
+		k = k.ToScalarType(consts.KFloat)
+		v = v.ToScalarType(consts.KFloat)
+		y = tensor.ScaledDotProductAttention(q, k, v, mask, dropout, isCausal) // (batch, heads, seq, dims/heads)
+		y = y.ToScalarType(consts.KHalf)
+	} else {
+		y = tensor.ScaledDotProductAttention(q, k, v, mask, dropout, isCausal) // (batch, heads, seq, dims/heads)
+	}
+	y = y.Transpose(1, 2)                               // (batch, seq, heads, dims/heads)
+	y = y.Reshape(-1, inputShape[1], int64(layer.dims)) // (batch, seq, dims)
 	return y
 }
 
