@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/lwch/gotorch/consts"
 	"github.com/lwch/gotorch/tensor"
 )
 
@@ -29,11 +28,6 @@ func LoadLinear(name string, params map[string]*tensor.Tensor, args map[string]f
 }
 
 func (layer *Linear) Forward(x *tensor.Tensor) *tensor.Tensor {
-	if layer.paramType == consts.KHalf {
-		return x.ToScalarType(consts.KFloat).
-			MatMul(layer.w.ToScalarType(consts.KFloat).Transpose(0, 1)).
-			ToScalarType(consts.KHalf)
-	}
 	return x.MatMul(layer.w.Transpose(0, 1))
 }
 
