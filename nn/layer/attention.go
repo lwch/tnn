@@ -110,21 +110,21 @@ func (layer *Attention) Score(q, k, v, mask *tensor.Tensor, isCausal, train bool
 	return score.Softmax(-1) // (batch, heads, seq, dims/heads)
 }
 
-func buildFreqs(q *tensor.Tensor, base, dim, seq int64) *tensor.Tensor {
+func buildFreqs(device consts.DeviceType, base, dim, seq int64) *tensor.Tensor {
 	data := make([]float32, dim/2)
 	for i := int64(0); i < dim/2; i++ {
 		data[i] = float32(1 / math.Pow(float64(base), float64(2*i)/float64(dim)))
 	}
 	freqs := tensor.FromFloat32(data,
 		tensor.WithShapes(dim/2),
-		tensor.WithDevice(q.DeviceType()))
+		tensor.WithDevice(device))
 	data = make([]float32, seq)
 	for i := range data {
 		data[i] = float32(i)
 	}
 	t := tensor.FromFloat32(data,
 		tensor.WithShapes(seq),
-		tensor.WithDevice(q.DeviceType()))
+		tensor.WithDevice(device))
 	freqs = tensor.Outer(t, freqs)
 	data = make([]float32, freqs.ElemCount())
 	for i := range data {
@@ -132,21 +132,27 @@ func buildFreqs(q *tensor.Tensor, base, dim, seq int64) *tensor.Tensor {
 	}
 	ones := tensor.FromFloat32(data,
 		tensor.WithShapes(freqs.Shapes()...),
-		tensor.WithDevice(q.DeviceType()))
+		tensor.WithDevice(device))
 	return tensor.Polar(ones, freqs).View(1, seq, 1, -1)
 }
 
 func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tensor, *tensor.Tensor) {
 	qShapes := q.Shapes()
 	kShapes := k.Shapes()
-	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).ToDevice(consts.KCPU).ViewAsComplex()
-	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).ToDevice(consts.KCPU).ViewAsComplex()
+	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).
+		ToDevice(consts.KCPU).ToScalarType(consts.KFloat).
+		ViewAsComplex()
+	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).
+		ToDevice(consts.KCPU).ToScalarType(consts.KFloat).
+		ViewAsComplex()
 	if layer.freqs == nil || layer.freqs.Shapes()[1] < seq {
-		layer.freqs = buildFreqs(xq, layer.ropeBase, qShapes[len(qShapes)-1], seq)
+		layer.freqs = buildFreqs(q.DeviceType(), layer.ropeBase, qShapes[len(qShapes)-1], seq)
 	}
 	freqs := layer.freqs.NArrow(1, 0, seq)
-	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...).ToDevice(q.DeviceType())
-	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...).ToDevice(k.DeviceType())
+	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...).
+		ToDevice(q.DeviceType()).ToScalarType(q.ScalarType())
+	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...).
+		ToDevice(k.DeviceType()).ToScalarType(k.ScalarType())
 	return xq, xk
 }
 
