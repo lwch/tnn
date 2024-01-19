@@ -14,16 +14,8 @@ type LayerNorm struct {
 func NewLayerNorm(name string, dims int64, opts ...LayerCreateOption) *LayerNorm {
 	var layer LayerNorm
 	layer.new("layer_norm", name, opts...)
-	data := make([]float32, dims)
-	for i := range data {
-		data[i] = 1
-	}
-	layer.eps = tensor.FromFloat32([]float32{1e-9},
-		tensor.WithShapes(1),
-		tensor.WithDevice(layer.device))
-	layer.a = tensor.FromFloat32(data,
-		tensor.WithShapes(dims),
-		tensor.WithDevice(layer.device))
+	layer.eps = layer.initN(1e-9)
+	layer.a = layer.ones(dims)
 	layer.a.SetRequiresGrad(true)
 	return &layer
 }
@@ -31,9 +23,7 @@ func NewLayerNorm(name string, dims int64, opts ...LayerCreateOption) *LayerNorm
 func LoadLayerNorm(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer LayerNorm
 	layer.new("layer_norm", name)
-	layer.eps = tensor.FromFloat32([]float32{1e-9},
-		tensor.WithShapes(1),
-		tensor.WithDevice(layer.device))
+	layer.eps = layer.initN(1e-9)
 	layer.a = params["a"]
 	return &layer
 }

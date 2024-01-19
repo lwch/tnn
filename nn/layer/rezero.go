@@ -13,9 +13,7 @@ type ReZero struct {
 func NewReZero(name string, opts ...LayerCreateOption) *ReZero {
 	var layer ReZero
 	layer.new("rezero", name, opts...)
-	layer.scale = tensor.FromFloat32([]float32{0},
-		tensor.WithShapes(1),
-		tensor.WithDevice(layer.device))
+	layer.scale = layer.initN(0)
 	layer.scale.SetRequiresGrad(true)
 	return &layer
 }

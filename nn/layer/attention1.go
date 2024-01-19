@@ -32,9 +32,7 @@ func NewAttention1(name string, dims, heads int, dropout float64, rope bool, opt
 		panic("dims must be divisible by heads")
 	}
 	layer.w = layer.initW(int64(dims*3), int64(dims*3))
-	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(dims)))},
-		tensor.WithShapes(1),
-		tensor.WithDevice(layer.device))
+	layer.scale = layer.initN(math.Sqrt(float64(dims)))
 	return &layer
 }
 
@@ -50,9 +48,7 @@ func LoadAttention1(name string, params map[string]*tensor.Tensor, args map[stri
 		layer.ropeBase = 10000
 	}
 	layer.w = params["w"]
-	layer.scale = tensor.FromFloat32([]float32{float32(math.Sqrt(float64(layer.dims)))},
-		tensor.WithShapes(1),
-		tensor.WithDevice(layer.device))
+	layer.scale = layer.initN(math.Sqrt(float64(layer.dims)))
 	return &layer
 }
 
