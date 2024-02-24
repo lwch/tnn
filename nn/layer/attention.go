@@ -149,9 +149,9 @@ func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tenso
 		layer.freqs = buildFreqs(q.DeviceType(), layer.ropeBase, qShapes[len(qShapes)-1], seq)
 	}
 	freqs := layer.freqs.NArrow(1, 0, seq).ToDevice(consts.KCPU)
-	xq = xq.Mul(freqs).ViewAsReal().View(qShapes...).
+	xq = xq.Mul(freqs).ViewAsReal().Flatten(3, -1).
 		ToDevice(q.DeviceType()).ToScalarType(q.ScalarType())
-	xk = xk.Mul(freqs).ViewAsReal().View(kShapes...).
+	xk = xk.Mul(freqs).ViewAsReal().Flatten(3, -1).
 		ToDevice(k.DeviceType()).ToScalarType(k.ScalarType())
 	return xq, xk
 }
