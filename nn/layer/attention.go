@@ -140,15 +140,22 @@ func (layer *Attention) applyROPE(q, k *tensor.Tensor, seq int64) (*tensor.Tenso
 	qShapes := q.Shapes()
 	kShapes := k.Shapes()
 	xq := q.Reshape(append(qShapes[:len(qShapes)-1], -1, 2)...).
-		ToDevice(consts.KCPU).ToScalarType(consts.KFloat).
-		ViewAsComplex()
+		ToScalarType(consts.KFloat)
 	xk := k.Reshape(append(kShapes[:len(kShapes)-1], -1, 2)...).
-		ToDevice(consts.KCPU).ToScalarType(consts.KFloat).
-		ViewAsComplex()
+		ToScalarType(consts.KFloat)
+	if layer.device == consts.KMPS {
+		xq = xq.ToDevice(consts.KCPU)
+		xk = xk.ToDevice(consts.KCPU)
+	}
+	xq = xq.ViewAsComplex()
+	xk = xk.ViewAsComplex()
 	if layer.freqs == nil || layer.freqs.Shapes()[1] < seq {
 		layer.freqs = buildFreqs(q.DeviceType(), layer.ropeBase, qShapes[len(qShapes)-1], seq)
 	}
-	freqs := layer.freqs.NArrow(1, 0, seq).ToDevice(consts.KCPU)
+	freqs := layer.freqs.NArrow(1, 0, seq)
+	if layer.device == consts.KMPS {
+		freqs = freqs.ToDevice(consts.KCPU)
+	}
 	xq = xq.Mul(freqs).ViewAsReal().Flatten(3, -1).
 		ToDevice(q.DeviceType()).ToScalarType(q.ScalarType())
 	xk = xk.Mul(freqs).ViewAsReal().Flatten(3, -1).
