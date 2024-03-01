@@ -23,6 +23,7 @@ func NewRMSNorm(name string, dims int64, opts ...LayerCreateOption) *RMSNorm {
 func LoadRMSNorm(name string, params map[string]*tensor.Tensor, args map[string]float32) Layer {
 	var layer RMSNorm
 	layer.new("rms_norm", name)
+	layer.paramType = params["a"].ScalarType()
 	layer.eps = layer.initN(1e-9)
 	layer.a = params["a"]
 	return &layer
