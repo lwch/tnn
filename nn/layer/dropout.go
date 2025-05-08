@@ -46,3 +46,6 @@ func (layer *Dropout) Clone() Layer {
 		keep: layer.keep,
 	}
 }
+
+func (layer *Dropout) Update(_ []*tensor.Tensor) {
+}

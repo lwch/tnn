@@ -93,3 +93,6 @@ func (layer *MaxPool1D) Clone() Layer {
 		ceil:     layer.ceil,
 	}
 }
+
+func (layer *MaxPool1D) Update(_ []*tensor.Tensor) {
+}

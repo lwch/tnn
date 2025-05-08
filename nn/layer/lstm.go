@@ -171,3 +171,14 @@ func (layer *Lstm) Clone() Layer {
 		Bo:          layer.Bo.Clone(),
 	}
 }
+
+func (layer *Lstm) Update(params []*tensor.Tensor) {
+	layer.Wi = params[0]
+	layer.Wf = params[1]
+	layer.Wg = params[2]
+	layer.Wo = params[3]
+	layer.Bi = params[4]
+	layer.Bf = params[5]
+	layer.Bg = params[6]
+	layer.Bo = params[7]
+}

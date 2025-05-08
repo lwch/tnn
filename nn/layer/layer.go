@@ -12,6 +12,7 @@ import (
 
 type Layer interface {
 	Params() []*tensor.Tensor
+	Update([]*tensor.Tensor)
 	Class() string
 	Name() string
 	Args() map[string]float32

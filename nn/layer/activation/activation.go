@@ -61,3 +61,7 @@ func (layer *base) clone() *base {
 		name:  layer.name,
 	}
 }
+
+func (*base) Update([]*tensor.Tensor) {
+	// activation have no params
+}

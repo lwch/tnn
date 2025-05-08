@@ -67,3 +67,7 @@ func (layer *Linear) Clone() Layer {
 		w:      layer.w.Clone(),
 	}
 }
+
+func (layer *Linear) Update(params []*tensor.Tensor) {
+	layer.w = params[0]
+}

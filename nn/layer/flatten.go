@@ -41,3 +41,6 @@ func (layer *Flatten) Clone() Layer {
 		base: layer.base.clone(),
 	}
 }
+
+func (layer *Flatten) Update(_ []*tensor.Tensor) {
+}

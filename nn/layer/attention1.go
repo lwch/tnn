@@ -213,3 +213,9 @@ func (layer *Attention1) Clone() Layer {
 		scale:   layer.scale.Clone(),
 	}
 }
+
+func (layer *Attention1) Update(params []*tensor.Tensor) {
+	layer.q = params[0]
+	layer.k = params[1]
+	layer.v = params[2]
+}

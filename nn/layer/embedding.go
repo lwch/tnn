@@ -81,3 +81,7 @@ func (layer *Embedding) Clone() Layer {
 		w:       layer.w.Clone(),
 	}
 }
+
+func (layer *Embedding) Update(params []*tensor.Tensor) {
+	layer.w = params[0]
+}

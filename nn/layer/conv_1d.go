@@ -116,3 +116,7 @@ func (layer *Conv1D) Clone() Layer {
 		w:        layer.w.Clone(),
 	}
 }
+
+func (layer *Conv1D) Update(params []*tensor.Tensor) {
+	layer.w = params[0]
+}

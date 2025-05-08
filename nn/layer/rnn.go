@@ -108,3 +108,8 @@ func (layer *Rnn) Clone() Layer {
 		b:           layer.b.Clone(),
 	}
 }
+
+func (layer *Rnn) Update(params []*tensor.Tensor) {
+	layer.w = params[0]
+	layer.b = params[1]
+}

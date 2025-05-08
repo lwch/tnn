@@ -130,3 +130,7 @@ func (layer *ConvTranspose2D) Clone() Layer {
 		w:             layer.w.Clone(),
 	}
 }
+
+func (layer *ConvTranspose2D) Update(params []*tensor.Tensor) {
+	layer.w = params[0]
+}

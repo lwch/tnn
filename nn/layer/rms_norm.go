@@ -68,3 +68,7 @@ func (layer *RMSNorm) Clone() Layer {
 		a:    layer.a.Clone(),
 	}
 }
+
+func (layer *RMSNorm) Update(params []*tensor.Tensor) {
+	layer.a = params[0]
+}

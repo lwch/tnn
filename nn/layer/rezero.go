@@ -63,3 +63,7 @@ func (layer *ReZero) Clone() Layer {
 		scale: layer.scale.Clone(),
 	}
 }
+
+func (layer *ReZero) Update(params []*tensor.Tensor) {
+	layer.scale = params[0]
+}
