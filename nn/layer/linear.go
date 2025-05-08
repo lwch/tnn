@@ -59,3 +59,11 @@ func (layer *Linear) ToScalarType(t consts.ScalarType) {
 func (layer *Linear) Reset() {
 	layer.w = layer.initW(layer.w.Shapes()...)
 }
+
+func (layer *Linear) Clone() Layer {
+	return &Linear{
+		base:   layer.base.clone(),
+		output: layer.output,
+		w:      layer.w.Clone(),
+	}
+}

@@ -105,3 +105,17 @@ func (layer *Conv2D) ToScalarType(t consts.ScalarType) {
 func (layer *Conv2D) Reset() {
 	layer.w = layer.initW(layer.w.Shapes()...)
 }
+
+func (layer *Conv2D) Clone() Layer {
+	return &Conv2D{
+		base:     layer.base.clone(),
+		inC:      layer.inC,
+		outC:     layer.outC,
+		kernel:   layer.kernel,
+		stride:   layer.stride,
+		padding:  layer.padding,
+		dilation: layer.dilation,
+		groups:   layer.groups,
+		w:        layer.w.Clone(),
+	}
+}

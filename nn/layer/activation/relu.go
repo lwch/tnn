@@ -25,3 +25,9 @@ func LoadRelu(name string, _ []*tensor.Tensor, _ map[string]float32) layer.Layer
 func (layer *ReLU) Forward(x *tensor.Tensor) *tensor.Tensor {
 	return x.Relu()
 }
+
+func (layer *ReLU) Clone() layer.Layer {
+	return &ReLU{
+		base: layer.base.clone(),
+	}
+}

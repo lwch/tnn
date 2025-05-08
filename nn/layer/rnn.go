@@ -97,3 +97,14 @@ func (layer *Rnn) Reset() {
 	layer.w = layer.initW(layer.w.Shapes()...)
 	layer.b = layer.initB(layer.b.Shapes()...)
 }
+
+func (layer *Rnn) Clone() Layer {
+	return &Rnn{
+		base:        layer.base.clone(),
+		featureSize: layer.featureSize,
+		steps:       layer.steps,
+		hidden:      layer.hidden,
+		w:           layer.w.Clone(),
+		b:           layer.b.Clone(),
+	}
+}

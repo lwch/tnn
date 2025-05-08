@@ -19,6 +19,7 @@ type Layer interface {
 	Unfreeze()
 	ToScalarType(t consts.ScalarType)
 	Reset()
+	Clone() Layer
 }
 
 type base struct {
@@ -190,4 +191,14 @@ func (b *base) Freeze() {
 
 func (b *base) Unfreeze() {
 	panic("not implemented")
+}
+
+func (b *base) clone() base {
+	return base{
+		init:      b.init,
+		name:      b.name,
+		class:     b.class,
+		device:    b.device,
+		paramType: b.paramType,
+	}
 }

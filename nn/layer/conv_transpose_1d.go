@@ -111,3 +111,18 @@ func (layer *ConvTranspose1D) ToScalarType(t consts.ScalarType) {
 func (layer *ConvTranspose1D) Reset() {
 	layer.w = layer.initW(layer.w.Shapes()...)
 }
+
+func (layer *ConvTranspose1D) Clone() Layer {
+	return &ConvTranspose1D{
+		base:          layer.base.clone(),
+		inC:           layer.inC,
+		outC:          layer.outC,
+		kernel:        layer.kernel,
+		stride:        layer.stride,
+		padding:       layer.padding,
+		outputPadding: layer.outputPadding,
+		dilation:      layer.dilation,
+		groups:        layer.groups,
+		w:             layer.w.Clone(),
+	}
+}

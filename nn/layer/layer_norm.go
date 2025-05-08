@@ -60,3 +60,11 @@ func (layer *LayerNorm) Reset() {
 	layer.a = layer.ones(layer.a.Shapes()...)
 	layer.a.SetRequiresGrad(true)
 }
+
+func (layer *LayerNorm) Clone() Layer {
+	return &LayerNorm{
+		base: layer.base.clone(),
+		eps:  layer.eps.Clone(),
+		a:    layer.a.Clone(),
+	}
+}

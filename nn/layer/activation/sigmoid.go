@@ -25,3 +25,9 @@ func LoadSigmoid(name string, _ []*tensor.Tensor, _ map[string]float32) layer.La
 func (layer *Sigmoid) Forward(x *tensor.Tensor) *tensor.Tensor {
 	return x.Sigmoid()
 }
+
+func (layer *Sigmoid) Clone() layer.Layer {
+	return &Sigmoid{
+		base: layer.base.clone(),
+	}
+}

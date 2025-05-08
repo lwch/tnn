@@ -71,3 +71,13 @@ func (layer *Embedding) ToScalarType(t consts.ScalarType) {
 func (layer *Embedding) Reset() {
 	layer.w = layer.initW(layer.w.Shapes()...)
 }
+
+func (layer *Embedding) Clone() Layer {
+	return &Embedding{
+		base:    layer.base.clone(),
+		num:     layer.num,
+		dim:     layer.dim,
+		padding: layer.padding,
+		w:       layer.w.Clone(),
+	}
+}

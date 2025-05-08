@@ -82,3 +82,14 @@ func (layer *MaxPool1D) ToScalarType(t consts.ScalarType) {
 
 func (layer *MaxPool1D) Reset() {
 }
+
+func (layer *MaxPool1D) Clone() Layer {
+	return &MaxPool1D{
+		base:     layer.base.clone(),
+		kernel:   layer.kernel,
+		stride:   layer.stride,
+		padding:  layer.padding,
+		dilation: layer.dilation,
+		ceil:     layer.ceil,
+	}
+}

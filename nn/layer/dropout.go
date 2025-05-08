@@ -39,3 +39,10 @@ func (layer *Dropout) ToScalarType(t consts.ScalarType) {
 
 func (layer *Dropout) Reset() {
 }
+
+func (layer *Dropout) Clone() Layer {
+	return &Dropout{
+		base: layer.base.clone(),
+		keep: layer.keep,
+	}
+}

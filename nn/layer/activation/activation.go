@@ -54,3 +54,10 @@ func (*base) ToScalarType(t consts.ScalarType) {
 func (*base) Reset() {
 	// activation have no params
 }
+
+func (layer *base) clone() *base {
+	return &base{
+		class: layer.class,
+		name:  layer.name,
+	}
+}

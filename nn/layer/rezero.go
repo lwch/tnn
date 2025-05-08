@@ -56,3 +56,10 @@ func (layer *ReZero) Reset() {
 	layer.scale = layer.initN(0)
 	layer.scale.SetRequiresGrad(true)
 }
+
+func (layer *ReZero) Clone() Layer {
+	return &ReZero{
+		base:  layer.base.clone(),
+		scale: layer.scale.Clone(),
+	}
+}

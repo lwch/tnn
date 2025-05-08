@@ -25,3 +25,9 @@ func LoadTanh(name string, _ []*tensor.Tensor, _ map[string]float32) layer.Layer
 func (layer *Tanh) Forward(x *tensor.Tensor) *tensor.Tensor {
 	return x.Tanh()
 }
+
+func (layer *Tanh) Clone() layer.Layer {
+	return &Tanh{
+		base: layer.base.clone(),
+	}
+}

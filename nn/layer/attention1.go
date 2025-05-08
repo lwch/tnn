@@ -199,3 +199,17 @@ func (layer *Attention1) Reset() {
 	layer.k = layer.initW(layer.k.Shapes()...)
 	layer.v = layer.initW(layer.v.Shapes()...)
 }
+
+func (layer *Attention1) Clone() Layer {
+	return &Attention1{
+		base:    layer.base.clone(),
+		dims:    layer.dims,
+		heads:   layer.heads,
+		dropout: layer.dropout,
+		rope:    layer.rope,
+		q:       layer.q.Clone(),
+		k:       layer.k.Clone(),
+		v:       layer.v.Clone(),
+		scale:   layer.scale.Clone(),
+	}
+}

@@ -40,3 +40,10 @@ func (layer *GeLU) Args() map[string]float32 {
 		"tanh": tanh,
 	}
 }
+
+func (layer *GeLU) Clone() layer.Layer {
+	return &GeLU{
+		base: layer.base.clone(),
+		tanh: layer.tanh,
+	}
+}

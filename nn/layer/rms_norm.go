@@ -60,3 +60,11 @@ func (layer *RMSNorm) Reset() {
 	layer.a = layer.ones(layer.a.Shapes()...)
 	layer.a.SetRequiresGrad(true)
 }
+
+func (layer *RMSNorm) Clone() Layer {
+	return &RMSNorm{
+		base: layer.base.clone(),
+		eps:  layer.eps.Clone(),
+		a:    layer.a.Clone(),
+	}
+}

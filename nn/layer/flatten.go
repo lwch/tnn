@@ -35,3 +35,9 @@ func (layer *Flatten) ToScalarType(t consts.ScalarType) {
 
 func (layer *Flatten) Reset() {
 }
+
+func (layer *Flatten) Clone() Layer {
+	return &Flatten{
+		base: layer.base.clone(),
+	}
+}

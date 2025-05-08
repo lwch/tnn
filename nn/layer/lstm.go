@@ -154,3 +154,20 @@ func (layer *Lstm) Reset() {
 	layer.Bg = layer.initB(layer.Bg.Shapes()...)
 	layer.Bo = layer.initB(layer.Bo.Shapes()...)
 }
+
+func (layer *Lstm) Clone() Layer {
+	return &Lstm{
+		base:        layer.base.clone(),
+		featureSize: layer.featureSize,
+		steps:       layer.steps,
+		hidden:      layer.hidden,
+		Wi:          layer.Wi.Clone(),
+		Wf:          layer.Wf.Clone(),
+		Wg:          layer.Wg.Clone(),
+		Wo:          layer.Wo.Clone(),
+		Bi:          layer.Bi.Clone(),
+		Bf:          layer.Bf.Clone(),
+		Bg:          layer.Bg.Clone(),
+		Bo:          layer.Bo.Clone(),
+	}
+}
